@@ -3,8 +3,13 @@ name = "arcmis-tools"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-repository.workspace = true
 description = "Tool domain for ARCMiS."
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rig = "0.42"
+tokio = { workspace = true, features = ["process"] }
 
 [dev-dependencies]
 cucumber.workspace = true
