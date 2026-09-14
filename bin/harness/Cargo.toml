@@ -1,0 +1,23 @@
+[package]
+name = "harness"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Binary entry point for ARCMiS."
+
+[dependencies]
+arcmis-agents = { path = "../../lib/agents" }
+arcmis-tools = { path = "../../lib/tools" }
+tokio.workspace = true
+
+[dev-dependencies]
+cucumber.workspace = true
+
+[features]
+cucumber-tests = []
+
+[[test]]
+name = "cucumber"
+harness = false
+required-features = ["cucumber-tests"]

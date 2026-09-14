@@ -1,0 +1,19 @@
+[package]
+name = "arcmis-tools"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Tool domain for ARCMiS."
+
+[dev-dependencies]
+cucumber.workspace = true
+tokio.workspace = true
+
+[features]
+cucumber-tests = []
+
+[[test]]
+name = "cucumber"
+harness = false
+required-features = ["cucumber-tests"]

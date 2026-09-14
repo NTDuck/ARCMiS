@@ -1,14 +1,18 @@
-[package]
-name = "arcmis"
+# Virtual workspace manifest. Member crates live under lib/* and bin/*.
+[workspace]
+resolver = "2"
+members = ["lib/*", "bin/*"]
+
+[workspace.package]
 version = "0.1.0"
-description = "Agentic Repository-level Code Migration for SLMs"
 edition = "2021"
 license = "BSD-3-Clause"
 repository = "https://github.com/NTDuck/ARCMiS"
-publish = false
+description = "Agentic Repository-level Code Migration for SLMs"
 
-# Mirrors litmus' clippy restrictions so style is uniform across NTDuck crates.
-[lints.clippy]
+[workspace.dependencies]
+cucumber = "0.21.1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+
+[workspace.lints.clippy]
 let_and_return = "allow"
-
-# No [lib] override: a plain src/lib.rs suffices for a placeholder crate.
