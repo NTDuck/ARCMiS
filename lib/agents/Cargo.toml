@@ -8,10 +8,15 @@ description = "Agent orchestration domain for ARCMiS."
 
 [dependencies]
 arcmis-tools = { path = "../tools" }
+rig = "0.42"
+serde = { version = "1", features = ["derive"] }
+serde_yaml = "0.9"
+serde_json = "1"
+tokio = { workspace = true, features = ["process"] }
 
 [dev-dependencies]
 cucumber.workspace = true
-tokio.workspace = true
+tokio = { workspace = true }
 
 [features]
 cucumber-tests = []
