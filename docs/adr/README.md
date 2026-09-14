@@ -10,6 +10,7 @@ Numbered, immutable Architecture Decision Records. Format and policy: [`.omp/rul
 | - | ----- | ------ |
 | [0001](0001-litmus-derived-rust-scaffold.md) | Litmus-derived Rust scaffold | accepted |
 | [0002](0002-stable-rustfmt-drop-required-version.md) | Stable rustfmt: drop required_version | accepted |
+| [0003](0003-rig-distilled-into-arex-skill-graph.md) | Distill rig into AREX-style skill graph | accepted |
 
 ## References
 
