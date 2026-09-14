@@ -28,7 +28,13 @@ Write all agent-facing English per the `asd-ste100` skill (installed at `~/.omp/
 ```bash
 python3 ~/.omp/agent/skills/asd-ste100/scripts/ste-lint.py <files>
 ```
+- For Rust files, lint the prose lines only (comments and doc comments). Rust code needs its statement semicolons. Extract them and lint the extract:
 
+```bash
+grep -E '^\s*//+!?\s?' src/main.rs | python3 ~/.omp/agent/skills/asd-ste100/scripts/ste-lint.py
+```
+
+- Lint Markdown, TOML, and feature files in full. Code tokens in those files (for example a `;` in a snippet) follow the surrounding language, not this rule.
 - The run must report 0 hard violations (exit 0). Advisory findings (passive voice, compound tenses) need a look. Fix them when the fix loses no meaning.
 - Where a longer phrase carries a hedge or a scope qualifier, keep the phrase. Record the exception in the commit body.
 
