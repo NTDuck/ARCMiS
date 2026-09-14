@@ -1,0 +1,14 @@
+[package]
+name = "arcmis"
+version = "0.1.0"
+description = "Agent-first workspace for the ARCMiS project."
+edition = "2021"
+license = "BSD-3-Clause"
+repository = "https://github.com/NTDuck/ARCMiS"
+publish = false
+
+# Mirrors litmus' clippy restrictions so style is uniform across NTDuck crates.
+[lints.clippy]
+let_and_return = "allow"
+
+# No [lib] override: a plain src/lib.rs suffices for a placeholder crate.
