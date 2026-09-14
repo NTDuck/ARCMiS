@@ -1,1 +1,3 @@
-# __PENDING__.MAgHARCM2
+# ARCMiS
+
+Agent-first Rust workspace.
