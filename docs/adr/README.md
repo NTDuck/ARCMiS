@@ -13,6 +13,7 @@ Numbered, immutable Architecture Decision Records. Format and policy: [`.omp/rul
 | [0003](0003-rig-distilled-into-arex-skill-graph.md) | Distill rig into AREX-style skill graph | accepted |
 | [0004](0004-mise-tasks-instead-of-cargo-aliases.md) | Mise tasks instead of cargo aliases | accepted |
 | [0005](0005-simplified-technical-english-for-rules.md) | Simplified Technical English for rules and agent text | accepted |
+| [0006](0006-workspace-layout-and-cucumber-tests.md) | Workspace layout and cucumber tests | accepted |
 
 ## References
 
