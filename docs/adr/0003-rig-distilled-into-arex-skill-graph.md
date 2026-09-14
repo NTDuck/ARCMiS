@@ -10,9 +10,9 @@ Agentic development against the rig Rust LLM framework hallucinates APIs when do
 ## Decision
 
 - Distill `0xPlaygrounds/rig` into an AREX-shaped skill graph at `.omp/skills/rig/`: a router `SKILL.md` + 7 sub-skills (`agents`, `tools`, `rag-vector`, `extraction`, `multi-agent`, `memory`, `providers`), each with Scope / Ground Truth (per-claim `upstream/...` citations) / Workflow / Pitfalls / Verify / Provenance.
-- Pin the graph to upstream commit `6828097ce102fbb4e26d3aeadd50201cc65c4150` (2026-09-14). Claims are valid against that pin; drift requires re-grounding, and the falsification loop in `.omp/rules/arex-skill-utilization.md` updates the skill in-session.
+- Pin the graph to upstream commit `6828097ce102fbb4e26d3aeadd50201cc65c4150` (2026-09-14). Claims are valid against that pin; drift requires re-grounding, and the falsification loop in `.omp/rules/skills.md` updates the skill in-session.
 - Sub-skills are written by parallel scoped agents, each owning exactly one file, each required to grep-verify symbols against the pinned checkout before writing (AREX "ground" stage).
-- A binding utilization rule (`.omp/rules/arex-skill-utilization.md`) makes routing + grounding + constraint-wise audit mandatory for any rig task, so the graph cannot silently rot into hallucination fuel.
+- A binding utilization rule (`.omp/rules/skills.md`) makes routing + grounding + constraint-wise audit mandatory for any rig task, so the graph cannot silently rot into hallucination fuel.
 
 ## Consequences
 
