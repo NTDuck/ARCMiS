@@ -9,7 +9,10 @@ description = "Binary entry point for ARCMiS."
 [dependencies]
 arcmis-agents = { path = "../../lib/agents" }
 arcmis-tools = { path = "../../lib/tools" }
-tokio.workspace = true
+rig = "0.42"
+tokio = { workspace = true }
+serde = { version = "1", features = ["derive"] }
+serde_yaml = "0.9"
 
 [dev-dependencies]
 cucumber.workspace = true
