@@ -49,6 +49,14 @@ fn write(
     content: ::std::string::String,
     requested: &str,
 ) -> ::core::result::Result<usize, ::rig::tool::ToolExecutionError> {
+    // Short-circuit on an identical rewrite. A model that repeats the same
+    // write burns turns and wall clock. Report it and let the loop move on.
+    if let ::core::result::Result::Ok(existing) = ::std::fs::read_to_string(path) {
+        if existing == content {
+            ::tracing::info!(file = %requested, "write_file skipped: content unchanged");
+            return ::core::result::Result::Ok(content.len());
+        }
+    }
     let len = content.len();
     ::std::fs::write(path, content).map_err(|error| {
         ::rig::tool::ToolExecutionError::other(format!("write_file failed for {requested}: {error}"))
