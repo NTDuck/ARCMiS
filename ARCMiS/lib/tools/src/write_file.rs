@@ -48,20 +48,38 @@ fn write(
     path: &::std::path::Path,
     content: ::std::string::String,
     requested: &str,
-) -> ::core::result::Result<usize, ::rig::tool::ToolExecutionError> {
+) -> ::core::result::Result<Written, ::rig::tool::ToolExecutionError> {
     // Short-circuit on an identical rewrite. A model that repeats the same
-    // write burns turns and wall clock. Report it and let the loop move on.
-    if let ::core::result::Result::Ok(existing) = ::std::fs::read_to_string(path) {
-        if existing == content {
-            ::tracing::info!(file = %requested, "write_file skipped: content unchanged");
-            return ::core::result::Result::Ok(content.len());
-        }
+    // write burns turns and wall clock. A missing file means no prior
+    // content. Every other read error is real and surfaces.
+    match ::std::fs::read_to_string(path) {
+        ::core::result::Result::Ok(existing) if existing == content => {
+            return ::core::result::Result::Ok(Written {
+                bytes: content.len(),
+                unchanged: true,
+            });
+        },
+        ::core::result::Result::Err(error) if error.kind() != ::std::io::ErrorKind::NotFound => {
+            return ::core::result::Result::Err(::rig::tool::ToolExecutionError::other(format!(
+                "write_file failed to read {requested}: {error}"
+            )));
+        },
+        _ => {},
     }
-    let len = content.len();
+    let bytes = content.len();
     ::std::fs::write(path, content).map_err(|error| {
         ::rig::tool::ToolExecutionError::other(format!("write_file failed for {requested}: {error}"))
     })?;
-    ::core::result::Result::Ok(len)
+    ::core::result::Result::Ok(Written {
+        bytes,
+        unchanged: false,
+    })
+}
+
+/// Outcome of one `write` step.
+struct Written {
+    bytes: usize,
+    unchanged: bool,
 }
 
 /// `write_file` writes one file inside the output workspace and creates its
@@ -100,7 +118,17 @@ impl ::rig::tool::Tool for WriteFile {
     ) -> ::core::result::Result<Self::Output, Self::Error> {
         let path = path_sanitize(&self.root, &args.path).map_err(::rig::tool::ToolExecutionError::other)?;
         create_parents(&path, &args.path)?;
-        let len = write(&path, args.content, &args.path)?;
-        ::core::result::Result::Ok(::rig::tool::ToolOutput::text(format!("wrote {} ({len} bytes)", args.path)))
+        let written = write(&path, args.content, &args.path)?;
+        if written.unchanged {
+            ::tracing::info!(file = %args.path, "write_file skipped: content unchanged");
+            return ::core::result::Result::Ok(::rig::tool::ToolOutput::text(format!(
+                "write_file: skipped, content unchanged ({} bytes)",
+                written.bytes
+            )));
+        }
+        ::core::result::Result::Ok(::rig::tool::ToolOutput::text(format!(
+            "wrote {} ({} bytes)",
+            args.path, written.bytes
+        )))
     }
 }
