@@ -15,6 +15,7 @@ Numbered, immutable Architecture Decision Records. Format and policy: [`.omp/rul
 | [0005](0005-simplified-technical-english-for-rules.md) | Simplified Technical English for rules and agent text | accepted |
 | [0006](0006-workspace-layout-and-cucumber-tests.md) | Workspace layout and cucumber tests | accepted |
 | [0007](0007-ollama-migration-agent.md) | Ollama-driven migration agent over GildedRose | accepted |
+| [0008](0008-clarity-logging-no-tuning-nested-layout.md) | Code clarity, minimal code, logging, no tuning, nested layout | accepted |
 
 ## References
 

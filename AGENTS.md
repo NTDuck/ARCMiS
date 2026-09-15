@@ -2,7 +2,8 @@
 
 `AGENTS.md` is the map, not the manual. Start here, then follow pointers to deeper sources of truth.
 
-- **Workflow rules (binding):** [`.omp/rules/`](.omp/rules/) — commits, config, decision logging, Rust style, distilled-skill usage, nextest, STE.
+- **Workflow rules (binding):** [`.omp/rules/`](.omp/rules/) — commits, code clarity, config, decision logging, logging, minimal code, no tuning, Rust style, distilled-skill usage, nextest, STE.
+- **Workspace layout:** members at `ARCMiS/lib/*` and `ARCMiS/bin/*` (ADR 0008).
 - **Distilled framework skills:** [`.omp/skills/rig/`](.omp/skills/rig/SKILL.md) — AREX-style skill graph for the rig Rust LLM framework (router + 7 sub-skills, pinned upstream commit).
 - **CI:** [`.github/workflows/`](.github/workflows/) — lint → build → test → dependencies-check (fmt/clippy on nightly, matrix test via nextest, cargo-deny + cargo-audit).
 
@@ -11,11 +12,15 @@
 1. Commits: granular, incremental, [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/). See `.omp/rules/commits.md`.
 2. Every historical decision not directly inferrable in code gets a WHY comment at the site **and** an ADR in `docs/adr/`. See `.omp/rules/decisions.md`.
 3. Rust style: fully qualified paths and derives, tap-chained instead of nested calls, functional style within functions. See `.omp/rules/rust.md`.
-4. Run the gates before you commit: `cargo fmt --check`, `cargo clippy`, and `cargo nextest run` (see `.omp/rules/use-nextest.md`). Mise tasks: `mise run lint-rustfmt`, `mise run lint-clippy`. Never commit a red tree.
-5. Tests: unit runs through `cargo nextest` locally and in CI. Behavior tests are cucumber suites under `{crate}/tests/features/`. Run them with `cargo test --features cucumber-tests --workspace --test cucumber`. See `docs/adr/0006-workspace-layout-and-cucumber-tests.md`.
+4. Run the gates before you commit: `cargo fmt --check`, `cargo clippy`, `cargo nextest run` (see `.omp/rules/build-and-gates.md`), and `python3 .omp/scripts/lint-rules.py` (qualified paths, derives, naming, print). Mise tasks: `mise run lint-rustfmt`, `mise run lint-clippy`. Never commit a red tree.
+5. Tests: unit runs through `cargo nextest` locally and in CI. Behavior tests are cucumber suites under `{crate}/tests/features/`. Run them with `cargo test --features cucumber-tests --workspace --test cucumber`. See `.omp/rules/build-and-gates.md` and `docs/adr/0006-workspace-layout-and-cucumber-tests.md`.
 6. Tasks touching a distilled framework (e.g. rig): route through its `.omp/skills/` graph first and ground every upstream symbol before writing. See `.omp/rules/skills.md`.
-7. Do not hardcode configuration. Bubble every setting up to the call site (`main` or the test entry). See `.omp/rules/config.md`.
-8. Write all messages, comments, and wordings per the `asd-ste100` skill. Lint touched files before commit. See `.omp/rules/ste.md`.
+7. Code clarity: the module opens with the list of things. Each item reads as small named functions. Do not mix abstraction levels. See `.omp/rules/code-clarity.md`.
+8. Minimal code: prefer external crates. Do not re-implement general capabilities without a why comment. See `.omp/rules/minimal-code.md`.
+9. No print. Log through `tracing` with structured fields. Keep messages STE-clean. See `.omp/rules/logging.md`.
+10. Do not hand-tune against the problem set. Run-specific values live only in the config file. See `.omp/rules/no-tuning.md`.
+11. Do not hardcode configuration. Bubble every setting up to the call site (`main` or the test entry). See `.omp/rules/config.md`.
+12. Write all messages, comments, and wordings per the `asd-ste100` skill. Lint touched files before commit. See `.omp/rules/ste.md`.
 
 ## Verification
 

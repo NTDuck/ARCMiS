@@ -21,7 +21,7 @@ Write all agent-facing English per the `asd-ste100` skill (installed at `~/.omp/
 - Keep the author's hedges. Do not promote "may" to a fact. Confidence is content.
 - Do not stack more than three nouns. Rewrite long noun clusters as a phrase with "of" or as a relative clause.
 
-## Gate
+## Gate (mechanical)
 
 - Before you commit, run the linter over each touched file:
 

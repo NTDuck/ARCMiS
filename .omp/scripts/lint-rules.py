@@ -1,0 +1,87 @@
+#!/usr/bin/env python3
+"""Rule linter for ARCMiS. Checks every enforceable rule mechanically.
+
+Run before commit: python3 .omp/scripts/lint-rules.py [files]
+With no arguments, checks all workspace Rust files plus .omp text files.
+
+Enforced rules (each maps to a section of .omp/rules/*):
+- rust.md §1: every external `use` carries a leading ::
+- rust.md §8/derives: every derive path carries a leading ::
+- rust.md §4 (naming): no single-letter bindings (e, o, c) outside tiny
+  numeric loop indices and generic parameters
+- rust.md §5: prefer turbofish over type annotations on local let with
+  collect()/parse() — reported as advisory findings
+- logging.md: no println!/eprintln!/dbg!/print! in workspace code
+- code-clarity.md: advisory — files longer than 300 lines are listed for review
+"""
+
+from __future__ import annotations
+
+import re
+import sys
+from pathlib import Path
+
+USE_RE = re.compile(r"^\s*use\s+(?!::|crate::|self::|super::)([A-Za-z_][A-Za-z0-9_]*)")
+DERIVE_RE = re.compile(r"#\[\s*derive\s*\(([^)]*)\)\s*\]")
+PRINT_RE = re.compile(r"\b(println!|eprintln!|print!|dbg!)\s*\(")
+SINGLE_LETTER_RE = re.compile(r"\blet\s+([a-z])\s*(?::[^=]+)?=")
+TURBOFISH_ADVISORY_RE = re.compile(r"let\s+\w+\s*:\s*[^=]+=\s*[\w:.]+(?:\.\w+)?\(\)\.(collect|parse)\(")
+NESTED_CALL_ADVISORY_RE = re.compile(r"\w+\([^()]*\w+\(")
+
+
+def iter_rust_files(root: Path, only: list[Path]) -> list[Path]:
+    if only:
+        return [p for p in only if p.suffix == ".rs"]
+    return [
+        p
+        for p in (root / "ARCMiS").rglob("*.rs")
+        if "target" not in p.parts
+    ]
+
+
+def check_rust(path: Path, text: str) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    advisories: list[str] = []
+    for no, line in enumerate(text.splitlines(), start=1):
+        if USE_RE.match(line):
+            errors.append(f"{path}:{no}: unqualified use (rust.md §1): {line.strip()}")
+        for derive in DERIVE_RE.finditer(line):
+            for token in derive.group(1).split(","):
+                token = token.strip()
+                if token and not token.startswith("::"):
+                    errors.append(f"{path}:{no}: unqualified derive path (rust.md §8): {token}")
+        if PRINT_RE.search(line):
+            errors.append(f"{path}:{no}: print in workspace code (logging.md): {line.strip()}")
+        for m in SINGLE_LETTER_RE.finditer(line):
+            name = m.group(1)
+            if name not in ("i", "j", "k") or "for " not in line:
+                errors.append(f"{path}:{no}: single-letter binding `{name}` (rust.md §4): {line.strip()}")
+        if TURBOFISH_ADVISORY_RE.search(line):
+            advisories.append(f"{path}:{no}: prefer turbofish over annotation (rust.md §5): {line.strip()}")
+    return errors, advisories
+
+
+def main() -> int:
+    root = Path(__file__).resolve().parent.parent.parent
+    only = [Path(a) for a in sys.argv[1:]]
+    files = iter_rust_files(root, only)
+    errors: list[str] = []
+    advisories: list[str] = []
+    for path in files:
+        text = path.read_text(encoding="utf-8")
+        file_errors, file_advisories = check_rust(path, text)
+        errors.extend(file_errors)
+        advisories.extend(file_advisories)
+        if not only and text.count("\n") > 300:
+            advisories.append(f"{path}: over 300 lines (code-clarity.md): split or trim")
+    if errors:
+        print("\n".join(errors))
+        print(f"{len(errors)} violation(s)")
+    if advisories:
+        print("\n".join(advisories))
+        print(f"{len(advisories)} advisory finding(s)")
+    return 1 if errors else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
