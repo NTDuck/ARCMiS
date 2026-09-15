@@ -2,12 +2,6 @@
 
 use ::std::collections::BTreeMap;
 
-/// A tool exposed to agents.
-#[derive(::core::fmt::Debug, ::core::clone::Clone, ::core::cmp::PartialEq, ::core::cmp::Eq)]
-pub struct Tool {
-    pub name: ::std::string::String,
-}
-
 /// Catalog of tools keyed by name.
 #[derive(::core::fmt::Debug, ::core::default::Default)]
 pub struct Catalog {
@@ -51,4 +45,9 @@ impl Catalog {
     pub fn is_empty(&self) -> bool {
         self.tools.is_empty()
     }
+}
+
+#[derive(::core::fmt::Debug, ::core::clone::Clone, ::core::cmp::PartialEq, ::core::cmp::Eq)]
+pub struct Tool {
+    pub name: ::std::string::String,
 }

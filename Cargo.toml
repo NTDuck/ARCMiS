@@ -1,7 +1,7 @@
 # Virtual workspace manifest. Member crates live under lib/* and bin/*.
 [workspace]
 resolver = "2"
-members = ["lib/*", "bin/*"]
+members = ["ARCMiS/lib/*", "ARCMiS/bin/*"]
 
 [workspace.package]
 version = "0.1.0"

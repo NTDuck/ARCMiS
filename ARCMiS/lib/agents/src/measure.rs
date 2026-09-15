@@ -1,10 +1,8 @@
 //! Result measurement for a migration run. Compiles the output codebase
 //! and runs the translated tests; both numbers are outcomes, not gates.
 
-use ::serde::Serialize;
-
 /// Final measurement of one migration run.
-#[derive(::core::fmt::Debug, Serialize)]
+#[derive(::core::fmt::Debug, ::serde::Serialize)]
 pub struct Measurement {
     /// Build status of the output codebase: pass or fail.
     pub compile: &'static str,
@@ -28,6 +26,9 @@ pub async fn measure(output_dir: &::std::path::Path, test_command: &str) -> Meas
     }
     let (ok, out) = run_line(output_dir, test_command).await;
     let test_pass_rate = parse_pass_rate(&out);
+    if test_pass_rate.is_none() {
+        ::tracing::warn!(runner_ok = ok, "test runner reported no counts");
+    }
     Measurement {
         compile: "pass",
         test_pass_rate,
@@ -41,14 +42,18 @@ pub async fn measure(output_dir: &::std::path::Path, test_command: &str) -> Meas
 }
 
 /// Run one shell line in `dir`. Returns (success, combined output).
-async fn run_line(dir: &::std::path::Path, line: &str) -> (bool, String) {
+async fn run_line(dir: &::std::path::Path, line: &str) -> (bool, ::std::string::String) {
     let output = ::tokio::process::Command::new("sh").arg("-c").arg(line).current_dir(dir).output().await;
     match output {
         ::core::result::Result::Ok(out) => {
-            let text = format!("{}{}", String::from_utf8_lossy(&out.stdout), String::from_utf8_lossy(&out.stderr),);
+            let text = format!(
+                "{}{}",
+                ::std::string::String::from_utf8_lossy(&out.stdout),
+                ::std::string::String::from_utf8_lossy(&out.stderr),
+            );
             (out.status.success(), text)
         },
-        ::core::result::Result::Err(e) => (false, format!("spawn failed: {e}")),
+        ::core::result::Result::Err(error) => (false, format!("spawn failed: {error}")),
     }
 }
 
@@ -68,10 +73,11 @@ fn parse_pass_rate(output: &str) -> ::core::option::Option<f64> {
 fn find_count(output: &str, markers: &[&str]) -> u64 {
     markers
         .iter()
-        .filter_map(|m| {
-            let idx = output.find(m)?;
-            let before = &output[..idx];
-            let digits: String = before.chars().rev().take_while(|c| c.is_ascii_digit() || *c == ' ').collect();
+        .filter_map(|marker| {
+            let index = output.find(marker)?;
+            let before = &output[..index];
+            let digits: ::std::string::String =
+                before.chars().rev().take_while(|c| c.is_ascii_digit() || *c == ' ').collect();
             digits.split_whitespace().next().and_then(|n| n.parse::<u64>().ok())
         })
         .sum()

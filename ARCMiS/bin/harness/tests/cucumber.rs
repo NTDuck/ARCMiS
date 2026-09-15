@@ -5,7 +5,7 @@ use ::arcmis_tools::Catalog;
 use ::cucumber::{given, then, World};
 
 #[derive(::core::fmt::Debug, ::core::default::Default)]
-#[derive(World)]
+#[derive(::cucumber::World)]
 pub struct HarnessWorld {
     tools: Catalog,
     agents: Registry,
@@ -29,7 +29,7 @@ async fn wiring_succeeds(w: &mut HarnessWorld) {
     ::core::assert!(tool.is_some());
 }
 
-#[tokio::main]
+#[::tokio::main]
 async fn main() {
     HarnessWorld::run("tests/features").await;
 }

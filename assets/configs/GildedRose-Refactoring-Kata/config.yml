@@ -1,5 +1,4 @@
 # Migration run configuration. The agent reads this file. The agent does not hardcode anything from it.
-# Verified against rig@6828097: providers::ollama::Client::builder().build() -> localhost:11434.
 
 run:
   # Model that drives the agent (ollama model tag).
@@ -18,84 +17,10 @@ run:
   think: false
   # Sampling temperature. Low value for deterministic tool use.
   temperature: 0.2
-  # Files the agent may translate. Paths are relative to the input codebase root.
-  source_files:
-    - GildedRose.c
-    - GildedRose.h
-  # Tests translated as-is to the target language and run after the build.
-  test_files:
-    - GildedRoseTextTests.c
 
 output:
   # Destination root for the transformed codebase and run logs.
   dir: .artifacts/GildedRose-Refactoring-Kata/Rust
-  # Package skeleton written before the agent runs. Manifest setup is
-  # toolchain work. The agent translates sources and tests. It may overwrite
-  # any of these files.
-  scaffold_files:
-    Cargo.toml: |
-      [package]
-      name = "gilded-rose"
-      version = "0.1.0"
-      edition = "2021"
-
-      [workspace]
-    src/lib.rs: |
-      //! Gilded Rose inventory. Translated from C by the migration agent.
-      //! The agent completes the `update_quality` logic and adds tests.
-
-      /// One shop item. Translated from the C `Item` struct.
-      #[derive(Debug, Clone)]
-      pub struct Item {
-          pub name: String,
-          pub sell_in: i32,
-          pub quality: i32,
-      }
-
-      /// Equivalent of the C `init_item`: create an item with owned values.
-      #[must_use]
-      pub fn init_item(name: &str, sell_in: i32, quality: i32) -> Item {
-          Item {
-              name: String::from(name),
-              sell_in,
-              quality,
-          }
-      }
-
-      /// Equivalent of the C `update_quality`: advance every item one day.
-      pub fn update_quality(items: &mut [Item]) {
-          for item in items {
-              let aged = item.name == "Aged Brie";
-              let backstage = item.name == "Backstage passes to a TAFKAL80ETC concert";
-              let legendary = item.name == "Sulfuras, Hand of Ragnaros";
-              // TODO(agent): this branch handles only legendary items and the
-              // sell-in tick. Translate the C branches for Brie, backstage
-              // passes, and expired items from the C source.
-              if !legendary {
-                  item.sell_in -= 1;
-              }
-              let _ = (aged, backstage);
-          }
-      }
-
-      /// Equivalent of the C `print_item`: format one item.
-      #[must_use]
-      pub fn print_item(item: &Item) -> String {
-          format!("{}, {}, {}", item.name, item.sell_in, item.quality)
-      }
-
-      #[cfg(test)]
-      mod tests {
-          use super::*;
-
-          #[test]
-          fn legendary_items_never_change() {
-              let mut items = vec![init_item("Sulfuras, Hand of Ragnaros", 0, 80)];
-              update_quality(&mut items);
-              assert_eq!(items[0].quality, 80);
-              assert_eq!(items[0].sell_in, 0);
-          }
-      }
 
 source:
   # Input codebase to transform.

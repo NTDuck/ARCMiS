@@ -4,12 +4,6 @@
 use ::std::collections::BTreeMap;
 use ::std::sync::Arc;
 
-/// A registered agent identity.
-#[derive(::core::fmt::Debug, ::core::clone::Clone, ::core::cmp::PartialEq, ::core::cmp::Eq)]
-pub struct Agent {
-    pub name: ::std::string::String,
-}
-
 /// Registry of agents keyed by name.
 #[derive(::core::fmt::Debug, ::core::default::Default)]
 pub struct Registry {
@@ -52,4 +46,10 @@ impl Registry {
     pub fn is_empty(&self) -> bool {
         self.agents.is_empty()
     }
+}
+
+/// A registered agent identity.
+#[derive(::core::fmt::Debug, ::core::clone::Clone, ::core::cmp::PartialEq, ::core::cmp::Eq)]
+pub struct Agent {
+    pub name: ::std::string::String,
 }

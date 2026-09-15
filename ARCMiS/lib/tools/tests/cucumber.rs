@@ -4,7 +4,7 @@ use ::arcmis_tools::{Catalog, Tool};
 use ::cucumber::{given, then, when, World};
 
 #[derive(::core::fmt::Debug, ::core::default::Default)]
-#[derive(World)]
+#[derive(::cucumber::World)]
 pub struct ToolWorld {
     catalog: Catalog,
     last: ::core::option::Option<Tool>,
@@ -40,7 +40,7 @@ async fn tool_absent(w: &mut ToolWorld, name: String) {
     ::core::assert!(w.catalog.get(&name).is_none());
 }
 
-#[tokio::main]
+#[::tokio::main]
 async fn main() {
     ToolWorld::run("tests/features").await;
 }

@@ -1,19 +1,24 @@
 [package]
-name = "arcmis-tools"
+name = "arcmis-agents"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "Tool domain for ARCMiS."
+repository.workspace = true
+description = "Agent orchestration domain for ARCMiS."
 
 [dependencies]
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+arcmis-tools = { path = "../tools" }
 rig = "0.42"
-tokio = { workspace = true, features = ["process"] }
+serde = { version = "1", features = ["derive"] }
+serde_yaml = "0.9"
+serde_json = "1"
+tokio = { workspace = true, features = ["process", "macros"] }
+tracing = "0.1"
+bon = "3.10.1"
 
 [dev-dependencies]
 cucumber.workspace = true
-tokio.workspace = true
+tokio = { workspace = true }
 
 [features]
 cucumber-tests = []

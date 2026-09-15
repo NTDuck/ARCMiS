@@ -6,7 +6,7 @@ use ::cucumber::{given, then, when, World};
 use ::std::sync::Arc;
 
 #[derive(::core::fmt::Debug, ::core::default::Default)]
-#[derive(World)]
+#[derive(::cucumber::World)]
 pub struct AgentWorld {
     registry: Registry,
     last: ::core::option::Option<Arc<Agent>>,
@@ -38,7 +38,7 @@ async fn agent_absent(w: &mut AgentWorld, name: String) {
     ::core::assert!(w.registry.get(&name).is_none());
 }
 
-#[tokio::main]
+#[::tokio::main]
 async fn main() {
     AgentWorld::run("tests/features").await;
 }
