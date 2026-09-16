@@ -9,12 +9,12 @@ description = "Binary entry point for ARCMiS."
 [dependencies]
 arcmis-agents = { path = "../../lib/agents" }
 arcmis-tools = { path = "../../lib/tools" }
-rig = "0.42"
+rig = "0.42.0"
+serde.workspace = true
+serde_yaml.workspace = true
 tokio = { workspace = true }
-serde = { version = "1", features = ["derive"] }
-serde_yaml = "0.9"
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing.workspace = true
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 
 [dev-dependencies]
 cucumber.workspace = true
