@@ -7,11 +7,15 @@ With no arguments, checks all workspace Rust files plus .omp text files.
 Enforced rules (each maps to a section of .omp/rules/*):
 - rust.md §1: every external `use` carries a leading ::
 - rust.md §8/derives: every derive path carries a leading ::
+- rust.md §9/macros: every macro invocation carries a fully qualified path
+  with a bang (`::serde_json::json!`, not `json!`)
 - rust.md §4 (naming): no single-letter bindings (e, o, c) outside tiny
   numeric loop indices and generic parameters
 - rust.md §5: prefer turbofish over type annotations on local let with
   collect()/parse() — reported as advisory findings
 - logging.md: no println!/eprintln!/dbg!/print! in workspace code
+- code-clarity.md: description purity — no `Args:` payload inside
+  model-facing description strings
 - code-clarity.md: advisory — files longer than 300 lines are listed for review
 """
 
@@ -23,6 +27,8 @@ from pathlib import Path
 
 USE_RE = re.compile(r"^\s*use\s+(?!::|crate::|self::|super::)([A-Za-z_][A-Za-z0-9_]*)")
 DERIVE_RE = re.compile(r"#\[\s*derive\s*\(([^)]*)\)\s*\]")
+BARE_MACRO_RE = re.compile(r"(^|[^:\w])\b([a-z_][a-z0-9_]*)!\s*[(\[{]")
+ARGS_IN_DESCRIPTION_RE = re.compile(r'"[^"]*\bArgs:')
 PRINT_RE = re.compile(r"\b(println!|eprintln!|print!|dbg!)\s*\(")
 SINGLE_LETTER_RE = re.compile(r"\blet\s+([a-z])\s*(?::[^=]+)?=")
 TURBOFISH_ADVISORY_RE = re.compile(r"let\s+\w+\s*:\s*[^=]+=\s*[\w:.]+(?:\.\w+)?\(\)\.(collect|parse)\(")
@@ -45,6 +51,10 @@ def check_rust(path: Path, text: str) -> tuple[list[str], list[str]]:
     for no, line in enumerate(text.splitlines(), start=1):
         if USE_RE.match(line):
             errors.append(f"{path}:{no}: unqualified use (rust.md §1): {line.strip()}")
+        # Derive attributes follow rust.md §8; skip them for the bare-macro rule.
+        if "derive" not in line and BARE_MACRO_RE.search(line):
+            macro_name = BARE_MACRO_RE.search(line).group(2)
+            errors.append(f"{path}:{no}: unqualified macro `{macro_name}!` (rust.md §9): {line.strip()}")
         for derive in DERIVE_RE.finditer(line):
             for token in derive.group(1).split(","):
                 token = token.strip()

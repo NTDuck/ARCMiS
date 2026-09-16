@@ -2,7 +2,6 @@
 description: No mod.rs. One item per file. Shared helpers live in src/util/<topic>.rs.
 ---
 
-# Module Layout
 
 ## 1. No mod.rs
 
@@ -23,9 +22,18 @@ When several tools form one group, use `src/<group>/<tool>.rs`.
 
 Put shared helpers in `src/util/<topic>.rs`. Never make a `util.rs` dumping ground. Never put helpers next to the item list.
 
-## 5. Examples
+## 5. Inline Module Declarations
+
+A file whose only content is module declarations must not exist. Do not keep a glue file that only re-lists modules with `pub mod foo;`. Declare `pub mod foo;` inline in `lib.rs` and delete the glue file.
+
+- Keep a `src/foo/` directory for real multi-file submodules. A directory is fine when its files hold code.
+
+
+## 6. Examples
 
 Current tree:
 
-- agents crate: `src/agent/default.rs` (agent), `src/agent.rs` (module list), `src/util/…` (helpers).
-- tools crate: `src/read_file.rs`, `src/write_file.rs`, `src/run_command.rs`, `src/catalog.rs`, `src/util/…` (helpers).
+- agents crate: `src/default.rs` (agent), `src/lib.rs` holds the module list, `src/util/…` (helpers).
+- tools crate: `src/read_file.rs`, `src/write_file.rs`, `src/run_command.rs`, `src/catalog.rs` (tools), `src/util/<topic>.rs` (helpers, declared inline in `lib.rs`).
+
+

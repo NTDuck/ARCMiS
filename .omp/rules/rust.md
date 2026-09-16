@@ -4,7 +4,7 @@ description: Rust style. Use fully qualified paths and derives. Chain with tap i
 
 # Rust Style
 
-This rule applies to all Rust code in this repository. `python3 .omp/scripts/lint-rules.py` enforces sections 1, 4, and 9 mechanically. Review enforces the other sections. Build and test gates live in `.omp/rules/build-and-gates.md`.
+This rule applies to all Rust code in this repository. `python3 .omp/scripts/lint-rules.py` enforces sections 1, 4, 5, 8, and 9 mechanically. Review enforces the other sections. Build and test gates live in `.omp/rules/build-and-gates.md`.
 
 ## 1. Fully Qualified Paths
 
@@ -89,3 +89,21 @@ struct Point {
 
 - `Debug` lives in `::core::fmt`. `Clone` and `Copy` live in `::core::clone` and `::core::marker`. Comparison traits live in `::core::cmp`. `Default` lives in `::core::default`.
 - Note: the clippy config sets `absolute-paths-max-segments = 0`. This lint is off by default. If you enable it later, raise the cap in `.clippy.toml` or scope the lint to allow derives.
+
+## 9. Fully Qualified Macros
+
+Every macro invocation outside a `#[derive(...)]` attribute uses the fully qualified path with a bang. Write `::serde_json::json!`, `::std::format!`, `::tracing::info!`, and `::core::assert_eq!`.
+
+- Do not import a macro with `use` and call it bare. The invocation carries the crate path.
+- Derive attributes follow section 8.
+
+```rust
+// Good
+let payload = ::serde_json::json!({ "path": path });
+::tracing::info!(path = %path, "read file");
+
+// Bad
+use serde_json::json;
+let payload = json!({ "path": path });
+::tracing::info!("read {}", path);
+```
