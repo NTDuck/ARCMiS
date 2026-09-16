@@ -75,12 +75,12 @@ pub fn build(config: &Config) -> ::rig::agent::Agent {
 /// output structure itself.
 pub fn prompt(config: &Config, sources: &sources::Sources) -> ::core::result::Result<String, ::std::string::String> {
     if sources.is_empty() {
-        return ::core::result::Result::Err(format!(
+        return ::core::result::Result::Err(::std::format!(
             "no readable sources collected from {}",
             config.source.root.display()
         ));
     }
-    Ok(format!(
+    Ok(::std::format!(
         "Translate this {} codebase to {}. \
 Write the output as a complete {} package into the output workspace: \
 plan the package structure, generate the manifest, and write every \

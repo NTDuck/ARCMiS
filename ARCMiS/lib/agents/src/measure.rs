@@ -34,7 +34,7 @@ pub async fn measure(output_dir: &::std::path::Path, test_command: &str) -> Meas
         test_pass_rate,
         // Surface an unparseable runner as part of the detail, not silence.
         detail: if test_pass_rate.is_none() {
-            format!("test runner reported no counts; ok={ok}\n{out}")
+            ::std::format!("test runner reported no counts; ok={ok}\n{out}")
         } else {
             out
         },
@@ -46,14 +46,14 @@ async fn run_line(dir: &::std::path::Path, line: &str) -> (bool, ::std::string::
     let output = ::tokio::process::Command::new("sh").arg("-c").arg(line).current_dir(dir).output().await;
     match output {
         ::core::result::Result::Ok(out) => {
-            let text = format!(
+            let text = ::std::format!(
                 "{}{}",
                 ::std::string::String::from_utf8_lossy(&out.stdout),
                 ::std::string::String::from_utf8_lossy(&out.stderr),
             );
             (out.status.success(), text)
         },
-        ::core::result::Result::Err(error) => (false, format!("spawn failed: {error}")),
+        ::core::result::Result::Err(error) => (false, ::std::format!("spawn failed: {error}")),
     }
 }
 

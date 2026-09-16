@@ -41,9 +41,9 @@ impl Walk {
     /// Read `dir` recursively, collecting readable text files into `sources`.
     fn dir(&self, dir: &::std::path::Path, sources: &mut Sources) -> ::core::result::Result<(), ::std::string::String> {
         let entries = ::std::fs::read_dir(dir)
-            .map_err(|error| format!("input root not readable at {}: {error}", dir.display()))?;
+            .map_err(|error| ::std::format!("input root not readable at {}: {error}", dir.display()))?;
         for entry in entries {
-            let entry = entry.map_err(|error| format!("input root entry read failed at {}: {error}", dir.display()))?;
+            let entry = entry.map_err(|error| ::std::format!("input root entry read failed at {}: {error}", dir.display()))?;
             let path = entry.path();
             if path.is_dir() {
                 self.dir(&path, sources)?;
@@ -66,7 +66,7 @@ impl Walk {
         };
         let rel = path
             .strip_prefix(&self.root)
-            .map_err(|error| format!("input path {} outside root {}: {error}", path.display(), self.root.display()))?;
+            .map_err(|error| ::std::format!("input path {} outside root {}: {error}", path.display(), self.root.display()))?;
         let truncated = truncate(&content, self.per_file_cap);
         if truncated.len() < content.len() {
             ::tracing::warn!(file = %rel.display(), per_file_cap = self.per_file_cap, "input file truncated to context cap");
@@ -94,7 +94,7 @@ fn truncate(text: &str, max_bytes: u64) -> ::std::string::String {
 pub fn render(sources: &Sources) -> ::std::string::String {
     let mut out = ::std::string::String::new();
     for (rel, content) in sources {
-        out.push_str(&format!("=== FILE {rel} ===\n{content}\n"));
+        out.push_str(&::std::format!("=== FILE {rel} ===\n{content}\n"));
     }
     out
 }

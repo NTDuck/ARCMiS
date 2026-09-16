@@ -1,6 +1,5 @@
 //! `read_file` reads one file from the workspace.
 
-use ::serde_json::json;
 
 /// Arguments for `read_file`.
 #[derive(::core::fmt::Debug, ::serde::Deserialize)]
@@ -22,7 +21,7 @@ fn read(
     requested: &str,
 ) -> ::core::result::Result<::std::string::String, ::rig::tool::ToolExecutionError> {
     ::std::fs::read_to_string(path)
-        .map_err(|error| ::rig::tool::ToolExecutionError::other(format!("read_file failed for {requested}: {error}")))
+        .map_err(|error| ::rig::tool::ToolExecutionError::other(::std::format!("read_file failed for {requested}: {error}")))
 }
 
 /// `read_file` returns the content of one file in the workspace.
@@ -42,7 +41,7 @@ impl ::rig::tool::Tool for ReadFile {
     }
 
     fn parameters(&self) -> ::serde_json::Value {
-        json!({
+        ::serde_json::json!({
             "type": "object",
             "properties": {
                 "path": { "type": "string", "description": "Path relative to the workspace root" }

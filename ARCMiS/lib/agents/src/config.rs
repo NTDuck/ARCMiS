@@ -80,7 +80,7 @@ impl Config {
     /// Load and parse the config file at `path`.
     pub fn load(path: &::std::path::Path) -> ::core::result::Result<Self, ::std::string::String> {
         let raw = ::std::fs::read_to_string(path)
-            .map_err(|error| format!("config load failed for {}: {error}", path.display()))?;
-        ::serde_yaml::from_str(&raw).map_err(|error| format!("config parse failed: {error}"))
+            .map_err(|error| ::std::format!("config load failed for {}: {error}", path.display()))?;
+        ::serde_yaml::from_str(&raw).map_err(|error| ::std::format!("config parse failed: {error}"))
     }
 }

@@ -1,7 +1,6 @@
 //! `run_command` runs one command in a working directory and captures its
 //! output.
 
-use ::serde_json::json;
 
 /// Arguments for `run_command`.
 #[derive(::core::fmt::Debug, ::serde::Deserialize)]
@@ -30,7 +29,7 @@ async fn run(
         .current_dir(cwd)
         .output()
         .await
-        .map_err(|error| ::rig::tool::ToolExecutionError::other(format!("run_command failed for {program}: {error}")))
+        .map_err(|error| ::rig::tool::ToolExecutionError::other(::std::format!("run_command failed for {program}: {error}")))
 }
 
 /// Decode the process output into exit code, stdout, and stderr text.
@@ -60,7 +59,7 @@ impl ::rig::tool::Tool for RunCommand {
     }
 
     fn parameters(&self) -> ::serde_json::Value {
-        json!({
+        ::serde_json::json!({
             "type": "object",
             "properties": {
                 "program": { "type": "string", "description": "Executable name" },
@@ -77,7 +76,7 @@ impl ::rig::tool::Tool for RunCommand {
     ) -> ::core::result::Result<Self::Output, Self::Error> {
         let output = run(&args.program, &args.args, &self.cwd).await?;
         let result = decode(output);
-        ::core::result::Result::Ok(::rig::tool::ToolOutput::json(json!({
+        ::core::result::Result::Ok(::rig::tool::ToolOutput::json(::serde_json::json!({
             "exit_code": result.exit_code,
             "stdout": result.stdout,
             "stderr": result.stderr,

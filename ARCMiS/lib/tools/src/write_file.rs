@@ -1,6 +1,5 @@
 //! `write_file` writes one file inside the output workspace.
 
-use ::serde_json::json;
 
 /// Arguments for `write_file`.
 #[derive(::core::fmt::Debug, ::serde::Deserialize)]
@@ -16,7 +15,7 @@ fn create_parents(
 ) -> ::core::result::Result<(), ::rig::tool::ToolExecutionError> {
     if let ::core::option::Option::Some(parent) = path.parent() {
         ::std::fs::create_dir_all(parent).map_err(|error| {
-            ::rig::tool::ToolExecutionError::other(format!("write_file failed for {requested}: {error}"))
+            ::rig::tool::ToolExecutionError::other(::std::format!("write_file failed for {requested}: {error}"))
         })?;
     }
     ::core::result::Result::Ok(())
@@ -39,7 +38,7 @@ fn write(
             });
         },
         ::core::result::Result::Err(error) if error.kind() != ::std::io::ErrorKind::NotFound => {
-            return ::core::result::Result::Err(::rig::tool::ToolExecutionError::other(format!(
+            return ::core::result::Result::Err(::rig::tool::ToolExecutionError::other(::std::format!(
                 "write_file failed to read {requested}: {error}"
             )));
         },
@@ -47,7 +46,7 @@ fn write(
     }
     let bytes = content.len();
     ::std::fs::write(path, content).map_err(|error| {
-        ::rig::tool::ToolExecutionError::other(format!("write_file failed for {requested}: {error}"))
+        ::rig::tool::ToolExecutionError::other(::std::format!("write_file failed for {requested}: {error}"))
     })?;
     ::core::result::Result::Ok(Written {
         bytes,
@@ -80,7 +79,7 @@ impl ::rig::tool::Tool for WriteFile {
     }
 
     fn parameters(&self) -> ::serde_json::Value {
-        json!({
+        ::serde_json::json!({
             "type": "object",
             "properties": {
                 "path": { "type": "string", "description": "Path relative to the output root" },
@@ -101,12 +100,12 @@ impl ::rig::tool::Tool for WriteFile {
         let written = write(&path, args.content, &args.path)?;
         if written.unchanged {
             ::tracing::info!(file = %args.path, "write_file skipped: content unchanged");
-            return ::core::result::Result::Ok(::rig::tool::ToolOutput::text(format!(
+            return ::core::result::Result::Ok(::rig::tool::ToolOutput::text(::std::format!(
                 "write_file: skipped, content unchanged ({} bytes)",
                 written.bytes
             )));
         }
-        ::core::result::Result::Ok(::rig::tool::ToolOutput::text(format!(
+        ::core::result::Result::Ok(::rig::tool::ToolOutput::text(::std::format!(
             "wrote {} ({} bytes)",
             args.path, written.bytes
         )))
