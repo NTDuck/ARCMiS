@@ -1,7 +1,7 @@
 //! Cucumber suite for the tool catalog.
 
-use ::tools::{Catalog, Tool};
 use ::cucumber::{given, then, when, World};
+use ::tools::{Catalog, Tool};
 
 #[derive(::core::fmt::Debug, ::core::default::Default)]
 #[derive(::cucumber::World)]

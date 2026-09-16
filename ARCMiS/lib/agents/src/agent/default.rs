@@ -17,8 +17,8 @@
 //! 3. `run` drives the agent loop for the configured turn budget and
 //!    returns the model's final text.
 
-use ::tools::{RunCommand, WriteFile};
 use ::rig::prelude::*;
+use ::tools::{RunCommand, WriteFile};
 
 use crate::config::Config;
 use crate::sources;

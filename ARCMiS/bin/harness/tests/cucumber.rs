@@ -1,8 +1,8 @@
 //! Cucumber suite for harness wiring.
 
 use ::agents::Registry;
-use ::tools::Catalog;
 use ::cucumber::{given, then, World};
+use ::tools::Catalog;
 
 #[derive(::core::fmt::Debug, ::core::default::Default)]
 #[derive(::cucumber::World)]

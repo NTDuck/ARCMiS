@@ -123,8 +123,7 @@ async fn run_attempts(config: &Config, sources: &Sources) -> ::core::option::Opt
         };
         ::tracing::info!(attempt, final_output = %final_text, "agent final output");
 
-        let measurement =
-            ::agents::measure::measure(&config.output.dir, &config.source.target.test_command).await;
+        let measurement = ::agents::measure::measure(&config.output.dir, &config.source.target.test_command).await;
         ::tracing::info!(
             attempt,
             compile = measurement.compile,
