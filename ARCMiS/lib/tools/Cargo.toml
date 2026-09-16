@@ -1,8 +1,11 @@
 [package]
-name = "arcmis-tools"
+name = "ARCMiS-tools"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+
+[lib]
+name = "tools"
 
 [dependencies]
 rig = "0.42.0"

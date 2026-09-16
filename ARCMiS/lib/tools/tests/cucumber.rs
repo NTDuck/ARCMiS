@@ -1,6 +1,6 @@
 //! Cucumber suite for the tool catalog.
 
-use ::arcmis_tools::{Catalog, Tool};
+use ::tools::{Catalog, Tool};
 use ::cucumber::{given, then, when, World};
 
 #[derive(::core::fmt::Debug, ::core::default::Default)]
@@ -30,7 +30,7 @@ async fn tool_present(w: &mut ToolWorld, name: String) {
     let tool = w.catalog.get(&name);
     ::core::assert!(tool.is_some());
     let tool = tool.expect("checked above");
-    w.last = ::core::option::Option::Some(::arcmis_tools::Tool {
+    w.last = ::core::option::Option::Some(::tools::Tool {
         name: ::std::clone::Clone::clone(&tool.name),
     });
 }

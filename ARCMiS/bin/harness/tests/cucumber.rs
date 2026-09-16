@@ -1,7 +1,7 @@
 //! Cucumber suite for harness wiring.
 
-use ::arcmis_agents::Registry;
-use ::arcmis_tools::Catalog;
+use ::agents::Registry;
+use ::tools::Catalog;
 use ::cucumber::{given, then, World};
 
 #[derive(::core::fmt::Debug, ::core::default::Default)]

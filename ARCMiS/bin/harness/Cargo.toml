@@ -7,8 +7,8 @@ repository.workspace = true
 description = "Binary entry point for ARCMiS."
 
 [dependencies]
-arcmis-agents = { path = "../../lib/agents" }
-arcmis-tools = { path = "../../lib/tools" }
+agents = { package = "ARCMiS-agents", path = "../../lib/agents" }
+tools = { package = "ARCMiS-tools", path = "../../lib/tools" }
 rig = "0.42.0"
 serde.workspace = true
 serde_yaml.workspace = true

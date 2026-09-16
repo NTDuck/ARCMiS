@@ -20,9 +20,9 @@
 use ::rig::agent::{AgentHook, CompletionCallAction, CompletionCallEvent, HookContext, ToolCall, ToolCallAction};
 use ::rig::completion::{Prompt, PromptError};
 
-use ::arcmis_agents::config::Config;
-use ::arcmis_agents::measure::Measurement;
-use ::arcmis_agents::sources::Sources;
+use ::agents::config::Config;
+use ::agents::measure::Measurement;
+use ::agents::sources::Sources;
 
 /// Tool-call args preview length. Longer args are cut and marked.
 const ARG_PREVIEW_CHARS: usize = 200;
@@ -71,7 +71,7 @@ fn init_tracing() {
 
 /// Load and parse the config file at `path`.
 fn load_config(path: &::std::path::Path) -> ::core::result::Result<Config, ::std::string::String> {
-    ::arcmis_agents::config::Config::load(path)
+    ::agents::config::Config::load(path)
 }
 
 /// Walk the configured input root and collect every readable text file.
@@ -79,15 +79,15 @@ fn load_config(path: &::std::path::Path) -> ::core::result::Result<Config, ::std
 /// bytes per token of source text. One quarter leaves room for the
 /// preamble, the other files, the transcript, and the reply.
 fn discover_sources(config: &Config) -> ::core::result::Result<Sources, ::std::string::String> {
-    let per_file_cap = config.run.num_ctx / 4 * ::arcmis_agents::sources::BYTES_PER_TOKEN;
-    ::arcmis_agents::sources::collect(&config.source.root, per_file_cap)
+    let per_file_cap = config.run.num_ctx / 4 * ::agents::sources::BYTES_PER_TOKEN;
+    ::agents::sources::collect(&config.source.root, per_file_cap)
 }
 
 /// One agent run: build the agent, render the discovered sources into the
 /// task, and drive the tool loop for the configured turn budget.
 async fn run_attempt(config: &Config, sources: &Sources) -> ::core::result::Result<::std::string::String, PromptError> {
-    let agent = ::arcmis_agents::agent::default::build(config);
-    let task = ::arcmis_agents::agent::default::prompt(config, sources).map_err(request_error)?;
+    let agent = ::agents::agent::default::build(config);
+    let task = ::agents::agent::default::prompt(config, sources).map_err(request_error)?;
     agent.prompt(task).max_turns(config.run.max_turns).add_hook(RunLog).await
 }
 
@@ -124,7 +124,7 @@ async fn run_attempts(config: &Config, sources: &Sources) -> ::core::option::Opt
         ::tracing::info!(attempt, final_output = %final_text, "agent final output");
 
         let measurement =
-            ::arcmis_agents::measure::measure(&config.output.dir, &config.source.target.test_command).await;
+            ::agents::measure::measure(&config.output.dir, &config.source.target.test_command).await;
         ::tracing::info!(
             attempt,
             compile = measurement.compile,

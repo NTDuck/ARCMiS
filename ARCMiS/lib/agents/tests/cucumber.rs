@@ -1,7 +1,7 @@
 //! Cucumber suite for the agent registry.
 
-use ::arcmis_agents::registry::Agent;
-use ::arcmis_agents::Registry;
+use ::agents::registry::Agent;
+use ::agents::Registry;
 use ::cucumber::{given, then, when, World};
 use ::std::sync::Arc;
 

@@ -17,7 +17,7 @@
 //! 3. `run` drives the agent loop for the configured turn budget and
 //!    returns the model's final text.
 
-use ::arcmis_tools::{RunCommand, WriteFile};
+use ::tools::{RunCommand, WriteFile};
 use ::rig::prelude::*;
 
 use crate::config::Config;
