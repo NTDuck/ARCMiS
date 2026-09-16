@@ -16,6 +16,8 @@ Numbered, immutable Architecture Decision Records. Format and policy: [`.omp/rul
 | [0006](0006-workspace-layout-and-cucumber-tests.md) | Workspace layout and cucumber tests | accepted |
 | [0007](0007-ollama-migration-agent.md) | Ollama-driven migration agent over GildedRose | accepted |
 | [0008](0008-clarity-logging-no-tuning-nested-layout.md) | Code clarity, minimal code, logging, no tuning, nested layout | accepted |
+| [0009](0009-crate-naming-manifest-structure-module-layout.md) | Crate naming, manifest structure, and module layout | accepted |
+| [0010](0010-user-facing-code-order-and-macro-qualification.md) | User-facing code order, macro qualification, and module flattening | accepted |
 
 ## References
 
