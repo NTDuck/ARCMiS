@@ -12,7 +12,7 @@ fn resolve(
     root: &::std::path::Path,
     path: &str,
 ) -> ::core::result::Result<::std::path::PathBuf, ::std::string::String> {
-    crate::util::path::path_sanitize(root, path)
+    crate::path::path_sanitize(root, path)
 }
 
 /// Read the file content as UTF-8 text.
@@ -37,7 +37,7 @@ impl ::rig::tool::Tool for ReadFile {
     type Output = ::rig::tool::ToolOutput;
 
     fn description(&self) -> ::std::string::String {
-        "Read a file from the workspace. Args: {\"path\": \"relative/path\"}".to_owned()
+        "Read one file from the workspace and return its content.".to_owned()
     }
 
     fn parameters(&self) -> ::serde_json::Value {

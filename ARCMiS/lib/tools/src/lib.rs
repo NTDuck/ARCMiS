@@ -7,13 +7,13 @@
 //! - `run_command` — [`RunCommand`] runs one command in a working directory.
 
 pub mod catalog;
+pub mod path;
 pub mod read_file;
 pub mod run_command;
-pub mod util;
 pub mod write_file;
 
 pub use catalog::{Catalog, Tool};
 pub use read_file::ReadFile;
 pub use run_command::{CommandOutput, RunCommand};
-pub use util::path::path_sanitize;
+pub use path::path_sanitize;
 pub use write_file::WriteFile;

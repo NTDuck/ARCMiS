@@ -74,8 +74,7 @@ impl ::rig::tool::Tool for WriteFile {
     type Output = ::rig::tool::ToolOutput;
 
     fn description(&self) -> ::std::string::String {
-        "Write a file inside the output workspace. Args: {\"path\": \"relative/path\", \"content\": \"text\"}"
-            .to_owned()
+        "Write one file inside the output workspace and create its parent directories.".to_owned()
     }
 
     fn parameters(&self) -> ::serde_json::Value {
@@ -95,7 +94,7 @@ impl ::rig::tool::Tool for WriteFile {
         args: Self::Args,
     ) -> ::core::result::Result<Self::Output, Self::Error> {
         let path =
-            crate::util::path::path_sanitize(&self.root, &args.path).map_err(::rig::tool::ToolExecutionError::other)?;
+            crate::path::path_sanitize(&self.root, &args.path).map_err(::rig::tool::ToolExecutionError::other)?;
         create_parents(&path, &args.path)?;
         let written = write(&path, args.content, &args.path)?;
         if written.unchanged {

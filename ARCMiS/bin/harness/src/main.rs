@@ -86,8 +86,8 @@ fn discover_sources(config: &Config) -> ::core::result::Result<Sources, ::std::s
 /// One agent run: build the agent, render the discovered sources into the
 /// task, and drive the tool loop for the configured turn budget.
 async fn run_attempt(config: &Config, sources: &Sources) -> ::core::result::Result<::std::string::String, PromptError> {
-    let agent = ::agents::agent::default::build(config);
-    let task = ::agents::agent::default::prompt(config, sources).map_err(request_error)?;
+    let agent = ::agents::default::build(config);
+    let task = ::agents::default::prompt(config, sources).map_err(request_error)?;
     agent.prompt(task).max_turns(config.run.max_turns).add_hook(RunLog).await
 }
 

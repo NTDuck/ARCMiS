@@ -9,12 +9,12 @@ pub fn path_sanitize(
 ) -> ::core::result::Result<::std::path::PathBuf, ::std::string::String> {
     let rel = ::std::path::Path::new(path);
     if rel.is_absolute() || path.starts_with('~') {
-        return ::core::result::Result::Err(format!(
+        return ::core::result::Result::Err(::std::format!(
             "path '{path}' is absolute. Use a path relative to the output workspace root, for example 'src/lib.rs'."
         ));
     }
     if rel.components().any(|c| c == ::std::path::Component::ParentDir) {
-        return ::core::result::Result::Err(format!(
+        return ::core::result::Result::Err(::std::format!(
             "path '{path}' must not contain '..'. Stay inside the output workspace."
         ));
     }
