@@ -1,57 +1,10 @@
 //! `write_file` writes one file inside the output workspace.
 
-
 /// Arguments for `write_file`.
 #[derive(::core::fmt::Debug, ::serde::Deserialize)]
 pub struct WriteFileArgs {
     pub path: ::std::string::String,
     pub content: ::std::string::String,
-}
-
-/// Create the parent directories of the output path.
-fn create_parents(
-    path: &::std::path::Path,
-    requested: &str,
-) -> ::core::result::Result<(), ::rig::tool::ToolExecutionError> {
-    if let ::core::option::Option::Some(parent) = path.parent() {
-        ::std::fs::create_dir_all(parent).map_err(|error| {
-            ::rig::tool::ToolExecutionError::other(::std::format!("write_file failed for {requested}: {error}"))
-        })?;
-    }
-    ::core::result::Result::Ok(())
-}
-
-/// Write the content to the output path and return the byte count.
-fn write(
-    path: &::std::path::Path,
-    content: ::std::string::String,
-    requested: &str,
-) -> ::core::result::Result<Written, ::rig::tool::ToolExecutionError> {
-    // Short-circuit on an identical rewrite. A model that repeats the same
-    // write burns turns and wall clock. A missing file means no prior
-    // content. Every other read error is real and surfaces.
-    match ::std::fs::read_to_string(path) {
-        ::core::result::Result::Ok(existing) if existing == content => {
-            return ::core::result::Result::Ok(Written {
-                bytes: content.len(),
-                unchanged: true,
-            });
-        },
-        ::core::result::Result::Err(error) if error.kind() != ::std::io::ErrorKind::NotFound => {
-            return ::core::result::Result::Err(::rig::tool::ToolExecutionError::other(::std::format!(
-                "write_file failed to read {requested}: {error}"
-            )));
-        },
-        _ => {},
-    }
-    let bytes = content.len();
-    ::std::fs::write(path, content).map_err(|error| {
-        ::rig::tool::ToolExecutionError::other(::std::format!("write_file failed for {requested}: {error}"))
-    })?;
-    ::core::result::Result::Ok(Written {
-        bytes,
-        unchanged: false,
-    })
 }
 
 /// Outcome of one `write` step.
@@ -106,7 +59,54 @@ impl ::rig::tool::Tool for WriteFile {
         }
         ::core::result::Result::Ok(::rig::tool::ToolOutput::text(::std::format!(
             "wrote {} ({} bytes)",
-            args.path, written.bytes
+            args.path,
+            written.bytes
         )))
     }
+}
+
+/// Create the parent directories of the output path.
+fn create_parents(
+    path: &::std::path::Path,
+    requested: &str,
+) -> ::core::result::Result<(), ::rig::tool::ToolExecutionError> {
+    if let ::core::option::Option::Some(parent) = path.parent() {
+        ::std::fs::create_dir_all(parent).map_err(|error| {
+            ::rig::tool::ToolExecutionError::other(::std::format!("write_file failed for {requested}: {error}"))
+        })?;
+    }
+    ::core::result::Result::Ok(())
+}
+
+/// Write the content to the output path and return the byte count.
+fn write(
+    path: &::std::path::Path,
+    content: ::std::string::String,
+    requested: &str,
+) -> ::core::result::Result<Written, ::rig::tool::ToolExecutionError> {
+    // Short-circuit on an identical rewrite. A model that repeats the same
+    // write burns turns and wall clock. A missing file means no prior
+    // content. Every other read error is real and surfaces.
+    match ::std::fs::read_to_string(path) {
+        ::core::result::Result::Ok(existing) if existing == content => {
+            return ::core::result::Result::Ok(Written {
+                bytes: content.len(),
+                unchanged: true,
+            });
+        },
+        ::core::result::Result::Err(error) if error.kind() != ::std::io::ErrorKind::NotFound => {
+            return ::core::result::Result::Err(::rig::tool::ToolExecutionError::other(::std::format!(
+                "write_file failed to read {requested}: {error}"
+            )));
+        },
+        _ => {},
+    }
+    let bytes = content.len();
+    ::std::fs::write(path, content).map_err(|error| {
+        ::rig::tool::ToolExecutionError::other(::std::format!("write_file failed for {requested}: {error}"))
+    })?;
+    ::core::result::Result::Ok(Written {
+        bytes,
+        unchanged: false,
+    })
 }

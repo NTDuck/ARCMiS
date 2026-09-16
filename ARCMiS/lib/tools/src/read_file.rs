@@ -1,33 +1,9 @@
 //! `read_file` reads one file from the workspace.
 
-
 /// Arguments for `read_file`.
 #[derive(::core::fmt::Debug, ::serde::Deserialize)]
 pub struct ReadFileArgs {
     pub path: ::std::string::String,
-}
-
-/// Resolve the tool path under the workspace root.
-fn resolve(
-    root: &::std::path::Path,
-    path: &str,
-) -> ::core::result::Result<::std::path::PathBuf, ::std::string::String> {
-    crate::path::path_sanitize(root, path)
-}
-
-/// Read the file content as UTF-8 text.
-fn read(
-    path: &::std::path::Path,
-    requested: &str,
-) -> ::core::result::Result<::std::string::String, ::rig::tool::ToolExecutionError> {
-    ::std::fs::read_to_string(path)
-        .map_err(|error| ::rig::tool::ToolExecutionError::other(::std::format!("read_file failed for {requested}: {error}")))
-}
-
-/// `read_file` returns the content of one file in the workspace.
-pub struct ReadFile {
-    /// Root directory. Tool paths resolve inside it.
-    pub root: ::std::path::PathBuf,
 }
 
 impl ::rig::tool::Tool for ReadFile {
@@ -59,4 +35,28 @@ impl ::rig::tool::Tool for ReadFile {
         let content = read(&path, &args.path)?;
         ::core::result::Result::Ok(::rig::tool::ToolOutput::text(content))
     }
+}
+
+/// `read_file` returns the content of one file in the workspace.
+pub struct ReadFile {
+    /// Root directory. Tool paths resolve inside it.
+    pub root: ::std::path::PathBuf,
+}
+
+/// Resolve the tool path under the workspace root.
+fn resolve(
+    root: &::std::path::Path,
+    path: &str,
+) -> ::core::result::Result<::std::path::PathBuf, ::std::string::String> {
+    crate::path::path_sanitize(root, path)
+}
+
+/// Read the file content as UTF-8 text.
+fn read(
+    path: &::std::path::Path,
+    requested: &str,
+) -> ::core::result::Result<::std::string::String, ::rig::tool::ToolExecutionError> {
+    ::std::fs::read_to_string(path).map_err(|error| {
+        ::rig::tool::ToolExecutionError::other(::std::format!("read_file failed for {requested}: {error}"))
+    })
 }

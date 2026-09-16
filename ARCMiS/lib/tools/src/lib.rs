@@ -13,7 +13,7 @@ pub mod run_command;
 pub mod write_file;
 
 pub use catalog::{Catalog, Tool};
+pub use path::path_sanitize;
 pub use read_file::ReadFile;
 pub use run_command::{CommandOutput, RunCommand};
-pub use path::path_sanitize;
 pub use write_file::WriteFile;

@@ -1,7 +1,6 @@
 //! `run_command` runs one command in a working directory and captures its
 //! output.
 
-
 /// Arguments for `run_command`.
 #[derive(::core::fmt::Debug, ::serde::Deserialize)]
 pub struct RunCommandArgs {
@@ -16,29 +15,6 @@ pub struct CommandOutput {
     pub exit_code: i32,
     pub stdout: ::std::string::String,
     pub stderr: ::std::string::String,
-}
-
-/// Start the program in the working directory and wait for it to exit.
-async fn run(
-    program: &str,
-    args: &[::std::string::String],
-    cwd: &::std::path::Path,
-) -> ::core::result::Result<::std::process::Output, ::rig::tool::ToolExecutionError> {
-    ::tokio::process::Command::new(program)
-        .args(args)
-        .current_dir(cwd)
-        .output()
-        .await
-        .map_err(|error| ::rig::tool::ToolExecutionError::other(::std::format!("run_command failed for {program}: {error}")))
-}
-
-/// Decode the process output into exit code, stdout, and stderr text.
-fn decode(output: ::std::process::Output) -> CommandOutput {
-    CommandOutput {
-        exit_code: output.status.code().unwrap_or(-1),
-        stdout: ::std::string::String::from_utf8_lossy(&output.stdout).into_owned(),
-        stderr: ::std::string::String::from_utf8_lossy(&output.stderr).into_owned(),
-    }
 }
 
 /// `run_command` runs one command in the workspace and returns its exit code
@@ -81,5 +57,25 @@ impl ::rig::tool::Tool for RunCommand {
             "stdout": result.stdout,
             "stderr": result.stderr,
         })))
+    }
+}
+
+/// Start the program in the working directory and wait for it to exit.
+async fn run(
+    program: &str,
+    args: &[::std::string::String],
+    cwd: &::std::path::Path,
+) -> ::core::result::Result<::std::process::Output, ::rig::tool::ToolExecutionError> {
+    ::tokio::process::Command::new(program).args(args).current_dir(cwd).output().await.map_err(|error| {
+        ::rig::tool::ToolExecutionError::other(::std::format!("run_command failed for {program}: {error}"))
+    })
+}
+
+/// Decode the process output into exit code, stdout, and stderr text.
+fn decode(output: ::std::process::Output) -> CommandOutput {
+    CommandOutput {
+        exit_code: output.status.code().unwrap_or(-1),
+        stdout: ::std::string::String::from_utf8_lossy(&output.stdout).into_owned(),
+        stderr: ::std::string::String::from_utf8_lossy(&output.stderr).into_owned(),
     }
 }
