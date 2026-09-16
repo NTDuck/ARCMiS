@@ -12,7 +12,7 @@
 
 1. Commits: granular, incremental, [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/). See `.omp/rules/commits.md`.
 2. Every historical decision not directly inferrable in code gets a WHY comment at the site **and** an ADR in `docs/adr/`. See `.omp/rules/decisions.md`.
-3. Rust style: fully qualified paths, derives, and macros; caller before callee; tap-chained instead of nested calls; functional style within functions. See `.omp/rules/rust.md`.
+3. Rust style: fully qualified paths, derives, and macros. Caller before callee. Tap-chained instead of nested calls. Functional style within functions. See `.omp/rules/rust.md`.
 4. Run the gates before you commit: `cargo fmt --check`, `cargo clippy`, `cargo nextest run` (see `.omp/rules/build-and-gates.md`), and `python3 .omp/scripts/lint-rules.py` (qualified paths, derives, naming, print). Mise tasks: `mise run lint-rustfmt`, `mise run lint-clippy`. Never commit a red tree.
 5. Tests: unit runs through `cargo nextest` locally and in CI. Behavior tests are cucumber suites under `{crate}/tests/features/`. Run them with `cargo test --features cucumber-tests --workspace --test cucumber`. See `.omp/rules/build-and-gates.md` and `docs/adr/0006-workspace-layout-and-cucumber-tests.md`.
 7. Code clarity: the module opens with the list of things. User-facing code comes first. Callees follow their caller, depth-first. Each item reads as small named functions. Keep description strings pure. Do not mix abstraction levels. See `.omp/rules/code-clarity.md`.

@@ -43,7 +43,8 @@ impl Walk {
         let entries = ::std::fs::read_dir(dir)
             .map_err(|error| ::std::format!("input root not readable at {}: {error}", dir.display()))?;
         for entry in entries {
-            let entry = entry.map_err(|error| ::std::format!("input root entry read failed at {}: {error}", dir.display()))?;
+            let entry =
+                entry.map_err(|error| ::std::format!("input root entry read failed at {}: {error}", dir.display()))?;
             let path = entry.path();
             if path.is_dir() {
                 self.dir(&path, sources)?;
@@ -64,9 +65,9 @@ impl Walk {
             ::core::result::Result::Ok(text) => text,
             ::core::result::Result::Err(_) => return ::core::result::Result::Ok(()),
         };
-        let rel = path
-            .strip_prefix(&self.root)
-            .map_err(|error| ::std::format!("input path {} outside root {}: {error}", path.display(), self.root.display()))?;
+        let rel = path.strip_prefix(&self.root).map_err(|error| {
+            ::std::format!("input path {} outside root {}: {error}", path.display(), self.root.display())
+        })?;
         let truncated = truncate(&content, self.per_file_cap);
         if truncated.len() < content.len() {
             ::tracing::warn!(file = %rel.display(), per_file_cap = self.per_file_cap, "input file truncated to context cap");
