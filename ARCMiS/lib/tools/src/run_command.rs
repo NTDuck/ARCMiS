@@ -55,7 +55,7 @@ impl ::rig::tool::Tool for RunCommand {
     type Output = ::rig::tool::ToolOutput;
 
     fn description(&self) -> ::std::string::String {
-        "Run a command in the workspace. Args: {\"program\": \"cargo\", \"args\": [\"test\"]}".to_owned()
+        "Run one command in the workspace and return its exit code and output.".to_owned()
     }
 
     fn parameters(&self) -> ::serde_json::Value {
