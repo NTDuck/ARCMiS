@@ -30,7 +30,7 @@ Structure every module so a reader sees the map first and the detail second.
 
 - A type declaration precedes the impl block that gives it behavior. The reader meets the shape before the behavior. `pub struct Foo {...}` comes before `impl Foo {...}`.
 - An `impl Trait for X` block comes between `X`'s declaration and the types the impl signature names.
-- Within one item, order is: the primary type declaration, its impl blocks, the secondary types the impl needs, then the private helper functions in call order. Tool file example: `pub struct WriteFile {...}` -> `impl ::rig::tool::Tool for WriteFile {...}` -> `pub struct WriteFileArgs {...}` -> helper fns.
+- Within one item, order is: primary type declaration, its impl blocks, secondary types the impl needs, then helpers in call order. Tool example: `pub struct WriteFile {...}` -> `impl ::rig::tool::Tool for WriteFile {...}` -> `pub struct WriteFileArgs {...}` -> helper fns.
 
 
 ## Description purity
@@ -43,6 +43,12 @@ Structure every module so a reader sees the map first and the detail second.
 - One function lives on one abstraction level. A function that orchestrates steps does not also parse strings.
 - Library code holds logic. The binary holds wiring (config load, logging setup, process exit codes). Wiring never hides in library functions.
 - Error handling sits at the level that owns the choice: a tool reports its failure, the caller decides what it means.
+
+
+## Line cap
+
+- One source file holds at most 300 lines. The linter lists longer files as advisory findings.
+- A tool file is exempt. The file is the tool, and a complex domain (protocol handling, selector parsing) grows the helpers. The tool struct, its impl, and the args stay at the top. The cap stays for every other file.
 
 ## Violations
 
