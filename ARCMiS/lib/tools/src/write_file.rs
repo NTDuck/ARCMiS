@@ -1,18 +1,5 @@
 //! `write_file` writes one file inside the output workspace.
 
-/// Arguments for `write_file`.
-#[derive(::core::fmt::Debug, ::serde::Deserialize)]
-pub struct WriteFileArgs {
-    pub path: ::std::string::String,
-    pub content: ::std::string::String,
-}
-
-/// Outcome of one `write` step.
-struct Written {
-    bytes: usize,
-    unchanged: bool,
-}
-
 /// `write_file` writes one file inside the output workspace and creates its
 /// parent directories.
 pub struct WriteFile {
@@ -63,6 +50,19 @@ impl ::rig::tool::Tool for WriteFile {
             written.bytes
         )))
     }
+}
+
+/// Arguments for `write_file`.
+#[derive(::core::fmt::Debug, ::serde::Deserialize)]
+pub struct WriteFileArgs {
+    pub path: ::std::string::String,
+    pub content: ::std::string::String,
+}
+
+/// Outcome of one `write` step.
+struct Written {
+    bytes: usize,
+    unchanged: bool,
 }
 
 /// Create the parent directories of the output path.

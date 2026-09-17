@@ -1,9 +1,9 @@
 //! `read_file` reads one file from the workspace.
 
-/// Arguments for `read_file`.
-#[derive(::core::fmt::Debug, ::serde::Deserialize)]
-pub struct ReadFileArgs {
-    pub path: ::std::string::String,
+/// `read_file` returns the content of one file in the workspace.
+pub struct ReadFile {
+    /// Root directory. Tool paths resolve inside it.
+    pub root: ::std::path::PathBuf,
 }
 
 impl ::rig::tool::Tool for ReadFile {
@@ -37,10 +37,10 @@ impl ::rig::tool::Tool for ReadFile {
     }
 }
 
-/// `read_file` returns the content of one file in the workspace.
-pub struct ReadFile {
-    /// Root directory. Tool paths resolve inside it.
-    pub root: ::std::path::PathBuf,
+/// Arguments for `read_file`.
+#[derive(::core::fmt::Debug, ::serde::Deserialize)]
+pub struct ReadFileArgs {
+    pub path: ::std::string::String,
 }
 
 /// Resolve the tool path under the workspace root.

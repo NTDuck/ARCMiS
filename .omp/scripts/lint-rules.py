@@ -47,6 +47,35 @@ def iter_rust_files(root: Path, only: list[Path]) -> list[Path]:
     ]
 
 
+def check_decl_order(path: Path, text: str) -> list[str]:
+    """code-clarity.md §Declaration before implementation: a type's impl
+    block must come after its declaration. Track impl blocks whose primary
+    type is declared later in the file, or never declared in-file."""
+    errors: list[str] = []
+    decl_line: dict[str, int] = {}
+    impl_line: dict[str, int] = {}
+    impl_re = re.compile(r"^\s*impl(?:<[^>]*>)?\s+(?:\S+\s+for\s+)?([A-Za-z_][A-Za-z0-9_]*)")
+    decl_re = re.compile(r"^\s*pub\s+(?:struct|enum|union)\s+([A-Za-z_][A-Za-z0-9_]*)")
+    for no, line in enumerate(text.splitlines(), start=1):
+        if COMMENT_RE.match(line):
+            continue
+        decl = decl_re.match(line)
+        if decl:
+            name = decl.group(1)
+            decl_line[name] = no
+            seen = impl_line.get(name)
+            if seen is not None:
+                errors.append(
+                    f"{path}:{seen}: impl {name} before its declaration at line {no} "
+                    f"(code-clarity.md §Declaration before implementation)"
+                )
+            continue
+        impl = impl_re.match(line)
+        if impl:
+            impl_line.setdefault(impl.group(1), no)
+    return errors
+
+
 def check_rust(path: Path, text: str) -> tuple[list[str], list[str]]:
     errors: list[str] = []
     advisories: list[str] = []
@@ -71,6 +100,7 @@ def check_rust(path: Path, text: str) -> tuple[list[str], list[str]]:
                 errors.append(f"{path}:{no}: single-letter binding `{name}` (rust.md §4): {line.strip()}")
         if TURBOFISH_ADVISORY_RE.search(line):
             advisories.append(f"{path}:{no}: prefer turbofish over annotation (rust.md §5): {line.strip()}")
+    errors.extend(check_decl_order(path, text))
     return errors, advisories
 
 

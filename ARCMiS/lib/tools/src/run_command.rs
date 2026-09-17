@@ -1,21 +1,4 @@
 //! `run_command` runs one command in a working directory and captures its
-//! output.
-
-/// Arguments for `run_command`.
-#[derive(::core::fmt::Debug, ::serde::Deserialize)]
-pub struct RunCommandArgs {
-    pub program: ::std::string::String,
-    #[serde(default)]
-    pub args: ::std::vec::Vec<::std::string::String>,
-}
-
-/// Captured result of one command run.
-#[derive(::core::fmt::Debug)]
-pub struct CommandOutput {
-    pub exit_code: i32,
-    pub stdout: ::std::string::String,
-    pub stderr: ::std::string::String,
-}
 
 /// `run_command` runs one command in the workspace and returns its exit code
 /// and captured output as JSON.
@@ -58,6 +41,22 @@ impl ::rig::tool::Tool for RunCommand {
             "stderr": result.stderr,
         })))
     }
+}
+
+/// Arguments for `run_command`.
+#[derive(::core::fmt::Debug, ::serde::Deserialize)]
+pub struct RunCommandArgs {
+    pub program: ::std::string::String,
+    #[serde(default)]
+    pub args: ::std::vec::Vec<::std::string::String>,
+}
+
+/// Captured result of one command run.
+#[derive(::core::fmt::Debug)]
+pub struct CommandOutput {
+    pub exit_code: i32,
+    pub stdout: ::std::string::String,
+    pub stderr: ::std::string::String,
 }
 
 /// Start the program in the working directory and wait for it to exit.

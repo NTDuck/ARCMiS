@@ -19,11 +19,19 @@ Structure every module so a reader sees the map first and the detail second.
 
 ### Block order
 
-- In one file, the item that the user of the module meets first comes first. Write the tool, agent, or command first. Then write its impl block. Then write its main entry function.
+- In one file, the item that the user of the module meets first comes first. Write the tool, agent, or command first. Then write its impl block. Then write its main entry function. The item's type declaration comes first. See `Declaration before implementation` below.
 - Inside a function, the body stays high level. Write a sequence of small named calls. Then write `return`.
 - Immediately after that function, declare the functions it calls. Order them in the order the body calls them. This is depth-first: a caller comes before each callee. Each next function sits one level lower.
 - Example: `run()` calls `resolve()` and then `read()`. Declare `resolve` first. The helpers of `resolve` follow it. Then declare `read`.
 - Balance: when a function calls many helpers, group the helpers logically and accept a small jump. The goal is clean and idiomatic code. Do not apply the depth-first stencil with clutter.
+
+
+#### Declaration before implementation
+
+- A type declaration precedes the impl block that gives it behavior. The reader meets the shape before the behavior. `pub struct Foo {...}` comes before `impl Foo {...}`.
+- An `impl Trait for X` block comes between `X`'s declaration and the types the impl signature names.
+- Within one item, order is: the primary type declaration, its impl blocks, the secondary types the impl needs, then the private helper functions in call order. Tool file example: `pub struct WriteFile {...}` -> `impl ::rig::tool::Tool for WriteFile {...}` -> `pub struct WriteFileArgs {...}` -> helper fns.
+
 
 ## Description purity
 
