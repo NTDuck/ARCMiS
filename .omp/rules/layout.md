@@ -35,6 +35,5 @@ A file whose only content is module declarations must not exist. Do not keep a g
 Current tree:
 
 - agents crate: `src/default.rs` (agent), `src/util/` (config, measure, registry, sources), `src/lib.rs` declares `util` inline as one `pub mod util { ... }` block.
-- tools crate: `src/read_file.rs`, `src/write_file.rs`, `src/run_command.rs` (tools), `src/util/` (catalog, path), `src/lib.rs` declares `util` inline.
-
+- tools crate: the seventeen tool modules at the crate root. Names: `read.rs`, `write.rs`, `edit.rs`, `search.rs`, `find.rs`, `ast_grep.rs`, `ast_edit.rs`, `bash.rs`, `eval.rs`, `ssh.rs`, `lsp.rs`, `debug.rs`, `task.rs`, `irc.rs`, `todo.rs`, `job.rs`, `ask.rs`. Then `src/util/` (catalog, jobs, path, snapshots). Then `src/lib.rs`, which declares `util` inline and re-exports the tools.
 

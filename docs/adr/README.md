@@ -19,6 +19,8 @@ Numbered, immutable Architecture Decision Records. Format and policy: [`.omp/rul
 | [0009](0009-crate-naming-manifest-structure-module-layout.md) | Crate naming, manifest structure, and module layout | accepted |
 | [0010](0010-user-facing-code-order-and-macro-qualification.md) | User-facing code order, macro qualification, and module flattening | accepted |
 | [0011](0011-util-directory-layout.md) | Util directory layout | accepted |
+| [0012](0012-seventeen-tool-surface.md) | Seventeen-tool surface after oh-my-pi | accepted |
+| [0013](0013-react-default-agent.md) | ReAct default agent | accepted |
 
 ## References
 
