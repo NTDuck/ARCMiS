@@ -18,7 +18,7 @@
 //! Exit code: success iff the best measurement compiled.
 
 use ::rig::agent::{AgentHook, CompletionCallAction, CompletionCallEvent, HookContext, ToolCall, ToolCallAction};
-use ::rig::completion::{Prompt, PromptError};
+use ::rig::completion::PromptError;
 
 use ::agents::util::config::Config;
 use ::agents::util::measure::Measurement;
@@ -107,12 +107,12 @@ fn discover_sources(config: &Config) -> ::core::result::Result<Sources, ::std::s
     ::agents::util::sources::collect(&config.source.root, per_file_cap)
 }
 
-/// One agent run: build the agent, render the discovered sources into the
-/// task, and drive the tool loop for the configured turn budget.
-async fn run_attempts(config: &Config, sources: &Sources) -> ::core::option::Option<Measurement> {
+/// The attempt loop. Drive one ReAct run per attempt, measure the output
+/// dir, and keep the best measurement across attempts.
+async fn run_attempts(config: &Config, _sources: &Sources) -> ::core::option::Option<Measurement> {
     let mut best: ::core::option::Option<Measurement> = ::core::option::Option::None;
     for attempt in 1..=config.run.max_retries + 1 {
-        let final_text = match run_attempt(config, sources).await {
+        let final_text = match ::agents::default::run(config, RunLog).await {
             ::core::result::Result::Ok(text) => text,
             ::core::result::Result::Err(
                 e @ PromptError::MaxTurnsError {
@@ -146,20 +146,6 @@ async fn run_attempts(config: &Config, sources: &Sources) -> ::core::option::Opt
         }
     }
     best
-}
-
-/// Write the run report into the output dir and log its path.
-async fn run_attempt(config: &Config, sources: &Sources) -> ::core::result::Result<::std::string::String, PromptError> {
-    let agent = ::agents::default::build(config);
-    let task = ::agents::default::prompt(config, sources).map_err(request_error)?;
-    agent.prompt(task).max_turns(config.run.max_turns).add_hook(RunLog).await
-}
-
-/// Wrap an internal failure into a rig prompt error.
-fn request_error(error: ::std::string::String) -> PromptError {
-    PromptError::CompletionError(::rig::completion::CompletionError::RequestError(::std::boxed::Box::new(
-        ::std::io::Error::other(error),
-    )))
 }
 
 /// The attempt loop. A 2B model is flaky: a turn can truncate, wander, or
