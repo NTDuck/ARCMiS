@@ -47,7 +47,7 @@ impl ::rig::tool::Tool for WriteFile {
         args: Self::Args,
     ) -> ::core::result::Result<Self::Output, Self::Error> {
         let path =
-            crate::path::path_sanitize(&self.root, &args.path).map_err(::rig::tool::ToolExecutionError::other)?;
+            crate::util::path::path_sanitize(&self.root, &args.path).map_err(::rig::tool::ToolExecutionError::other)?;
         create_parents(&path, &args.path)?;
         let written = write(&path, args.content, &args.path)?;
         if written.unchanged {

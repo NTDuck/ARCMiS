@@ -48,7 +48,7 @@ fn resolve(
     root: &::std::path::Path,
     path: &str,
 ) -> ::core::result::Result<::std::path::PathBuf, ::std::string::String> {
-    crate::path::path_sanitize(root, path)
+    crate::util::path::path_sanitize(root, path)
 }
 
 /// Read the file content as UTF-8 text.

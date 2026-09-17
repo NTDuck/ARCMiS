@@ -30,7 +30,7 @@ async fn tool_present(w: &mut ToolWorld, name: String) {
     let tool = w.catalog.get(&name);
     ::core::assert!(tool.is_some());
     let tool = tool.expect("checked above");
-    w.last = ::core::option::Option::Some(::tools::Tool {
+    w.last = ::core::option::Option::Some(::tools::util::catalog::Tool {
         name: ::std::clone::Clone::clone(&tool.name),
     });
 }

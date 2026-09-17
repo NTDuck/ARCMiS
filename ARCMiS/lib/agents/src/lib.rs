@@ -2,7 +2,7 @@
 
 pub mod util {
     //! Support modules for the agent domain. Nothing here implements an
-    //! agent; the agent lives in `crate::default`.
+    //! agent. The agent lives in `crate::default`.
     pub mod config;
     pub mod measure;
     pub mod registry;
