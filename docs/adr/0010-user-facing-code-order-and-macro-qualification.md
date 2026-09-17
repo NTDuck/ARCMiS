@@ -1,7 +1,7 @@
 # 0010. User-facing code order, macro qualification, and module flattening
 
 - **Date:** 2026-09-16
-- **Status:** accepted
+- **Status:** accepted. ADR 0011 supersedes the module-flattening point.
 
 ## Context
 

@@ -20,20 +20,21 @@ When several tools form one group, use `src/<group>/<tool>.rs`.
 
 ## 4. Shared Helpers
 
-Put shared helpers in their own source file, for example `src/path.rs`. Never make a `util.rs` dumping ground. Never put helpers next to the item list.
+Put shared helpers in their own source file under `src/util/`, for example `src/util/path.rs`. One topic per file. Never make a `util.rs` dumping ground. Never put helpers next to the item list.
 
 ## 5. Inline Module Declarations
 
 A file whose only content is module declarations must not exist. Do not keep a glue file that only re-lists modules with `pub mod foo;`. Declare `pub mod foo;` inline in `lib.rs` and delete the glue file.
 
 - Keep a `src/foo/` directory for real multi-file submodules. A directory is fine when its files hold code.
+- A module group such as `util` needs one declaration in `lib.rs`. A bare `pub mod util::foo;` does not parse, so declare the group as one inline block (`pub mod util { pub mod foo; }`). The block holds declarations and at most a doc comment. It is not a glue file.
 
 
 ## 6. Examples
 
 Current tree:
 
-- agents crate: `src/default.rs` (agent), `src/lib.rs` holds the module list.
-- tools crate: `src/read_file.rs`, `src/write_file.rs`, `src/run_command.rs`, `src/catalog.rs` (tools), `src/path.rs` (helpers, declared inline in `lib.rs`).
+- agents crate: `src/default.rs` (agent), `src/util/` (config, measure, registry, sources), `src/lib.rs` declares `util` inline as one `pub mod util { ... }` block.
+- tools crate: `src/read_file.rs`, `src/write_file.rs`, `src/run_command.rs` (tools), `src/util/` (catalog, path), `src/lib.rs` declares `util` inline.
 
 
