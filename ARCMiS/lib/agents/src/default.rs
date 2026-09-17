@@ -20,8 +20,8 @@
 use ::rig::prelude::*;
 use ::tools::{RunCommand, WriteFile};
 
-use crate::config::Config;
-use crate::sources;
+use crate::util::config::Config;
+use crate::util::sources;
 
 /// Preamble for the default agent. States the loop contract. The task
 /// specifics travel in the prompt from config and the collected sources.

@@ -20,9 +20,9 @@
 use ::rig::agent::{AgentHook, CompletionCallAction, CompletionCallEvent, HookContext, ToolCall, ToolCallAction};
 use ::rig::completion::{Prompt, PromptError};
 
-use ::agents::config::Config;
-use ::agents::measure::Measurement;
-use ::agents::sources::Sources;
+use ::agents::util::config::Config;
+use ::agents::util::measure::Measurement;
+use ::agents::util::sources::Sources;
 
 /// Tool-call args preview length. Longer args are cut and marked.
 const ARG_PREVIEW_CHARS: usize = 200;
@@ -94,9 +94,8 @@ fn init_tracing() {
         .init();
 }
 
-/// Load and parse the config file at `path`.
 fn load_config(path: &::std::path::Path) -> ::core::result::Result<Config, ::std::string::String> {
-    ::agents::config::Config::load(path)
+    ::agents::util::config::Config::load(path)
 }
 
 /// Walk the configured input root and collect every readable text file.
@@ -104,8 +103,8 @@ fn load_config(path: &::std::path::Path) -> ::core::result::Result<Config, ::std
 /// bytes per token of source text. One quarter leaves room for the
 /// preamble, the other files, the transcript, and the reply.
 fn discover_sources(config: &Config) -> ::core::result::Result<Sources, ::std::string::String> {
-    let per_file_cap = config.run.num_ctx / 4 * ::agents::sources::BYTES_PER_TOKEN;
-    ::agents::sources::collect(&config.source.root, per_file_cap)
+    let per_file_cap = config.run.num_ctx / 4 * ::agents::util::sources::BYTES_PER_TOKEN;
+    ::agents::util::sources::collect(&config.source.root, per_file_cap)
 }
 
 /// One agent run: build the agent, render the discovered sources into the
@@ -129,7 +128,8 @@ async fn run_attempts(config: &Config, sources: &Sources) -> ::core::option::Opt
         };
         ::tracing::info!(attempt, final_output = %final_text, "agent final output");
 
-        let measurement = ::agents::measure::measure(&config.output.dir, &config.source.target.test_command).await;
+        let measurement =
+            ::agents::util::measure::measure(&config.output.dir, &config.source.target.test_command).await;
         ::tracing::info!(
             attempt,
             compile = measurement.compile,

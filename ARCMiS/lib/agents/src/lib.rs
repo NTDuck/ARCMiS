@@ -1,12 +1,17 @@
 //! Agent orchestration domain for ARCMiS.
 
-pub mod config;
-pub mod default;
-pub mod measure;
-pub mod registry;
-pub mod sources;
+pub mod util {
+    //! Support modules for the agent domain. Nothing here implements an
+    //! agent; the agent lives in `crate::default`.
+    pub mod config;
+    pub mod measure;
+    pub mod registry;
+    pub mod sources;
+}
 
-pub use config::Config;
+pub mod default;
+
 pub use default::{build, prompt, run};
-pub use measure::{measure, Measurement};
-pub use registry::Registry;
+pub use util::config::Config;
+pub use util::measure::{measure, Measurement};
+pub use util::registry::Registry;

@@ -1,6 +1,6 @@
 //! Cucumber suite for the agent registry.
 
-use ::agents::registry::Agent;
+use ::agents::util::registry::Agent;
 use ::agents::Registry;
 use ::cucumber::{given, then, when, World};
 use ::std::sync::Arc;
