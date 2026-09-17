@@ -1,0 +1,498 @@
+//! `debug` drives one debug adapter session through a pluggable backend.
+//!
+//! This pass validates arguments, enforces one active session, and routes each
+//! action to a backend group. Real adapter wiring lands later. The default
+//! backend reports that no adapter is configured.
+
+/// `debug` runs one debug adapter operation.
+pub struct Debug {
+    /// Debug adapter backend. The orchestrator wires a real implementation.
+    pub backend: ::std::sync::Arc<dyn DapBackend + ::core::marker::Send + ::core::marker::Sync>,
+    /// Identifier of the active session, if one exists.
+    pub session: ::std::sync::Arc<::std::sync::Mutex<::core::option::Option<::std::string::String>>>,
+}
+
+impl ::core::fmt::Debug for Debug {
+    fn fmt(&self, formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        formatter.debug_struct("Debug").finish_non_exhaustive()
+    }
+}
+
+impl ::rig::tool::Tool for Debug {
+    const NAME: &'static str = "debug";
+    type Error = ::rig::tool::ToolExecutionError;
+    type Args = DebugArgs;
+    type Output = ::rig::tool::ToolOutput;
+
+    fn description(&self) -> ::std::string::String {
+        "Run one debug adapter operation and return the adapter response.".to_owned()
+    }
+
+    fn parameters(&self) -> ::serde_json::Value {
+        ::serde_json::json!({
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "enum": [
+                        "launch", "attach", "set_breakpoint", "remove_breakpoint",
+                        "set_instruction_breakpoint", "remove_instruction_breakpoint",
+                        "set_data_breakpoint", "remove_data_breakpoint",
+                        "data_breakpoint_info", "continue", "step_over", "step_in",
+                        "step_out", "pause", "evaluate", "stack_trace", "threads",
+                        "scopes", "variables", "disassemble", "read_memory",
+                        "write_memory", "modules", "loaded_sources", "custom_request",
+                        "output", "terminate", "sessions"
+                    ],
+                    "description": "Debug adapter operation to run"
+                },
+                "program": { "type": "string", "description": "Program path for launch" },
+                "args": { "type": "array", "items": { "type": "string" }, "description": "Program arguments for launch" },
+                "adapter": { "type": "string", "description": "Configured adapter identifier" },
+                "cwd": { "type": "string", "description": "Working directory for the session" },
+                "file": { "type": "string", "description": "Source file for breakpoint actions" },
+                "line": { "type": "integer", "description": "Source line for breakpoint actions" },
+                "function": { "type": "string", "description": "Function name for function breakpoints" },
+                "name": { "type": "string", "description": "Breakpoint or variable name" },
+                "condition": { "type": "string", "description": "Breakpoint condition expression" },
+                "hit_condition": { "type": "string", "description": "Breakpoint hit count expression" },
+                "expression": { "type": "string", "description": "Expression for evaluate" },
+                "context": { "type": "string", "description": "Evaluate context, default repl" },
+                "frame_id": { "type": "integer", "description": "Stack frame reference" },
+                "scope_id": { "type": "integer", "description": "Scope reference for variables" },
+                "variable_ref": { "type": "integer", "description": "Variable reference handle" },
+                "pid": { "type": "integer", "description": "Process id for attach" },
+                "port": { "type": "integer", "description": "Remote attach port" },
+                "host": { "type": "string", "description": "Remote attach host" },
+                "levels": { "type": "integer", "description": "Maximum stack frames" },
+                "memory_reference": { "type": "string", "description": "Memory reference for memory actions" },
+                "instruction_reference": { "type": "string", "description": "Instruction reference for disassemble" },
+                "instruction_count": { "type": "integer", "description": "Instruction count for disassemble" },
+                "instruction_offset": { "type": "integer", "description": "Instruction offset for disassemble" },
+                "count": { "type": "integer", "description": "Byte count for read_memory" },
+                "data": { "type": "string", "description": "Base64 memory payload for write_memory" },
+                "data_id": { "type": "string", "description": "Data breakpoint identifier" },
+                "access_type": { "type": "string", "enum": ["read", "write", "readWrite"], "description": "Access type for data breakpoints" },
+                "command": { "type": "string", "description": "Custom DAP request command" },
+                "arguments": { "type": "object", "description": "Custom DAP request arguments" },
+                "offset": { "type": "integer", "description": "Generic offset value" },
+                "resolve_symbols": { "type": "boolean", "description": "Resolve symbols when loading modules" },
+                "allow_partial": { "type": "boolean", "description": "Accept partial results" },
+                "start_module": { "type": "integer", "description": "First module index" },
+                "module_count": { "type": "integer", "description": "Module count" },
+                "timeout": { "type": "integer", "description": "Operation timeout in seconds, clamped to 5 through 300" }
+            },
+            "required": ["action"]
+        })
+    }
+
+    async fn call(
+        &self,
+        _context: &mut ::rig::tool::ToolContext,
+        args: Self::Args,
+    ) -> ::core::result::Result<Self::Output, Self::Error> {
+        let action = args.action;
+        let timeout = args.timeout.unwrap_or(30).clamp(5, 300);
+        validate(action, &args)?;
+        let request = DebugRequest {
+            action,
+            program: args.program.clone(),
+            args: args.args.clone().unwrap_or_default(),
+            adapter: args.adapter.clone(),
+            cwd: args.cwd.clone(),
+            file: args.file.clone(),
+            line: args.line,
+            function: args.function.clone(),
+            name: args.name.clone(),
+            condition: args.condition.clone(),
+            hit_condition: args.hit_condition.clone(),
+            expression: args.expression.clone(),
+            context: args.context.clone().unwrap_or_else(|| "repl".to_owned()),
+            frame_id: args.frame_id,
+            scope_id: args.scope_id,
+            variable_ref: args.variable_ref,
+            pid: args.pid,
+            port: args.port,
+            host: args.host.clone(),
+            levels: args.levels,
+            memory_reference: args.memory_reference.clone(),
+            instruction_reference: args.instruction_reference.clone(),
+            instruction_count: args.instruction_count,
+            instruction_offset: args.instruction_offset,
+            count: args.count,
+            data: args.data.clone(),
+            data_id: args.data_id.clone(),
+            access_type: args.access_type,
+            command: args.command.clone(),
+            arguments: args.arguments.clone(),
+            offset: args.offset,
+            resolve_symbols: args.resolve_symbols.unwrap_or(false),
+            allow_partial: args.allow_partial.unwrap_or(false),
+            start_module: args.start_module,
+            module_count: args.module_count,
+            timeout,
+        };
+        self.claim_session(action, &request)?;
+        let result = dispatch(self.backend.as_ref(), action, &request).await;
+        if ::core::matches!(action, DebugAction::Terminate) {
+            self.release_session();
+        }
+        let action_name = ::serde_json::to_value(action).unwrap_or(::serde_json::Value::Null);
+        ::core::result::Result::Ok(::rig::tool::ToolOutput::json(::serde_json::json!({
+            "action": action_name,
+            "result": result,
+        })))
+    }
+}
+
+impl Debug {
+    /// Record the session for launch and attach. Reject a second live session.
+    fn claim_session(
+        &self,
+        action: DebugAction,
+        request: &DebugRequest,
+    ) -> ::core::result::Result<(), ::rig::tool::ToolExecutionError> {
+        let starts = ::core::matches!(action, DebugAction::Launch | DebugAction::Attach);
+        if !starts {
+            return ::core::result::Result::Ok(());
+        }
+        let mut session = self.session.lock().unwrap_or_else(::std::sync::PoisonError::into_inner);
+        if let ::core::option::Option::Some(active) = session.as_ref() {
+            return ::core::result::Result::Err(::rig::tool::ToolExecutionError::other(::std::format!(
+                "Debug session {active} is still active. Terminate it before launching another."
+            )));
+        }
+        *session = ::core::option::Option::Some(session_id(request));
+        ::core::result::Result::Ok(())
+    }
+
+    /// Clear the session record after terminate.
+    fn release_session(&self) {
+        let mut session = self.session.lock().unwrap_or_else(::std::sync::PoisonError::into_inner);
+        *session = ::core::option::Option::None;
+    }
+}
+
+/// Arguments for `debug`.
+#[derive(::core::fmt::Debug, ::serde::Deserialize)]
+pub struct DebugArgs {
+    /// Debug adapter operation to run.
+    pub action: DebugAction,
+    /// Program path for launch.
+    pub program: ::core::option::Option<::std::string::String>,
+    /// Program arguments for launch.
+    pub args: ::core::option::Option<::std::vec::Vec<::std::string::String>>,
+    /// Configured adapter identifier.
+    pub adapter: ::core::option::Option<::std::string::String>,
+    /// Working directory for the session.
+    pub cwd: ::core::option::Option<::std::string::String>,
+    /// Source file for breakpoint actions.
+    pub file: ::core::option::Option<::std::string::String>,
+    /// Source line for breakpoint actions.
+    pub line: ::core::option::Option<u32>,
+    /// Function name for function breakpoints.
+    pub function: ::core::option::Option<::std::string::String>,
+    /// Breakpoint or variable name.
+    pub name: ::core::option::Option<::std::string::String>,
+    /// Breakpoint condition expression.
+    pub condition: ::core::option::Option<::std::string::String>,
+    /// Breakpoint hit count expression.
+    pub hit_condition: ::core::option::Option<::std::string::String>,
+    /// Expression for evaluate.
+    pub expression: ::core::option::Option<::std::string::String>,
+    /// Evaluate context.
+    pub context: ::core::option::Option<::std::string::String>,
+    /// Stack frame reference.
+    pub frame_id: ::core::option::Option<u64>,
+    /// Scope reference for variables.
+    pub scope_id: ::core::option::Option<u64>,
+    /// Variable reference handle.
+    pub variable_ref: ::core::option::Option<u64>,
+    /// Process id for attach.
+    pub pid: ::core::option::Option<u32>,
+    /// Remote attach port.
+    pub port: ::core::option::Option<u16>,
+    /// Remote attach host.
+    pub host: ::core::option::Option<::std::string::String>,
+    /// Maximum stack frames.
+    pub levels: ::core::option::Option<u32>,
+    /// Memory reference for memory actions.
+    pub memory_reference: ::core::option::Option<::std::string::String>,
+    /// Instruction reference for disassemble.
+    pub instruction_reference: ::core::option::Option<::std::string::String>,
+    /// Instruction count for disassemble.
+    pub instruction_count: ::core::option::Option<u32>,
+    /// Instruction offset for disassemble.
+    pub instruction_offset: ::core::option::Option<i64>,
+    /// Byte count for read_memory.
+    pub count: ::core::option::Option<u32>,
+    /// Base64 memory payload for write_memory.
+    pub data: ::core::option::Option<::std::string::String>,
+    /// Data breakpoint identifier.
+    pub data_id: ::core::option::Option<::std::string::String>,
+    /// Access type for data breakpoints.
+    pub access_type: ::core::option::Option<DebugAccessType>,
+    /// Custom DAP request command.
+    pub command: ::core::option::Option<::std::string::String>,
+    /// Custom DAP request arguments.
+    pub arguments: ::core::option::Option<::serde_json::Value>,
+    /// Generic offset value.
+    pub offset: ::core::option::Option<i64>,
+    /// Resolve symbols when loading modules.
+    pub resolve_symbols: ::core::option::Option<bool>,
+    /// Accept partial results.
+    pub allow_partial: ::core::option::Option<bool>,
+    /// First module index.
+    pub start_module: ::core::option::Option<u32>,
+    /// Module count.
+    pub module_count: ::core::option::Option<u32>,
+    /// Operation timeout in seconds.
+    pub timeout: ::core::option::Option<u64>,
+}
+
+/// One `debug` operation.
+#[derive(::core::fmt::Debug, ::core::clone::Clone, ::core::marker::Copy, ::serde::Serialize, ::serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DebugAction {
+    Launch,
+    Attach,
+    SetBreakpoint,
+    RemoveBreakpoint,
+    SetInstructionBreakpoint,
+    RemoveInstructionBreakpoint,
+    SetDataBreakpoint,
+    RemoveDataBreakpoint,
+    DataBreakpointInfo,
+    Continue,
+    StepOver,
+    StepIn,
+    StepOut,
+    Pause,
+    Evaluate,
+    StackTrace,
+    Threads,
+    Scopes,
+    Variables,
+    Disassemble,
+    ReadMemory,
+    WriteMemory,
+    Modules,
+    LoadedSources,
+    CustomRequest,
+    Output,
+    Terminate,
+    Sessions,
+}
+
+/// Access kind for a data breakpoint.
+#[derive(::core::fmt::Debug, ::core::clone::Clone, ::core::marker::Copy, ::serde::Serialize, ::serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum DebugAccessType {
+    Read,
+    Write,
+    ReadWrite,
+}
+
+/// Normalized request values passed to the backend.
+#[derive(::core::fmt::Debug, ::core::clone::Clone)]
+pub struct DebugRequest {
+    pub action: DebugAction,
+    pub program: ::core::option::Option<::std::string::String>,
+    pub args: ::std::vec::Vec<::std::string::String>,
+    pub adapter: ::core::option::Option<::std::string::String>,
+    pub cwd: ::core::option::Option<::std::string::String>,
+    pub file: ::core::option::Option<::std::string::String>,
+    pub line: ::core::option::Option<u32>,
+    pub function: ::core::option::Option<::std::string::String>,
+    pub name: ::core::option::Option<::std::string::String>,
+    pub condition: ::core::option::Option<::std::string::String>,
+    pub hit_condition: ::core::option::Option<::std::string::String>,
+    pub expression: ::core::option::Option<::std::string::String>,
+    pub context: ::std::string::String,
+    pub frame_id: ::core::option::Option<u64>,
+    pub scope_id: ::core::option::Option<u64>,
+    pub variable_ref: ::core::option::Option<u64>,
+    pub pid: ::core::option::Option<u32>,
+    pub port: ::core::option::Option<u16>,
+    pub host: ::core::option::Option<::std::string::String>,
+    pub levels: ::core::option::Option<u32>,
+    pub memory_reference: ::core::option::Option<::std::string::String>,
+    pub instruction_reference: ::core::option::Option<::std::string::String>,
+    pub instruction_count: ::core::option::Option<u32>,
+    pub instruction_offset: ::core::option::Option<i64>,
+    pub count: ::core::option::Option<u32>,
+    pub data: ::core::option::Option<::std::string::String>,
+    pub data_id: ::core::option::Option<::std::string::String>,
+    pub access_type: ::core::option::Option<DebugAccessType>,
+    pub command: ::core::option::Option<::std::string::String>,
+    pub arguments: ::core::option::Option<::serde_json::Value>,
+    pub offset: ::core::option::Option<i64>,
+    pub resolve_symbols: bool,
+    pub allow_partial: bool,
+    pub start_module: ::core::option::Option<u32>,
+    pub module_count: ::core::option::Option<u32>,
+    pub timeout: u64,
+}
+
+/// Boxed future returned by every backend method.
+pub type DebugFuture<'a> = ::std::pin::Pin<
+    ::std::boxed::Box<dyn ::core::future::Future<Output = ::std::string::String> + ::core::marker::Send + 'a>,
+>;
+
+/// Pluggable debug adapter boundary. One method per action group.
+pub trait DapBackend: ::core::marker::Send + ::core::marker::Sync {
+    fn launch(&self, request: &DebugRequest) -> DebugFuture<'_>;
+    fn attach(&self, request: &DebugRequest) -> DebugFuture<'_>;
+    fn breakpoints(&self, request: &DebugRequest) -> DebugFuture<'_>;
+    fn stepping(&self, request: &DebugRequest) -> DebugFuture<'_>;
+    fn inspect(&self, request: &DebugRequest) -> DebugFuture<'_>;
+    fn memory(&self, request: &DebugRequest) -> DebugFuture<'_>;
+    fn modules(&self, request: &DebugRequest) -> DebugFuture<'_>;
+    fn control(&self, request: &DebugRequest) -> DebugFuture<'_>;
+}
+
+/// Fallback backend for the dispatch shell. It reports that no adapter exists.
+#[derive(::core::fmt::Debug, ::core::default::Default)]
+pub struct NullDapBackend;
+
+impl DapBackend for NullDapBackend {
+    fn launch(&self, request: &DebugRequest) -> DebugFuture<'_> {
+        ::std::boxed::Box::pin(::core::future::ready(unconfigured(request)))
+    }
+
+    fn attach(&self, request: &DebugRequest) -> DebugFuture<'_> {
+        ::std::boxed::Box::pin(::core::future::ready(unconfigured(request)))
+    }
+
+    fn breakpoints(&self, request: &DebugRequest) -> DebugFuture<'_> {
+        ::std::boxed::Box::pin(::core::future::ready(unconfigured(request)))
+    }
+
+    fn stepping(&self, request: &DebugRequest) -> DebugFuture<'_> {
+        ::std::boxed::Box::pin(::core::future::ready(unconfigured(request)))
+    }
+
+    fn inspect(&self, request: &DebugRequest) -> DebugFuture<'_> {
+        ::std::boxed::Box::pin(::core::future::ready(unconfigured(request)))
+    }
+
+    fn memory(&self, request: &DebugRequest) -> DebugFuture<'_> {
+        ::std::boxed::Box::pin(::core::future::ready(unconfigured(request)))
+    }
+
+    fn modules(&self, request: &DebugRequest) -> DebugFuture<'_> {
+        ::std::boxed::Box::pin(::core::future::ready(unconfigured(request)))
+    }
+
+    fn control(&self, request: &DebugRequest) -> DebugFuture<'_> {
+        ::std::boxed::Box::pin(::core::future::ready(unconfigured(request)))
+    }
+}
+
+/// Build the fallback text for a tool without a real adapter.
+fn unconfigured(request: &DebugRequest) -> ::std::string::String {
+    let target = request.program.as_deref().unwrap_or("<no program>");
+    ::std::format!("no debug adapter configured for {target}")
+}
+
+/// Derive the session identifier for a launch or attach request.
+fn session_id(request: &DebugRequest) -> ::std::string::String {
+    if let ::core::option::Option::Some(program) = request.program.as_deref() {
+        return program.to_owned();
+    }
+    if let ::core::option::Option::Some(pid) = request.pid {
+        return ::std::format!("pid-{pid}");
+    }
+    match (request.host.as_deref(), request.port) {
+        (::core::option::Option::Some(host), ::core::option::Option::Some(port)) => {
+            ::std::format!("{host}:{port}")
+        },
+        (_, ::core::option::Option::Some(port)) => ::std::format!("port-{port}"),
+        _ => "default".to_owned(),
+    }
+}
+
+/// Reject operations whose required arguments are missing.
+fn validate(action: DebugAction, args: &DebugArgs) -> ::core::result::Result<(), ::rig::tool::ToolExecutionError> {
+    match action {
+        DebugAction::Launch => require(args.program.is_some(), "program is required for launch"),
+        DebugAction::Attach => require(args.pid.is_some() || args.port.is_some(), "pid or port is required for attach"),
+        DebugAction::SetBreakpoint => require(
+            (args.file.is_some() && args.line.is_some()) || args.function.is_some(),
+            "file with line or function is required for set_breakpoint",
+        ),
+        DebugAction::Evaluate => require(args.expression.is_some(), "expression is required for evaluate"),
+        DebugAction::Variables => require(
+            args.variable_ref.is_some() || args.scope_id.is_some(),
+            "variable_ref or scope_id is required for variables",
+        ),
+        DebugAction::ReadMemory => require(
+            args.memory_reference.is_some() && args.count.is_some(),
+            "memory_reference and count are required for read_memory",
+        ),
+        DebugAction::WriteMemory => require(
+            args.memory_reference.is_some() && args.data.is_some(),
+            "memory_reference and data are required for write_memory",
+        ),
+        DebugAction::CustomRequest => require(args.command.is_some(), "command is required for custom_request"),
+        DebugAction::RemoveBreakpoint
+        | DebugAction::SetInstructionBreakpoint
+        | DebugAction::RemoveInstructionBreakpoint
+        | DebugAction::SetDataBreakpoint
+        | DebugAction::RemoveDataBreakpoint
+        | DebugAction::DataBreakpointInfo
+        | DebugAction::Continue
+        | DebugAction::StepOver
+        | DebugAction::StepIn
+        | DebugAction::StepOut
+        | DebugAction::Pause
+        | DebugAction::StackTrace
+        | DebugAction::Threads
+        | DebugAction::Scopes
+        | DebugAction::Disassemble
+        | DebugAction::Modules
+        | DebugAction::LoadedSources
+        | DebugAction::Output
+        | DebugAction::Terminate
+        | DebugAction::Sessions => ::core::result::Result::Ok(()),
+    }
+}
+
+/// Fail with an invalid args error when a requirement is not met.
+fn require(met: bool, message: &str) -> ::core::result::Result<(), ::rig::tool::ToolExecutionError> {
+    if met {
+        ::core::result::Result::Ok(())
+    } else {
+        ::core::result::Result::Err(::rig::tool::ToolExecutionError::invalid_args(message))
+    }
+}
+
+/// Route one action to its backend group method.
+async fn dispatch(backend: &dyn DapBackend, action: DebugAction, request: &DebugRequest) -> ::std::string::String {
+    match action {
+        DebugAction::Launch => backend.launch(request).await,
+        DebugAction::Attach => backend.attach(request).await,
+        DebugAction::SetBreakpoint
+        | DebugAction::RemoveBreakpoint
+        | DebugAction::SetInstructionBreakpoint
+        | DebugAction::RemoveInstructionBreakpoint
+        | DebugAction::SetDataBreakpoint
+        | DebugAction::RemoveDataBreakpoint
+        | DebugAction::DataBreakpointInfo => backend.breakpoints(request).await,
+        DebugAction::Continue
+        | DebugAction::StepOver
+        | DebugAction::StepIn
+        | DebugAction::StepOut
+        | DebugAction::Pause => backend.stepping(request).await,
+        DebugAction::Evaluate
+        | DebugAction::StackTrace
+        | DebugAction::Threads
+        | DebugAction::Scopes
+        | DebugAction::Variables
+        | DebugAction::Disassemble
+        | DebugAction::Output => backend.inspect(request).await,
+        DebugAction::ReadMemory | DebugAction::WriteMemory => backend.memory(request).await,
+        DebugAction::Modules | DebugAction::LoadedSources => backend.modules(request).await,
+        DebugAction::CustomRequest | DebugAction::Terminate | DebugAction::Sessions => backend.control(request).await,
+    }
+}

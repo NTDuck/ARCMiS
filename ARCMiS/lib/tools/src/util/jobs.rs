@@ -1,0 +1,167 @@
+//! Job registry for background jobs.
+//!
+//! A tool records a job when it starts work. The job tool polls the registry,
+//! cancels running jobs, and prunes finished entries. Each job stores a type
+//! label, a status, and the result or error text captured at completion.
+
+use ::std::collections::BTreeMap;
+
+/// Status of one registered job.
+#[derive(::core::fmt::Debug, ::core::clone::Clone, ::core::cmp::PartialEq, ::core::cmp::Eq)]
+pub enum JobStatus {
+    /// The job is running.
+    Running,
+    /// The job finished with success.
+    Completed,
+    /// The job finished with failure.
+    Failed,
+    /// The job stopped through an explicit cancel call before completion.
+    Cancelled,
+}
+
+impl JobStatus {
+    /// Stable lowercase name used in poll output.
+    #[must_use]
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Running => "running",
+            Self::Completed => "completed",
+            Self::Failed => "failed",
+            Self::Cancelled => "cancelled",
+        }
+    }
+}
+
+/// One registered job with its lifecycle data.
+#[derive(::core::fmt::Debug, ::core::clone::Clone)]
+pub struct JobEntry {
+    /// Job id (uuid string).
+    pub id: ::std::string::String,
+    /// Job type, for example "task" or "command".
+    pub job_type: ::std::string::String,
+    /// Human label shown in listings.
+    pub label: ::std::string::String,
+    /// Current status.
+    pub status: JobStatus,
+    /// Result text captured on completion.
+    pub result_text: ::core::option::Option<::std::string::String>,
+    /// Error text captured on failure.
+    pub error_text: ::core::option::Option<::std::string::String>,
+    /// Unix time of the last status change, in seconds.
+    pub updated_at: u64,
+}
+
+/// Registry of background jobs, shared by the task and job tools.
+#[derive(::core::fmt::Debug, ::core::default::Default)]
+pub struct JobRegistry {
+    jobs: BTreeMap<::std::string::String, JobEntry>,
+}
+
+impl JobRegistry {
+    /// Create an empty shared registry.
+    #[must_use]
+    pub fn new() -> ::std::sync::Arc<Self> {
+        ::std::sync::Arc::new(Self {
+            jobs: BTreeMap::new(),
+        })
+    }
+
+    /// Register a running job and return its uuid id.
+    pub fn register(&mut self, job_type: &str, label: &str) -> ::std::string::String {
+        let id = ::uuid::Uuid::new_v4().to_string();
+        self.jobs.insert(
+            ::std::clone::Clone::clone(&id),
+            JobEntry {
+                id: ::std::clone::Clone::clone(&id),
+                job_type: ::std::string::String::from(job_type),
+                label: ::std::string::String::from(label),
+                status: JobStatus::Running,
+                result_text: ::core::option::Option::None,
+                error_text: ::core::option::Option::None,
+                updated_at: now_seconds(),
+            },
+        );
+        id
+    }
+
+    /// Mark a job completed with result text. The registry skips unknown ids.
+    pub fn complete(&mut self, id: &str, result_text: &str) {
+        self.update(id, |entry| {
+            entry.status = JobStatus::Completed;
+            entry.result_text = ::core::option::Option::Some(::std::string::String::from(result_text));
+        });
+    }
+
+    /// Mark a job failed with error text. The registry skips unknown ids.
+    pub fn fail(&mut self, id: &str, error_text: &str) {
+        self.update(id, |entry| {
+            entry.status = JobStatus::Failed;
+            entry.error_text = ::core::option::Option::Some(::std::string::String::from(error_text));
+        });
+    }
+
+    /// Snapshot the requested jobs. Empty ids returns every job.
+    #[must_use]
+    pub fn poll(&self, ids: &[::std::string::String]) -> ::std::vec::Vec<JobEntry> {
+        if ids.is_empty() {
+            return self.jobs.values().cloned().collect::<::std::vec::Vec<_>>();
+        }
+        ids.iter().filter_map(|id| self.jobs.get(id)).cloned().collect::<::std::vec::Vec<_>>()
+    }
+
+    /// Cancel the requested running jobs. Return the ids that were running.
+    pub fn cancel(&mut self, ids: &[::std::string::String]) -> ::std::vec::Vec<::std::string::String> {
+        ids.iter()
+            .filter_map(|id| {
+                let entry = self.jobs.get_mut(id)?;
+                if entry.status == JobStatus::Running {
+                    entry.status = JobStatus::Cancelled;
+                    entry.updated_at = now_seconds();
+                    ::core::option::Option::Some(::std::clone::Clone::clone(id))
+                } else {
+                    ::core::option::Option::None
+                }
+            })
+            .collect::<::std::vec::Vec<_>>()
+    }
+
+    /// Drop finished entries older than 5 minutes. Return the dropped count.
+    pub fn retain(&mut self) -> usize {
+        let cutoff = now_seconds().saturating_sub(300);
+        let stale = self
+            .jobs
+            .iter()
+            .filter(|(_, entry)| is_stale(entry, cutoff))
+            .map(|(id, _)| ::std::clone::Clone::clone(id))
+            .collect::<::std::vec::Vec<_>>();
+        let dropped = stale.len();
+        for id in stale {
+            self.jobs.remove(&id);
+        }
+        dropped
+    }
+}
+
+/// True when a finished entry updated before `cutoff`.
+fn is_stale(entry: &JobEntry, cutoff: u64) -> bool {
+    match entry.status {
+        JobStatus::Running => false,
+        JobStatus::Completed | JobStatus::Failed | JobStatus::Cancelled => entry.updated_at < cutoff,
+    }
+}
+
+/// Apply `change` to one job. The registry skips unknown ids.
+impl JobRegistry {
+    fn update(&mut self, id: &str, change: impl ::core::ops::FnOnce(&mut JobEntry)) {
+        let entry = self.jobs.get_mut(id);
+        if let ::core::option::Option::Some(entry) = entry {
+            change(entry);
+            entry.updated_at = now_seconds();
+        }
+    }
+}
+
+/// Current unix time in seconds.
+fn now_seconds() -> u64 {
+    ::std::time::SystemTime::now().duration_since(::std::time::UNIX_EPOCH).map_or(0, |span| span.as_secs())
+}
