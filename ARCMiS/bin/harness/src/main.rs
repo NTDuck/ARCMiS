@@ -1,28 +1,27 @@
-//! Binary entry point for ARCMiS. Drives the translation agent over a run
-//! config. Run pipeline:
+//! Binary entry point for ARCMiS. The harness is a thin sequencer:
+//!
 //! 1. Install the tracing subscriber (env filter, default level `info`).
 //! 2. Load the run config from the path in `argv[1]` (default path below).
-//! 3. Ensure the output dir exists. The agent owns the whole package
-//!    structure; the harness writes no scaffold.
-//! 4. Discover inputs: walk `source.root` recursively, read every text
-//!    file (skip files that fail `read_to_string`, cap each at a quarter
-//!    of `run.num_ctx` tokens rendered as bytes),
-//!    and pass the map to the agent render step.
-//! 5. Run up to `max_retries + 1` attempts. Each attempt ends in a
-//!    measurement of the output dir. Stop at the first compiling attempt;
-//!    otherwise keep the best measurement. A turn-budget exhaustion ends
-//!    one attempt, not the run: whatever the agent wrote is still
-//!    measured.
-//! 6. Write `run-report.md` into the output dir and log its path.
+//! 3. Construct the ollama client (base URL from `OLLAMA_API_BASE_URL`).
+//! 4. Discover inputs and build the structured [`MonolithRequest`].
+//! 5. Wire the monolith agent (tools: `write`, `bash` in the output root)
+//!    and run it. The run streams through the [`RunLog`] hook to the
+//!    console. The monolith returns a structured [`MonolithResponse`].
+//! 6. Wire the validator agent (tool: `bash` in the output root), pass it
+//!    the structured [`ValidatorRequest`], and run it with the same hook. The
+//!    validator returns a structured [`ValidatorResponse`].
+//! 7. Write `run-report.md` into the output dir and log its path.
 //!
-//! Exit code: success iff the best measurement compiled.
+//! Every agent boundary carries a typed artifact. No prompt-side coercion:
+//! the rig output schemas (`OutputMode::Tool`) enforce the shapes.
+//!
+//! Exit code: success iff the validator reports `pass`.
 
+use ::agents::{MonolithRequest, ValidatorRequest, ValidatorStepOutcome};
 use ::rig::agent::{AgentHook, CompletionCallAction, CompletionCallEvent, HookContext, ToolCall, ToolCallAction};
-use ::rig::completion::PromptError;
+use ::rig::client::ProviderClient;
 
-use ::agents::util::config::Config;
-use ::agents::util::measure::Measurement;
-use ::agents::util::sources::Sources;
+use ::agents::Config;
 
 /// Tool-call args preview length. Longer args are cut and marked.
 const ARG_PREVIEW_CHARS: usize = 200;
@@ -46,8 +45,8 @@ async fn main() -> ::std::process::ExitCode {
         },
     };
 
-    // The output dir must exist before the agent writes into it. The
-    // package structure itself is the agent's job; no scaffold here.
+    // The output dir must exist before the agents write into it. The
+    // package structure itself is the monolith's job; no scaffold here.
     if let ::core::result::Result::Err(e) = ::std::fs::create_dir_all(&config.output.dir) {
         ::tracing::error!(dir = %config.output.dir.display(), error = %e, "output dir create failed");
         return ::std::process::ExitCode::FAILURE;
@@ -60,31 +59,70 @@ async fn main() -> ::std::process::ExitCode {
         "migration run started"
     );
 
-    let sources = match discover_sources(&config) {
-        ::core::result::Result::Ok(sources) => sources,
+    // One ollama client, constructed in main, shared by both agents.
+    let client = match ::rig::providers::ollama::Client::from_env() {
+        ::core::result::Result::Ok(client) => client,
+        ::core::result::Result::Err(e) => {
+            ::tracing::error!(error = %e, "ollama client construction failed");
+            return ::std::process::ExitCode::FAILURE;
+        },
+    };
+
+    let task = match monolith_task(&config) {
+        ::core::result::Result::Ok(task) => task,
         ::core::result::Result::Err(e) => {
             ::tracing::error!(root = %config.source.root.display(), error = %e, "input discovery failed");
             return ::std::process::ExitCode::FAILURE;
         },
     };
 
-    let measurement = match run_attempts(&config, &sources).await {
-        ::core::option::Option::Some(m) => m,
-        ::core::option::Option::None => {
-            ::tracing::error!("all attempts failed before measurement");
+    // Wire and run the monolith. The shared hook logs every turn and tool
+    // call to the console.
+    let monolith = ::agents::build_monolith(&client, &config, RunLog);
+    let monolith_result = match ::agents::run_monolith(&monolith, &task, config.run.max_turns).await {
+        ::core::result::Result::Ok(result) => result,
+        ::core::result::Result::Err(e) => {
+            ::tracing::error!(error = %e, "monolith run failed");
             return ::std::process::ExitCode::FAILURE;
         },
     };
+    ::tracing::info!(
+        files_written = monolith_result.files_written,
+        approach = %monolith_result.approach,
+        "monolith finished"
+    );
+
+    // Wire and run the validator over the monolith's output.
+    let validation_task = ValidatorRequest {
+        output_dir: monolith_result.output_dir.clone(),
+        toolchain: ::std::vec![::std::string::String::from("build"), ::std::string::String::from("test")],
+        test_command: config.source.target.test_command.clone(),
+        approach: monolith_result.approach.clone(),
+    };
+    let validator = ::agents::build_validator(&client, &config, RunLog);
+    let validation = match ::agents::run_validator(&validator, &validation_task, config.run.max_turns).await {
+        ::core::result::Result::Ok(result) => result,
+        ::core::result::Result::Err(e) => {
+            ::tracing::error!(error = %e, "validator run failed");
+            return ::std::process::ExitCode::FAILURE;
+        },
+    };
+    ::tracing::info!(
+        compilation_status = %validation.compilation_status,
+        test_pass_rate = ?validation.test_pass_rate,
+        "validator finished"
+    );
 
     let elapsed = started.elapsed();
-    report(&config, &measurement, elapsed);
+    report(&config, &validation, elapsed);
 
-    if measurement.compile == "pass" {
+    if validation.compilation_status == "pass" {
         ::std::process::ExitCode::SUCCESS
     } else {
         ::std::process::ExitCode::FAILURE
     }
 }
+
 fn init_tracing() {
     ::tracing_subscriber::fmt()
         .with_env_filter(
@@ -95,91 +133,25 @@ fn init_tracing() {
 }
 
 fn load_config(path: &::std::path::Path) -> ::core::result::Result<Config, ::std::string::String> {
-    ::agents::util::config::Config::load(path)
+    Config::load(path)
 }
 
-/// Walk the configured input root and collect every readable text file.
-/// Cap one file at a quarter of the context window, rendered at four
-/// bytes per token of source text. One quarter leaves room for the
-/// preamble, the other files, the transcript, and the reply.
-fn discover_sources(config: &Config) -> ::core::result::Result<Sources, ::std::string::String> {
+/// Build the structured monolith task: discover the input sources and
+/// bundle them with the target toolchain from the config.
+fn monolith_task(config: &Config) -> ::core::result::Result<MonolithRequest, ::std::string::String> {
     let per_file_cap = config.run.num_ctx / 4 * ::agents::util::sources::BYTES_PER_TOKEN;
-    ::agents::util::sources::collect(&config.source.root, per_file_cap)
+    let sources = ::agents::util::sources::collect(&config.source.root, per_file_cap)?;
+    Ok(MonolithRequest {
+        sources,
+        source_language: config.source.language.clone(),
+        target_language: config.source.target.language.clone(),
+        test_command: config.source.target.test_command.clone(),
+    })
 }
 
-/// The attempt loop. Drive one ReAct run per attempt, measure the output
-/// dir, and keep the best measurement across attempts.
-async fn run_attempts(config: &Config, _sources: &Sources) -> ::core::option::Option<Measurement> {
-    let mut best: ::core::option::Option<Measurement> = ::core::option::Option::None;
-    for attempt in 1..=config.run.max_retries + 1 {
-        let final_text = match ::agents::default::run(config, RunLog).await {
-            ::core::result::Result::Ok(text) => text,
-            ::core::result::Result::Err(
-                e @ PromptError::MaxTurnsError {
-                    ..
-                },
-            ) => {
-                ::std::format!("run ended at the turn budget: {e}")
-            },
-            ::core::result::Result::Err(e) => {
-                ::tracing::warn!(attempt, error = %e, "agent run failed");
-                continue;
-            },
-        };
-        ::tracing::info!(attempt, final_output = %final_text, "agent final output");
-
-        let measurement =
-            ::agents::util::measure::measure(&config.output.dir, &config.source.target.test_command).await;
-        ::tracing::info!(
-            attempt,
-            compile = measurement.compile,
-            test_pass_rate = ?measurement.test_pass_rate,
-            "attempt measurement"
-        );
-        let done = measurement.compile == "pass";
-        best = ::core::option::Option::Some(match best {
-            ::core::option::Option::Some(b) if b.compile == "pass" => b,
-            _ => measurement,
-        });
-        if done {
-            break;
-        }
-    }
-    best
-}
-
-/// The attempt loop. A 2B model is flaky: a turn can truncate, wander, or
-/// exhaust its turn budget. Each attempt ends in a measurement of the
-/// output dir; the loop stops at the first compiling attempt (speed) and
-/// otherwise keeps the best measurement. A budget exhaustion is an attempt
-/// end, not a fatal error: whatever the agent wrote still gets measured.
-/// Returns `None` when every attempt failed before a measurement.
-fn report(config: &Config, measurement: &Measurement, elapsed: ::std::time::Duration) {
-    let record = ::std::format!(
-        "# measurement\ncompile: {}\ntest_pass_rate: {:?}\nelapsed: {:?}\n",
-        measurement.compile,
-        measurement.test_pass_rate,
-        elapsed
-    );
-    let report_path = config.output.dir.join("run-report.md");
-    match ::std::fs::write(&report_path, &record) {
-        ::core::result::Result::Ok(()) => ::tracing::info!(
-            report = %report_path.display(),
-            compile = measurement.compile,
-            test_pass_rate = ?measurement.test_pass_rate,
-            elapsed = ?elapsed,
-            "run report written"
-        ),
-        ::core::result::Result::Err(e) => {
-            ::tracing::warn!(path = %report_path.display(), error = %e, "run report write failed")
-        },
-    }
-}
-
-/// The run log. Tool calls surface through the rig hook; the model's final
-/// text and the measurement land in the tracing log and the run report.
+/// The run log. Tool calls surface through the rig hook; the agents'
+/// structured results land in the tracing log and the run report.
 #[derive(::core::clone::Clone, ::core::default::Default)]
-
 struct RunLog;
 
 impl AgentHook for RunLog {
@@ -206,4 +178,57 @@ fn truncate_args(args: &str) -> ::std::string::String {
     }
     let cut: ::std::string::String = args.chars().take(ARG_PREVIEW_CHARS).collect();
     ::std::format!("{cut}...")
+}
+
+/// Write the run report from the structured validation result.
+fn report(config: &Config, validation: &::agents::ValidatorResponse, elapsed: ::std::time::Duration) {
+    let steps =
+        validation.steps.iter().map(step_report_line).collect::<::std::vec::Vec<::std::string::String>>().join("\n");
+    let record = ::std::format!(
+        "# validation\ncompilation_status: {}\ntest_pass_rate: {}\nelapsed: {:?}\n\n## toolchain steps\n{}\n",
+        validation.compilation_status,
+        fmt_pass_rate(validation.test_pass_rate),
+        elapsed,
+        steps
+    );
+    let report_path = config.output.dir.join("run-report.md");
+    match ::std::fs::write(&report_path, &record) {
+        ::core::result::Result::Ok(()) => ::tracing::info!(
+            report = %report_path.display(),
+            compilation_status = %validation.compilation_status,
+            test_pass_rate = ?validation.test_pass_rate,
+            elapsed = ?elapsed,
+            "run report written"
+        ),
+        ::core::result::Result::Err(e) => {
+            ::tracing::warn!(path = %report_path.display(), error = %e, "run report write failed")
+        },
+    }
+}
+
+/// Render one toolchain step outcome as a report line.
+fn step_report_line(step: &ValidatorStepOutcome) -> ::std::string::String {
+    ::std::format!(
+        "- {}: {}{}",
+        step.step,
+        if step.passed {
+            "pass"
+        } else {
+            "fail"
+        },
+        match (step.tests_passed, step.tests_failed) {
+            (::core::option::Option::Some(passed), ::core::option::Option::Some(failed)) => {
+                ::std::format!(" (tests passed {passed}, failed {failed})")
+            },
+            _ => ::std::string::String::new(),
+        }
+    )
+}
+
+/// Render the pass rate for the report: `n/a` when no test step reported.
+fn fmt_pass_rate(rate: ::core::option::Option<f64>) -> ::std::string::String {
+    match rate {
+        ::core::option::Option::Some(rate) => ::std::format!("{rate:.2}"),
+        ::core::option::Option::None => ::std::string::String::from("n/a"),
+    }
 }

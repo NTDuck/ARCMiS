@@ -1,7 +1,7 @@
 # 0013. ReAct default agent
 
 - **Date:** 2026-09-17
-- **Status:** accepted
+- **Status:** superseded by [0015](0015-two-structured-artifact-agents.md)
 
 ## Context
 

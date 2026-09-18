@@ -2,7 +2,7 @@
 
 run:
   # Model that drives the agent (ollama model tag).
-  model: openbmb/minicpm5-2b:q8_0
+  model: granite4.1:3b-bf16
   # Turn budget for the agent tool loop.
   max_turns: 14
   # Model context window. The 2B model defaults to 2048 tokens. Retry history grows past 8k, so this run pins 16k (model supports up to 131072).
