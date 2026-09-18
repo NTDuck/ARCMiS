@@ -2,7 +2,7 @@
 # These replace the cargo aliases that lived in .cargo/config.toml. See docs/adr/0004.
 
 [tasks.dev]
-run = "cargo run --bin harness"
+run = "RUST_LOG=debug cargo run --bin harness"
 
 [tasks.lint-rustfmt]
 run = "cargo fmt --all"
