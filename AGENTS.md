@@ -12,8 +12,8 @@
 
 1. Commits: granular, incremental, [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/). See `.omp/rules/commits.md`.
 2. Every historical decision not directly inferrable in code gets a WHY comment at the site **and** an ADR in `docs/adr/`. See `.omp/rules/decisions.md`.
-3. Rust style: fully qualified paths, derives, and macros. Caller before callee. Tap-chained instead of nested calls. Functional style within functions. See `.omp/rules/rust.md`.
-4. Run the gates before you commit: `cargo fmt --check`, `cargo clippy`, `cargo nextest run` (see `.omp/rules/build-and-gates.md`), and `python3 .omp/scripts/lint-rules.py` (qualified paths, derives, naming, print). Mise tasks: `mise run lint-rustfmt`, `mise run lint-clippy`. Never commit a red tree.
+3. Rust style: plain paths (`foo::bar`, no leading `::`), method calls over qualified functions. Caller before callee. Tap-chained instead of nested calls. Functional style within functions. See `.omp/rules/rust.md`.
+4. Run the gates before you commit: `cargo fmt --check`, `cargo clippy`, `cargo nextest run` (see `.omp/rules/build-and-gates.md`), and `python3 .omp/scripts/lint-rules.py` (plain paths, naming, print). Mise tasks: `mise run lint-rustfmt`, `mise run lint-clippy`. Never commit a red tree.
 5. Tests: unit runs through `cargo nextest` locally and in CI. Behavior tests are cucumber suites under `{crate}/tests/features/`. Run them with `cargo test --features cucumber-tests --workspace --test cucumber`. See `.omp/rules/build-and-gates.md` and `docs/adr/0006-workspace-layout-and-cucumber-tests.md`.
 7. Code clarity: apply the Stepdown Rule (Clean Code) to every entity: crate, module, file, item, type, function. Reading proceeds top-down, each level drops one step. Callers come before callees. One abstraction level per body. Keep description strings pure. See `.omp/rules/code-clarity.md`.
 8. Minimal code: prefer external crates. Do not re-implement general capabilities without a why comment. See `.omp/rules/minimal-code.md`.

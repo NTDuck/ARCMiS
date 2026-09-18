@@ -4,10 +4,10 @@
 //! cancels running jobs, and prunes finished entries. Each job stores a type
 //! label, a status, and the result or error text captured at completion.
 
-use ::std::collections::BTreeMap;
+use std::collections::BTreeMap;
 
 /// Status of one registered job.
-#[derive(::core::fmt::Debug, ::core::clone::Clone, ::core::cmp::PartialEq, ::core::cmp::Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum JobStatus {
     /// The job is running.
     Running,
@@ -33,51 +33,51 @@ impl JobStatus {
 }
 
 /// One registered job with its lifecycle data.
-#[derive(::core::fmt::Debug, ::core::clone::Clone)]
+#[derive(Debug, Clone)]
 pub struct JobEntry {
     /// Job id (uuid string).
-    pub id: ::std::string::String,
+    pub id: String,
     /// Job type, for example "task" or "command".
-    pub job_type: ::std::string::String,
+    pub job_type: String,
     /// Human label shown in listings.
-    pub label: ::std::string::String,
+    pub label: String,
     /// Current status.
     pub status: JobStatus,
     /// Result text captured on completion.
-    pub result_text: ::core::option::Option<::std::string::String>,
+    pub result_text: Option<String>,
     /// Error text captured on failure.
-    pub error_text: ::core::option::Option<::std::string::String>,
+    pub error_text: Option<String>,
     /// Unix time of the last status change, in seconds.
     pub updated_at: u64,
 }
 
 /// Registry of background jobs, shared by the task and job tools.
-#[derive(::core::fmt::Debug, ::core::default::Default)]
+#[derive(Debug, Default)]
 pub struct JobRegistry {
-    jobs: BTreeMap<::std::string::String, JobEntry>,
+    jobs: BTreeMap<String, JobEntry>,
 }
 
 impl JobRegistry {
     /// Create an empty shared registry.
     #[must_use]
-    pub fn new() -> ::std::sync::Arc<Self> {
-        ::std::sync::Arc::new(Self {
+    pub fn new() -> std::sync::Arc<Self> {
+        std::sync::Arc::new(Self {
             jobs: BTreeMap::new(),
         })
     }
 
     /// Register a running job and return its uuid id.
-    pub fn register(&mut self, job_type: &str, label: &str) -> ::std::string::String {
-        let id = ::uuid::Uuid::new_v4().to_string();
+    pub fn register(&mut self, job_type: &str, label: &str) -> String {
+        let id = uuid::Uuid::new_v4().to_string();
         self.jobs.insert(
-            ::std::clone::Clone::clone(&id),
+            id.clone(),
             JobEntry {
-                id: ::std::clone::Clone::clone(&id),
-                job_type: ::std::string::String::from(job_type),
-                label: ::std::string::String::from(label),
+                id: id.clone(),
+                job_type: String::from(job_type),
+                label: String::from(label),
                 status: JobStatus::Running,
-                result_text: ::core::option::Option::None,
-                error_text: ::core::option::Option::None,
+                result_text: None,
+                error_text: None,
                 updated_at: now_seconds(),
             },
         );
@@ -88,7 +88,7 @@ impl JobRegistry {
     pub fn complete(&mut self, id: &str, result_text: &str) {
         self.update(id, |entry| {
             entry.status = JobStatus::Completed;
-            entry.result_text = ::core::option::Option::Some(::std::string::String::from(result_text));
+            entry.result_text = Some(String::from(result_text));
         });
     }
 
@@ -96,44 +96,40 @@ impl JobRegistry {
     pub fn fail(&mut self, id: &str, error_text: &str) {
         self.update(id, |entry| {
             entry.status = JobStatus::Failed;
-            entry.error_text = ::core::option::Option::Some(::std::string::String::from(error_text));
+            entry.error_text = Some(String::from(error_text));
         });
     }
 
     /// Snapshot the requested jobs. Empty ids returns every job.
     #[must_use]
-    pub fn poll(&self, ids: &[::std::string::String]) -> ::std::vec::Vec<JobEntry> {
+    pub fn poll(&self, ids: &[String]) -> Vec<JobEntry> {
         if ids.is_empty() {
-            return self.jobs.values().cloned().collect::<::std::vec::Vec<_>>();
+            return self.jobs.values().cloned().collect::<Vec<_>>();
         }
-        ids.iter().filter_map(|id| self.jobs.get(id)).cloned().collect::<::std::vec::Vec<_>>()
+        ids.iter().filter_map(|id| self.jobs.get(id)).cloned().collect::<Vec<_>>()
     }
 
     /// Cancel the requested running jobs. Return the ids that were running.
-    pub fn cancel(&mut self, ids: &[::std::string::String]) -> ::std::vec::Vec<::std::string::String> {
+    pub fn cancel(&mut self, ids: &[String]) -> Vec<String> {
         ids.iter()
             .filter_map(|id| {
                 let entry = self.jobs.get_mut(id)?;
                 if entry.status == JobStatus::Running {
                     entry.status = JobStatus::Cancelled;
                     entry.updated_at = now_seconds();
-                    ::core::option::Option::Some(::std::clone::Clone::clone(id))
+                    Some(id.clone())
                 } else {
-                    ::core::option::Option::None
+                    None
                 }
             })
-            .collect::<::std::vec::Vec<_>>()
+            .collect::<Vec<_>>()
     }
 
     /// Drop finished entries older than 5 minutes. Return the dropped count.
     pub fn retain(&mut self) -> usize {
         let cutoff = now_seconds().saturating_sub(300);
-        let stale = self
-            .jobs
-            .iter()
-            .filter(|(_, entry)| is_stale(entry, cutoff))
-            .map(|(id, _)| ::std::clone::Clone::clone(id))
-            .collect::<::std::vec::Vec<_>>();
+        let stale =
+            self.jobs.iter().filter(|(_, entry)| is_stale(entry, cutoff)).map(|(id, _)| id.clone()).collect::<Vec<_>>();
         let dropped = stale.len();
         for id in stale {
             self.jobs.remove(&id);
@@ -152,9 +148,9 @@ fn is_stale(entry: &JobEntry, cutoff: u64) -> bool {
 
 /// Apply `change` to one job. The registry skips unknown ids.
 impl JobRegistry {
-    fn update(&mut self, id: &str, change: impl ::core::ops::FnOnce(&mut JobEntry)) {
+    fn update(&mut self, id: &str, change: impl FnOnce(&mut JobEntry)) {
         let entry = self.jobs.get_mut(id);
-        if let ::core::option::Option::Some(entry) = entry {
+        if let Some(entry) = entry {
             change(entry);
             entry.updated_at = now_seconds();
         }
@@ -163,5 +159,5 @@ impl JobRegistry {
 
 /// Current unix time in seconds.
 fn now_seconds() -> u64 {
-    ::std::time::SystemTime::now().duration_since(::std::time::UNIX_EPOCH).map_or(0, |span| span.as_secs())
+    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |span| span.as_secs())
 }

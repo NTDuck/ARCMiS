@@ -1,29 +1,32 @@
 ---
-description: Rust style. Use fully qualified paths and derives. Chain with tap instead of nesting calls. Use functional style inside functions.
+description: Plain paths. Write `foo::bar`, not `::foo::bar`. Chain with tap instead of nesting calls. Use functional style inside functions.
 ---
 
 # Rust Style
 
-This rule applies to all Rust code in this repository. `python3 .omp/scripts/lint-rules.py` enforces sections 1, 4, 5, 8, and 9 mechanically. Review enforces the other sections. Build and test gates live in `.omp/rules/build-and-gates.md`.
+This rule applies to all Rust code in this repository. `python3 .omp/scripts/lint-rules.py` enforces sections 1, 4, 5, and 9 mechanically. Review enforces the other sections. Build and test gates live in `.omp/rules/build-and-gates.md`.
 
-## 1. Fully Qualified Paths
+## 1. Plain Paths
 
-Always use fully qualified paths for crates, macros, and traits. Write a leading `::`. Write `::foo::bar`, not `foo::bar`.
+Write plain paths. Do not write a leading `::`. Write `foo::bar`, not `::foo::bar`.
 
-- Paths in expressions, types, `use` items, and attributes all get the leading `::`.
-- Traits from built-in crates carry their real module path: `::core::fmt::Debug`, `::core::clone::Clone`, `::core::ops::Deref`. Do not guess. Check rustdoc.
-- Exception: items of the current crate stay bare inside it (`crate::module::Item` or plain `Item` in-module). This rule targets external and prelude names.
+- Paths in expressions, types, `use` items, and attributes stay bare.
+- Prelude and standard-library names stay bare: `Debug`, `Clone`, `String`, `Vec`, `format!`.
+- Names from a `use` import stay bare at the call site. Do not re-qualify them.
 
 ```rust
 // Good
-use ::core::ops::Add;
-let doubled = ::itertools::iproduct!(xs, ys).count();
-let f = ::std::collections::HashMap::<::std::string::String, u32>::new();
+use core::ops::Add;
+let doubled = itertools::iproduct!(xs, ys).count();
+let f = HashMap::<String, u32>::new();
 
 // Bad
-use core::ops::Add;
-let f = HashMap::<String, u32>::new();
+use ::core::ops::Add;
+let f = ::std::collections::HashMap::<::std::string::String, u32>::new();
 ```
+
+2026-09-18: this section replaces the fully-qualified-path rule of ADR 0010.
+The `::` noise hid each item behind a wall of qualifiers. See ADR 0016.
 
 ## 2. Tap Chaining, Not Nesting
 
@@ -31,7 +34,7 @@ Write `foo(bar(baz()))` as a chain of `.tap()` calls (from the [`tap`](https://d
 
 ```rust
 // Good
-use ::tap::Tap;
+use tap::Tap;
 
 let result = baz()
     .tap(|v| bar(v))
@@ -79,39 +82,51 @@ reader meets first comes first in the file. Example: declare `Registry`
 before `Agent` when readers need the registry concept first. The full
 ordering law for every entity: `code-clarity.md`.
 
-## 7. Builders via bon
+## 7. Method Call, Not Fully Qualified Function
 
-Use the [`bon`](https://docs.rs/bon) crate for constructible types and multi-parameter functions. Derive `::bon::Builder` on the struct. Use `#[::bon::builder]` on the function. Construct with named setters at the call site. Skip the builder in two cases. A type with one required field and no options keeps a plain constructor (`Foo::new`). A call site that would read as `Foo::builder().build()` with nothing set must not use a builder.
-
-## 8. Fully Qualified Derives
-
-Fully qualify derive macro paths. Write `#[derive(Debug)]` with the crate-qualified path:
+Write `foo.clone()`, not `Clone::clone(foo)`. A method call puts the value first.
 
 ```rust
-#[derive(::core::fmt::Debug, ::core::clone::Clone, ::core::marker::Copy, ::core::cmp::PartialEq, ::core::default::Default)]
+// Good
+let copy = name.clone();
+let text = config.to_string();
+
+// Bad
+let copy = Clone::clone(&name);
+let copy = std::clone::Clone::clone(&name);
+```
+
+2026-09-18: added with ADR 0016. The fully qualified function form added
+noise, no information.
+
+## 8. Structs Over Free Functions
+
+Name an operation group with a struct when the struct names the concept.
+Call `Tracing::init()`, not `init_tracing()`. Call `MonolithTask::build(config)`,
+not `monolith_task(config)`. A free function stays when the operation is a
+plain computation with no concept of its own (`truncate_args`).
+
+## 9. Plain Macros and Derives
+
+Every macro invocation uses its crate path with a bang. No leading `::`. Write `serde_json::json!`, `format!`, `tracing::info!`, `assert_eq!`. Derive macro paths stay bare: `#[derive(Debug, Clone, Default)]`.
+
+- Macros in the standard prelude (`format!`, `vec!`, `assert_eq!`, `assert!`, `write!`) stay bare.
+- Other macros carry the crate path: `serde_json::json!`, `tracing::info!`.
+- Do not import a macro with `use` and call it bare. The invocation carries the crate path.
+
+```rust
+// Good
+#[derive(Debug, Clone, Default)]
 struct Point {
     x: f64,
     y: f64,
 }
-```
 
-- `Debug` lives in `::core::fmt`. `Clone` and `Copy` live in `::core::clone` and `::core::marker`. Comparison traits live in `::core::cmp`. `Default` lives in `::core::default`.
-- Note: the clippy config sets `absolute-paths-max-segments = 0`. This lint is off by default. If you enable it later, raise the cap in `.clippy.toml` or scope the lint to allow derives.
-
-## 9. Fully Qualified Macros
-
-Every macro invocation outside a `#[derive(...)]` attribute uses the fully qualified path with a bang. Write `::serde_json::json!`, `::std::format!`, `::tracing::info!`, and `::core::assert_eq!`.
-
-- Do not import a macro with `use` and call it bare. The invocation carries the crate path.
-- Derive attributes follow section 8.
-
-```rust
-// Good
-let payload = ::serde_json::json!({ "path": path });
-::tracing::info!(path = %path, "read file");
+let payload = serde_json::json!({ "path": path });
+tracing::info!(path = %path, "read file");
 
 // Bad
-use serde_json::json;
-let payload = json!({ "path": path });
-::tracing::info!("read {}", path);
+#[derive(::core::fmt::Debug, ::core::clone::Clone)]
+let payload = ::serde_json::json!({ "path": path });
+tracing::info!("read {}", path);
 ```

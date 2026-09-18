@@ -9,9 +9,11 @@ description = "Binary entry point for ARCMiS."
 [dependencies]
 agents = { package = "ARCMiS-agents", path = "../../lib/agents" }
 tools = { package = "ARCMiS-tools", path = "../../lib/tools" }
+anyhow.workspace = true
 rig = "0.42.0"
 serde.workspace = true
 serde_yaml.workspace = true
+time.workspace = true
 tokio = { workspace = true }
 tracing.workspace = true
 tracing-subscriber.workspace = true

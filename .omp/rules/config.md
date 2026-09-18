@@ -17,7 +17,7 @@ Do not hardcode configuration. Every setting bubbles up to the call site: `main`
 
 ```rust
 // Good: the call site owns the values
-let client = ::rig::providers::openai::Client::from_env()?;
+let client = rig::providers::openai::Client::from_env()?;
 let agent = client
     .agent(model_name)             // model_name comes from main's config
     .preamble(&prompt)
@@ -26,12 +26,50 @@ let agent = client
 
 // Bad: library code picks the values
 fn summarize(text: &str) -> String {
-    let client = ::rig::providers::openai::Client::from_env()?; // IO in a lib fn
+    let client = rig::providers::openai::Client::from_env()?; // IO in a lib fn
     client.agent("gpt-5.2")        // hardcoded model
         .temperature(0.7)          // hardcoded tuning
         .build()
         .prompt(text)
         .await
+}
+```
+
+## Errors
+
+- Fallible functions return `anyhow::Result<T>`. Propagate with `?`. Do not resolve an error at its call site when the caller can react better.
+- `main` is fallible: `async fn main() -> anyhow::Result<ExitCode>`.
+- Add `.context(...)` at natural boundaries when the bare error loses the subject: a path, a step name.
+- Library code returns a typed error only when a caller must match on the variants.
+- Tool input validation returns `Result<_, String>`. The message is data for the model, not an error path.
+
+## Serde Defaults Stay Inline
+
+- Do not write one `const fn default_x() -> T` per defaulted field.
+- Derive `Default` on the struct, give every defaulted field a `Default` impl, and write `#[serde(default)]` on the struct or field. The values sit inline as literals in the `Default` derive when the type allows, otherwise in a small manual `Default` impl next to the struct.
+
+```rust
+// Good: values inline, no helper functions
+#[derive(Debug, Deserialize)]
+#[serde(default)]
+pub struct Run {
+    pub max_turns: usize,
+}
+
+impl Default for Run {
+    fn default() -> Self {
+        Self {
+            max_turns: 14,
+        }
+    }
+}
+
+// Bad: one helper function per field
+#[serde(default = "default_max_turns")]
+pub max_turns: usize,
+
+const fn default_max_turns() -> usize {
+    14
 }
 ```
 

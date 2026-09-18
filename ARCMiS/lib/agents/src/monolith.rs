@@ -12,11 +12,12 @@
 //!
 //! The agent is thin: one preamble with the working rules, one typed input,
 //! two tools, one typed output. No custom loop code.
+use anyhow::Context as _;
 
-use ::rig::agent::{Agent, OutputMode};
-use ::rig::client::AgentClientExt;
-use ::rig::completion::Prompt;
-use ::tools::{Bash, Write};
+use rig::agent::{Agent, OutputMode};
+use rig::client::AgentClientExt;
+use rig::completion::Prompt;
+use tools::{Bash, Write};
 
 /// Preamble for the monolith agent. Working rules only. The task data
 /// travels in the typed prompt payload.
@@ -38,13 +39,13 @@ further, report with the final report.";
 /// call. All knobs come from the config. The output root is the config's
 /// output dir.
 pub fn build(
-    client: &::rig::providers::ollama::Client,
+    client: &rig::providers::ollama::Client,
     config: &crate::util::config::Config,
-    hook: impl ::rig::agent::AgentHook + 'static,
+    hook: impl rig::agent::AgentHook + 'static,
 ) -> Agent {
     // One snapshot store per build. `write` results carry fresh hashline
     // anchors minted from it.
-    let snapshots = ::tools::SnapshotStore::new();
+    let snapshots = tools::SnapshotStore::new();
     let write = Write {
         root: config.output.dir.clone(),
         snapshots,
@@ -60,7 +61,7 @@ pub fn build(
         .tool(bash)
         .temperature(config.run.temperature)
         .max_tokens(config.run.max_output_tokens)
-        .additional_params(::serde_json::json!({
+        .additional_params(serde_json::json!({
             "num_ctx": config.run.num_ctx,
             "think": config.run.think,
         }))
@@ -73,43 +74,33 @@ pub fn build(
 /// Run the monolith agent over one task. `max_turns` bounds the model-call
 /// budget. Returns the structured result artifact. The model must deliver
 /// it through the output-tool call.
-pub async fn run(
-    agent: &Agent,
-    task: &MonolithRequest,
-    max_turns: usize,
-) -> ::core::result::Result<MonolithResponse, ::rig::completion::PromptError> {
-    let prompt =
-        ::serde_json::to_string(task).map_err(|error| request_error(::std::format!("task render failed: {error}")))?;
+pub async fn run(agent: &Agent, task: &MonolithRequest, max_turns: usize) -> anyhow::Result<MonolithResponse> {
+    let prompt = serde_json::to_string(task).context("task render failed")?;
     let raw = Prompt::prompt(agent, prompt).max_turns(max_turns).await?;
-    ::serde_json::from_str(&raw).map_err(|error| request_error(::std::format!("monolith result parse failed: {error}")))
-}
-
-/// Wrap an internal failure into a rig prompt error.
-fn request_error(message: ::std::string::String) -> ::rig::completion::PromptError {
-    ::rig::completion::PromptError::CompletionError(::rig::completion::CompletionError::ProviderError(message))
+    Ok(serde_json::from_str(&raw)?)
 }
 
 // Input and output artifacts owned exclusively by this agent. Per the
 // artifact-ownership rule, the DTOs live here. Per the Stepdown Rule, they
 // sit below the entry functions as secondary types that serve them.
-#[derive(::core::fmt::Debug, ::core::clone::Clone, ::serde::Serialize, ::serde::Deserialize, ::schemars::JsonSchema)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct MonolithRequest {
     /// Input codebase: ordered map of relative path to file content.
-    pub sources: ::std::collections::BTreeMap<::std::string::String, ::std::string::String>,
+    pub sources: std::collections::BTreeMap<String, String>,
     /// Source language of the input codebase.
-    pub source_language: ::std::string::String,
+    pub source_language: String,
     /// Target language to translate into.
-    pub target_language: ::std::string::String,
+    pub target_language: String,
     /// Test command for the translated codebase, run in the output root.
-    pub test_command: ::std::string::String,
+    pub test_command: String,
 }
 
-#[derive(::core::fmt::Debug, ::core::clone::Clone, ::serde::Serialize, ::serde::Deserialize, ::schemars::JsonSchema)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct MonolithResponse {
     /// Absolute or workspace-relative path of the output codebase root.
-    pub output_dir: ::std::string::String,
+    pub output_dir: String,
     /// Number of files the agent wrote.
     pub files_written: u32,
     /// One-line summary of the translation approach, for the validator's context.
-    pub approach: ::std::string::String,
+    pub approach: String,
 }

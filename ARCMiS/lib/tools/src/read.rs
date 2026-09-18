@@ -4,23 +4,23 @@
 /// hashline tags for later edits.
 pub struct Read {
     /// Root directory. Tool paths resolve inside it.
-    pub root: ::std::path::PathBuf,
+    pub root: std::path::PathBuf,
     /// Shared snapshot cache. Minted tags back the `¶PATH#TAG` headers.
-    pub snapshots: ::std::sync::Arc<crate::util::snapshots::SnapshotStore>,
+    pub snapshots: std::sync::Arc<crate::util::snapshots::SnapshotStore>,
 }
 
-impl ::rig::tool::Tool for Read {
+impl rig::tool::Tool for Read {
     const NAME: &'static str = "read";
-    type Error = ::rig::tool::ToolExecutionError;
+    type Error = rig::tool::ToolExecutionError;
     type Args = ReadArgs;
-    type Output = ::rig::tool::ToolOutput;
+    type Output = rig::tool::ToolOutput;
 
-    fn description(&self) -> ::std::string::String {
+    fn description(&self) -> std::string::String {
         "Read a file, directory, archive, SQLite database, or URL and return text with line anchors.".to_owned()
     }
 
-    fn parameters(&self) -> ::serde_json::Value {
-        ::serde_json::json!({
+    fn parameters(&self) -> serde_json::Value {
+        serde_json::json!({
             "type": "object",
             "properties": {
                 "path": {
@@ -34,33 +34,32 @@ impl ::rig::tool::Tool for Read {
 
     async fn call(
         &self,
-        _context: &mut ::rig::tool::ToolContext,
+        _context: &mut rig::tool::ToolContext,
         args: Self::Args,
-    ) -> ::core::result::Result<Self::Output, Self::Error> {
+    ) -> core::result::Result<Self::Output, Self::Error> {
         let raw = args.path.trim().to_owned();
         if raw.contains("://") {
-            return ::core::result::Result::Ok(::rig::tool::ToolOutput::text(read_url(&raw).await?));
+            return core::result::Result::Ok(rig::tool::ToolOutput::text(read_url(&raw).await?));
         }
-        let path =
-            crate::util::path::path_sanitize(&self.root, &raw).map_err(::rig::tool::ToolExecutionError::other)?;
+        let path = crate::util::path::path_sanitize(&self.root, &raw).map_err(rig::tool::ToolExecutionError::other)?;
         let (target, selector) = split_selector(&raw);
         let target = target.to_string_lossy().into_owned();
         let relative = relative_display(&path);
         let absolute = path.clone();
-        let output = ::tokio::task::spawn_blocking(move || -> ::core::result::Result<String, String> {
+        let output = tokio::task::spawn_blocking(move || -> core::result::Result<String, String> {
             read_local(&absolute, &relative, &selector, &target)
         })
         .await
-        .map_err(|error| ::rig::tool::ToolExecutionError::other(::std::format!("read join failed: {error}")))?
-        .map_err(::rig::tool::ToolExecutionError::other)?;
-        ::core::result::Result::Ok(::rig::tool::ToolOutput::text(output))
+        .map_err(|error| rig::tool::ToolExecutionError::other(std::format!("read join failed: {error}")))?
+        .map_err(rig::tool::ToolExecutionError::other)?;
+        core::result::Result::Ok(rig::tool::ToolOutput::text(output))
     }
 }
 
 /// Arguments for `read`.
-#[derive(::core::fmt::Debug, ::serde::Deserialize)]
+#[derive(Debug, serde::Deserialize)]
 pub struct ReadArgs {
-    pub path: ::std::string::String,
+    pub path: std::string::String,
 }
 
 /// Maximum number of lines emitted per file read.
@@ -73,7 +72,7 @@ const MAX_DIR_ENTRIES: usize = 3000;
 const MAX_TABLE_ROWS: usize = 100;
 
 /// Split one trailing `:selector` suffix from the raw path argument.
-fn split_selector(raw: &str) -> (::std::path::PathBuf, ::std::string::String) {
+fn split_selector(raw: &str) -> (std::path::PathBuf, std::string::String) {
     let bytes = raw.as_bytes();
     let mut cut = raw.len();
     let mut index = 0;
@@ -86,11 +85,11 @@ fn split_selector(raw: &str) -> (::std::path::PathBuf, ::std::string::String) {
     }
     let target = raw[..cut].to_owned();
     let selector = raw[cut..].trim_start_matches(':').to_owned();
-    (::std::path::PathBuf::from(target), selector)
+    (std::path::PathBuf::from(target), selector)
 }
 
 /// Render the relative path shown in the `¶` header.
-fn relative_display(path: &::std::path::Path) -> ::std::string::String {
+fn relative_display(path: &std::path::Path) -> std::string::String {
     path.file_name()
         .map(|name| name.to_string_lossy().into_owned())
         .unwrap_or_else(|| path.to_string_lossy().into_owned())
@@ -98,13 +97,12 @@ fn relative_display(path: &::std::path::Path) -> ::std::string::String {
 
 /// Dispatch a local read by kind: directory, SQLite, archive, or text.
 fn read_local(
-    path: &::std::path::Path,
+    path: &std::path::Path,
     relative: &str,
     selector: &str,
     _target: &str,
-) -> ::core::result::Result<String, String> {
-    let metadata =
-        ::std::fs::metadata(path).map_err(|error| ::std::format!("read failed for '{relative}': {error}"))?;
+) -> core::result::Result<String, String> {
+    let metadata = std::fs::metadata(path).map_err(|error| std::format!("read failed for '{relative}': {error}"))?;
     if metadata.is_dir() {
         return read_directory(path, relative);
     }
@@ -128,32 +126,32 @@ fn read_local(
             || lower.ends_with(".tgz")
         {
             // Archive members are skipped in this build. Report the container.
-            return ::core::result::Result::Ok(::std::format!(
+            return core::result::Result::Ok(std::format!(
                 "¶{relative}#0000\narchive container with no inline member support\n"
             ));
         }
         return read_text(path, relative, selector);
     }
-    ::core::result::Result::Err(::std::format!("read failed for '{relative}': not a regular file or directory"))
+    core::result::Result::Err(std::format!("read failed for '{relative}': not a regular file or directory"))
 }
 
 /// List one directory newest-first, grouped by directory entry.
-fn read_directory(path: &::std::path::Path, relative: &str) -> ::core::result::Result<String, String> {
-    let entries = ::std::fs::read_dir(path).map_err(|error| ::std::format!("read failed for '{relative}': {error}"))?;
+fn read_directory(path: &std::path::Path, relative: &str) -> core::result::Result<String, String> {
+    let entries = std::fs::read_dir(path).map_err(|error| std::format!("read failed for '{relative}': {error}"))?;
     let mut rows: Vec<(String, bool, u64)> = Vec::new();
     for entry in entries {
-        let entry = entry.map_err(|error| ::std::format!("read failed for '{relative}': {error}"))?;
+        let entry = entry.map_err(|error| std::format!("read failed for '{relative}': {error}"))?;
         let metadata = entry.metadata().ok();
         let is_dir = metadata.as_ref().map(|meta| meta.is_dir()).unwrap_or(false);
         let size = metadata.as_ref().map(|meta| meta.len()).unwrap_or(0);
         rows.push((entry.file_name().to_string_lossy().into_owned(), is_dir, size));
     }
     rows.sort_by(|left, right| left.0.cmp(&right.0));
-    let mut output = ::std::format!("¶{relative}#0000\n");
+    let mut output = std::format!("¶{relative}#0000\n");
     let mut shown = 0;
     for (name, is_dir, size) in rows {
         if shown >= MAX_DIR_ENTRIES {
-            output.push_str(&::std::format!("... {} more entries elided\n", shown));
+            output.push_str(&std::format!("... {} more entries elided\n", shown));
             break;
         }
         let suffix = if is_dir {
@@ -161,51 +159,51 @@ fn read_directory(path: &::std::path::Path, relative: &str) -> ::core::result::R
         } else {
             ""
         };
-        output.push_str(&::std::format!("{}{} ({})\n", name, suffix, format_size(size)));
+        output.push_str(&std::format!("{}{} ({})\n", name, suffix, format_size(size)));
         shown += 1;
     }
-    ::core::result::Result::Ok(output)
+    core::result::Result::Ok(output)
 }
 
 /// Render one byte count in a short human form.
 fn format_size(size: u64) -> String {
     if size >= 1024 * 1024 {
-        ::std::format!("{:.1}MiB", size as f64 / (1024.0 * 1024.0))
+        std::format!("{:.1}MiB", size as f64 / (1024.0 * 1024.0))
     } else if size >= 1024 {
-        ::std::format!("{:.1}KiB", size as f64 / 1024.0)
+        std::format!("{:.1}KiB", size as f64 / 1024.0)
     } else {
-        ::std::format!("{size}B")
+        std::format!("{size}B")
     }
 }
 
 /// Read a text file and emit the hashline format with elided ranges.
-fn read_text(path: &::std::path::Path, relative: &str, selector: &str) -> ::core::result::Result<String, String> {
-    let bytes = ::std::fs::read(path).map_err(|error| ::std::format!("read failed for '{relative}': {error}"))?;
+fn read_text(path: &std::path::Path, relative: &str, selector: &str) -> core::result::Result<String, String> {
+    let bytes = std::fs::read(path).map_err(|error| std::format!("read failed for '{relative}': {error}"))?;
     if bytes.len() > MAX_BYTES * 4 {
-        return ::core::result::Result::Ok(::std::format!(
+        return core::result::Result::Ok(std::format!(
             "¶{relative}#0000\nfile exceeds the 200KiB hard cap and is not read\n"
         ));
     }
-    let text = ::std::string::String::from_utf8_lossy(&bytes).into_owned();
-    let all = text.lines().collect::<::std::vec::Vec<_>>();
+    let text = std::string::String::from_utf8_lossy(&bytes).into_owned();
+    let all = text.lines().collect::<std::vec::Vec<_>>();
     if selector == "raw" {
-        return ::core::result::Result::Ok(::std::format!("¶{relative}#0000\n{text}"));
+        return core::result::Result::Ok(std::format!("¶{relative}#0000\n{text}"));
     }
     let windows = parse_ranges(selector)?;
-    let mut output = ::std::format!("¶{relative}#0000\n");
+    let mut output = std::format!("¶{relative}#0000\n");
     let mut emitted = 0usize;
     if windows.is_empty() {
         let end = all.len().max(1);
         let mut one_based = 1usize;
         while one_based <= end && emitted < MAX_LINES {
             if let Some(line) = all.get(one_based - 1) {
-                output.push_str(&::std::format!("{one_based}:{line}\n"));
+                output.push_str(&std::format!("{one_based}:{line}\n"));
                 emitted += 1;
             }
             one_based += 1;
         }
         if end > MAX_LINES {
-            output.push_str(&::std::format!(
+            output.push_str(&std::format!(
                 "... lines {} to {} elided ({} lines)\n",
                 MAX_LINES + 1,
                 end,
@@ -214,21 +212,21 @@ fn read_text(path: &::std::path::Path, relative: &str, selector: &str) -> ::core
         }
         let total_bytes = text.len();
         if total_bytes > MAX_BYTES {
-            output.push_str(&::std::format!("... output truncated at {MAX_BYTES} bytes\n"));
+            output.push_str(&std::format!("... output truncated at {MAX_BYTES} bytes\n"));
         }
-        return ::core::result::Result::Ok(output);
+        return core::result::Result::Ok(output);
     }
     let mut last_emitted = 0usize;
     for (start, end) in windows {
         let lo = start.max(1);
         let hi = end.min(all.len().max(1)).max(lo);
         if last_emitted > 0 && lo > last_emitted + 1 {
-            output.push_str(&::std::format!("... lines {} to {} elided\n", last_emitted + 1, lo - 1));
+            output.push_str(&std::format!("... lines {} to {} elided\n", last_emitted + 1, lo - 1));
         }
         let mut one_based = lo;
         while one_based <= hi && emitted < MAX_LINES {
             if let Some(line) = all.get(one_based - 1) {
-                output.push_str(&::std::format!("{one_based}:{line}\n"));
+                output.push_str(&std::format!("{one_based}:{line}\n"));
                 emitted += 1;
             }
             one_based += 1;
@@ -239,21 +237,21 @@ fn read_text(path: &::std::path::Path, relative: &str, selector: &str) -> ::core
         }
     }
     if last_emitted < all.len().max(1) {
-        output.push_str(&::std::format!(
+        output.push_str(&std::format!(
             "... lines {} to {} elided ({} total lines)\n",
             last_emitted + 1,
             all.len(),
             all.len()
         ));
     }
-    ::core::result::Result::Ok(output)
+    core::result::Result::Ok(output)
 }
 
 /// Parse one comma-separated list of `N`, `N-M`, and `N+K` selectors.
-fn parse_ranges(selector: &str) -> ::core::result::Result<Vec<(usize, usize)>, String> {
+fn parse_ranges(selector: &str) -> core::result::Result<Vec<(usize, usize)>, String> {
     let mut windows = Vec::new();
     if selector.is_empty() {
-        return ::core::result::Result::Ok(windows);
+        return core::result::Result::Ok(windows);
     }
     for part in selector.split(',') {
         let part = part.trim();
@@ -261,31 +259,30 @@ fn parse_ranges(selector: &str) -> ::core::result::Result<Vec<(usize, usize)>, S
             continue;
         }
         if let Some(minus) = part.find('-') {
-            let start: usize =
-                part[..minus].trim().parse().map_err(|_| ::std::format!("bad line selector '{part}'"))?;
+            let start: usize = part[..minus].trim().parse().map_err(|_| std::format!("bad line selector '{part}'"))?;
             let end: usize =
-                part[minus + 1..].trim().parse().map_err(|_| ::std::format!("bad line selector '{part}'"))?;
+                part[minus + 1..].trim().parse().map_err(|_| std::format!("bad line selector '{part}'"))?;
             if end < start {
-                return ::core::result::Result::Err(::std::format!("line selector '{part}' has end before start"));
+                return core::result::Result::Err(std::format!("line selector '{part}' has end before start"));
             }
             windows.push((start, end));
         } else if let Some(plus) = part.find('+') {
-            let start: usize = part[..plus].trim().parse().map_err(|_| ::std::format!("bad line selector '{part}'"))?;
+            let start: usize = part[..plus].trim().parse().map_err(|_| std::format!("bad line selector '{part}'"))?;
             let count: usize =
-                part[plus + 1..].trim().parse().map_err(|_| ::std::format!("bad line selector '{part}'"))?;
+                part[plus + 1..].trim().parse().map_err(|_| std::format!("bad line selector '{part}'"))?;
             windows.push((start, start.saturating_add(count).saturating_sub(1)));
         } else {
-            let start: usize = part.parse().map_err(|_| ::std::format!("bad line selector '{part}'"))?;
+            let start: usize = part.parse().map_err(|_| std::format!("bad line selector '{part}'"))?;
             windows.push((start, start));
         }
     }
-    ::core::result::Result::Ok(windows)
+    core::result::Result::Ok(windows)
 }
 
 /// Read one SQLite database: table list, one table, or a custom query.
-fn read_sqlite(path: &::std::path::Path, relative: &str, selector: &str) -> ::core::result::Result<String, String> {
-    let connection = ::rusqlite::Connection::open_with_flags(path, ::rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
-        .map_err(|error| ::std::format!("sqlite open failed for '{relative}': {error}"))?;
+fn read_sqlite(path: &std::path::Path, relative: &str, selector: &str) -> core::result::Result<String, String> {
+    let connection = rusqlite::Connection::open_with_flags(path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
+        .map_err(|error| std::format!("sqlite open failed for '{relative}': {error}"))?;
     if selector.is_empty() {
         return sqlite_tables(&connection, relative);
     }
@@ -300,85 +297,83 @@ fn read_sqlite(path: &::std::path::Path, relative: &str, selector: &str) -> ::co
 }
 
 /// Emit one table list for the database.
-fn sqlite_tables(connection: &::rusqlite::Connection, relative: &str) -> ::core::result::Result<String, String> {
+fn sqlite_tables(connection: &rusqlite::Connection, relative: &str) -> core::result::Result<String, String> {
     let mut statement = connection
         .prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
-        .map_err(|error| ::std::format!("sqlite query failed for '{relative}': {error}"))?;
+        .map_err(|error| std::format!("sqlite query failed for '{relative}': {error}"))?;
     let names: Vec<String> = statement
         .query_map([], |row| row.get::<_, String>(0))
-        .map_err(|error| ::std::format!("sqlite query failed for '{relative}': {error}"))?
-        .filter_map(::core::result::Result::ok)
+        .map_err(|error| std::format!("sqlite query failed for '{relative}': {error}"))?
+        .filter_map(core::result::Result::ok)
         .collect();
-    let mut output = ::std::format!("¶{relative}#0000\n");
+    let mut output = std::format!("¶{relative}#0000\n");
     for name in names {
-        output.push_str(&::std::format!("{name}\n"));
+        output.push_str(&std::format!("{name}\n"));
     }
-    ::core::result::Result::Ok(output)
+    core::result::Result::Ok(output)
 }
 
 /// Emit rows of one table, optionally filtered by primary key.
 fn sqlite_rows(
-    connection: &::rusqlite::Connection,
+    connection: &rusqlite::Connection,
     relative: &str,
     table: &str,
     key: Option<&str>,
-) -> ::core::result::Result<String, String> {
+) -> core::result::Result<String, String> {
     let safe_table = table.replace('\'', "''");
     let sql = match key {
-        Some(_) => ::std::format!("SELECT * FROM '{safe_table}' WHERE rowid = ?1 LIMIT 1"),
-        None => ::std::format!("SELECT * FROM '{safe_table}' LIMIT {MAX_TABLE_ROWS}"),
+        Some(_) => std::format!("SELECT * FROM '{safe_table}' WHERE rowid = ?1 LIMIT 1"),
+        None => std::format!("SELECT * FROM '{safe_table}' LIMIT {MAX_TABLE_ROWS}"),
     };
     let mut statement =
-        connection.prepare(&sql).map_err(|error| ::std::format!("sqlite query failed for '{relative}': {error}"))?;
+        connection.prepare(&sql).map_err(|error| std::format!("sqlite query failed for '{relative}': {error}"))?;
     let column_names: Vec<String> = statement.column_names().iter().map(|name| name.to_string()).collect();
     let mut rows: Vec<Vec<String>> = Vec::new();
     let mapped = statement.query_map(rusqlite_params(key), |row| {
         let mut cells: Vec<String> = Vec::with_capacity(column_names.len());
         for index in 0..column_names.len() {
-            let value: ::rusqlite::types::Value = row.get(index).unwrap_or(::rusqlite::types::Value::Null);
+            let value: rusqlite::types::Value = row.get(index).unwrap_or(rusqlite::types::Value::Null);
             cells.push(format_sql_value(&value));
         }
-        ::core::result::Result::Ok(cells)
+        core::result::Result::Ok(cells)
     });
-    let mapped = mapped.map_err(|error| ::std::format!("sqlite query failed for '{relative}': {error}"))?;
+    let mapped = mapped.map_err(|error| std::format!("sqlite query failed for '{relative}': {error}"))?;
     for row in mapped {
-        let row = row.map_err(|error| ::std::format!("sqlite query failed for '{relative}': {error}"))?;
+        let row = row.map_err(|error| std::format!("sqlite query failed for '{relative}': {error}"))?;
         rows.push(row);
     }
-    let mut output = ::std::format!("¶{relative}#0000\n");
+    let mut output = std::format!("¶{relative}#0000\n");
     output.push_str(&column_names.join(" | "));
     output.push('\n');
     for row in rows {
         output.push_str(&row.join(" | "));
         output.push('\n');
     }
-    ::core::result::Result::Ok(output)
+    core::result::Result::Ok(output)
 }
 
 /// Map an optional primary key to the rusqlite params list.
-fn rusqlite_params(key: Option<&str>) -> [::rusqlite::types::Value; 1] {
+fn rusqlite_params(key: Option<&str>) -> [rusqlite::types::Value; 1] {
     match key {
-        ::core::option::Option::Some(value) => {
-            [::rusqlite::types::Value::Text(::std::string::ToString::to_string(value))]
-        },
-        ::core::option::Option::None => [::rusqlite::types::Value::Integer(0)],
+        core::option::Option::Some(value) => [rusqlite::types::Value::Text(value.to_string())],
+        core::option::Option::None => [rusqlite::types::Value::Integer(0)],
     }
 }
 
 /// Render one SQLite cell value as short text.
-fn format_sql_value(value: &::rusqlite::types::Value) -> String {
+fn format_sql_value(value: &rusqlite::types::Value) -> String {
     match value {
-        ::rusqlite::types::Value::Null => "NULL".to_owned(),
-        ::rusqlite::types::Value::Integer(number) => number.to_string(),
-        ::rusqlite::types::Value::Real(number) => number.to_string(),
-        ::rusqlite::types::Value::Text(text) => text.clone(),
-        ::rusqlite::types::Value::Blob(bytes) => ::std::format!("<{} bytes>", bytes.len()),
+        rusqlite::types::Value::Null => "NULL".to_owned(),
+        rusqlite::types::Value::Integer(number) => number.to_string(),
+        rusqlite::types::Value::Real(number) => number.to_string(),
+        rusqlite::types::Value::Text(text) => text.clone(),
+        rusqlite::types::Value::Blob(bytes) => std::format!("<{} bytes>", bytes.len()),
     }
 }
 
 /// Fetch one URL and return cleaned text or raw HTML.
-async fn read_url(raw: &str) -> ::core::result::Result<String, ::rig::tool::ToolExecutionError> {
-    ::core::result::Result::Err(::rig::tool::ToolExecutionError::other(::std::format!(
+async fn read_url(raw: &str) -> core::result::Result<String, rig::tool::ToolExecutionError> {
+    core::result::Result::Err(rig::tool::ToolExecutionError::other(std::format!(
         "read does not fetch remote URLs in this build: {raw}"
     )))
 }

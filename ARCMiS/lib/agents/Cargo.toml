@@ -9,6 +9,7 @@ repository.workspace = true
 name = "agents"
 
 [dependencies]
+anyhow.workspace = true
 tools = { package = "ARCMiS-tools", path = "../tools" }
 rig = "0.42.0"
 serde.workspace = true
@@ -16,7 +17,6 @@ serde_json.workspace = true
 serde_yaml.workspace = true
 tokio = { workspace = true, features = ["process", "macros"] }
 tracing.workspace = true
-bon = "3.10.1"
 schemars = "1"
 
 [dev-dependencies]

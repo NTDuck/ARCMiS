@@ -1,11 +1,11 @@
 //! Cucumber suite for harness wiring.
 
-use ::agents::Registry;
-use ::cucumber::{given, then, World};
-use ::tools::Catalog;
+use agents::Registry;
+use cucumber::{given, then, World};
+use tools::Catalog;
 
-#[derive(::core::fmt::Debug, ::core::default::Default)]
-#[derive(::cucumber::World)]
+#[derive(Debug, Default)]
+#[derive(cucumber::World)]
 pub struct HarnessWorld {
     tools: Catalog,
     agents: Registry,
@@ -25,11 +25,11 @@ async fn agents_hold(w: &mut HarnessWorld, name: String) {
 async fn wiring_succeeds(w: &mut HarnessWorld) {
     let agent = w.agents.get("main");
     let tool = w.tools.get("echo");
-    ::core::assert!(agent.is_some());
-    ::core::assert!(tool.is_some());
+    assert!(agent.is_some());
+    assert!(tool.is_some());
 }
 
-#[::tokio::main]
+#[tokio::main]
 async fn main() {
     HarnessWorld::run("tests/features").await;
 }

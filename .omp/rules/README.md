@@ -15,7 +15,7 @@ Every rule file in this directory, with its enforcement. A script name means the
 | [minimal-code.md](minimal-code.md) | Write the least code. Prefer a maintained library over a re-implementation. | enforced in review |
 | [naming.md](naming.md) | Workspace crate names are `ARCMiS-<name>`. Imports use the short alias. | `lint-rules.py` (fails lowercase package names and `arcmis_` imports) |
 | [no-tuning.md](no-tuning.md) | No hand-tuning against the problem set. General solutions only. | enforced in review |
-| [rust.md](rust.md) | Fully qualified paths, derives, and macros. Caller before callee. Tap chains instead of nested calls. Functional style inside functions. | `lint-rules.py` (fails unqualified `use`, derives, and macro calls. Advisory: turbofish, nesting) + enforced in review |
+| [rust.md](rust.md) | Plain paths (`foo::bar`, no leading `::`), method calls over qualified functions. Caller before callee. Tap chains instead of nested calls. Functional style inside functions. | `lint-rules.py` (fails qualified `use`, derives, and macro calls. Advisory: turbofish, nesting) + enforced in review |
 | [ste.md](ste.md) | Write all English per ASD-STE100. | `ste-lint.py` |
 
 ## Run Before Commit

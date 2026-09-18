@@ -7,8 +7,8 @@
 //! Code intelligence: [`lsp`], [`debug`]. Coordination: [`task`], [`irc`],
 //! [`todo`], [`job`], [`ask`].
 //!
-//! Every tool implements [`::rig::tool::Tool`]. Stateful tools hold their
-//! shared state behind `::std::sync::Arc` fields constructed by the host.
+//! Every tool implements [`rig::tool::Tool`]. Stateful tools hold their
+//! shared state behind `std::sync::Arc` fields constructed by the host.
 
 pub mod util {
     //! Support modules for the tool domain. Nothing here implements a

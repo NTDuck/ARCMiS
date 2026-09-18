@@ -9,10 +9,11 @@
 //! The agent is thin: one preamble, one typed input, one tool, one typed
 //! output. No custom loop code.
 
-use ::rig::agent::{Agent, OutputMode};
-use ::rig::client::AgentClientExt;
-use ::rig::completion::Prompt;
-use ::tools::Bash;
+use anyhow::Context as _;
+use rig::agent::{Agent, OutputMode};
+use rig::client::AgentClientExt;
+use rig::completion::Prompt;
+use tools::Bash;
 
 /// Preamble for the validator agent. Working rules only. The task data
 /// travels in the typed prompt payload.
@@ -32,9 +33,9 @@ Work rules:\n\
 /// `hook` observes every model call and tool call. All knobs come from the
 /// config.
 pub fn build(
-    client: &::rig::providers::ollama::Client,
+    client: &rig::providers::ollama::Client,
     config: &crate::util::config::Config,
-    hook: impl ::rig::agent::AgentHook + 'static,
+    hook: impl rig::agent::AgentHook + 'static,
 ) -> Agent {
     let bash = Bash {
         root: config.output.dir.clone(),
@@ -46,7 +47,7 @@ pub fn build(
         .tool(bash)
         .temperature(config.run.temperature)
         .max_tokens(config.run.max_output_tokens)
-        .additional_params(::serde_json::json!({
+        .additional_params(serde_json::json!({
             "num_ctx": config.run.num_ctx,
             "think": config.run.think,
         }))
@@ -59,59 +60,48 @@ pub fn build(
 /// Run the validator agent over one task. `max_turns` bounds the
 /// model-call budget. Returns the structured result artifact. The model
 /// must deliver it through the output-tool call.
-pub async fn run(
-    agent: &Agent,
-    task: &ValidatorRequest,
-    max_turns: usize,
-) -> ::core::result::Result<ValidatorResponse, ::rig::completion::PromptError> {
-    let prompt =
-        ::serde_json::to_string(task).map_err(|error| request_error(::std::format!("task render failed: {error}")))?;
+pub async fn run(agent: &Agent, task: &ValidatorRequest, max_turns: usize) -> anyhow::Result<ValidatorResponse> {
+    let prompt = serde_json::to_string(task).context("task render failed")?;
     let raw = Prompt::prompt(agent, prompt).max_turns(max_turns).await?;
-    ::serde_json::from_str(&raw)
-        .map_err(|error| request_error(::std::format!("validator result parse failed: {error}")))
-}
-
-/// Wrap an internal failure into a rig prompt error.
-fn request_error(message: ::std::string::String) -> ::rig::completion::PromptError {
-    ::rig::completion::PromptError::CompletionError(::rig::completion::CompletionError::ProviderError(message))
+    Ok(serde_json::from_str(&raw)?)
 }
 
 // Input and output artifacts owned exclusively by this agent. Per the
 // artifact-ownership rule, the DTOs live here. Per the Stepdown Rule, they
 // sit below the entry functions as secondary types that serve them.
-#[derive(::core::fmt::Debug, ::core::clone::Clone, ::serde::Serialize, ::serde::Deserialize, ::schemars::JsonSchema)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct ValidatorRequest {
     /// Path of the codebase root to validate.
-    pub output_dir: ::std::string::String,
+    pub output_dir: String,
     /// Toolchain steps to run, in order. Example: `build`, `test`.
-    pub toolchain: ::std::vec::Vec<::std::string::String>,
+    pub toolchain: Vec<String>,
     /// Test command from the run config, for reference in the report.
-    pub test_command: ::std::string::String,
+    pub test_command: String,
     /// The monolith's own summary of its approach, for context only.
-    pub approach: ::std::string::String,
+    pub approach: String,
 }
 
-#[derive(::core::fmt::Debug, ::core::clone::Clone, ::serde::Serialize, ::serde::Deserialize, ::schemars::JsonSchema)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct ValidatorStepOutcome {
     /// Step name, for example `build` or `test`.
-    pub step: ::std::string::String,
+    pub step: String,
     /// True when the step command exited successfully.
     pub passed: bool,
     /// Runner-reported pass counts, when the step ran tests.
-    pub tests_passed: ::core::option::Option<u32>,
+    pub tests_passed: Option<u32>,
     /// Runner-reported failure counts, when the step ran tests.
-    pub tests_failed: ::core::option::Option<u32>,
+    pub tests_failed: Option<u32>,
     /// Last lines of combined command output, for the report.
-    pub detail_tail: ::std::string::String,
+    pub detail_tail: String,
 }
 
-#[derive(::core::fmt::Debug, ::core::clone::Clone, ::serde::Serialize, ::serde::Deserialize, ::schemars::JsonSchema)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct ValidatorResponse {
     /// True when every toolchain step passed.
-    pub compilation_status: ::std::string::String,
+    pub compilation_status: String,
     /// Test pass rate as a fraction of reported tests, `None` when no test
     /// step reported counts.
-    pub test_pass_rate: ::core::option::Option<f64>,
+    pub test_pass_rate: Option<f64>,
     /// Outcomes of the executed toolchain steps, in execution order.
-    pub steps: ::std::vec::Vec<ValidatorStepOutcome>,
+    pub steps: Vec<ValidatorStepOutcome>,
 }

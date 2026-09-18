@@ -1,11 +1,11 @@
 //! Minimal tool catalog. Real behavior grows here.
 
-use ::std::collections::BTreeMap;
+use std::collections::BTreeMap;
 
 /// Catalog of tools keyed by name.
-#[derive(::core::fmt::Debug, ::core::default::Default)]
+#[derive(Debug, Default)]
 pub struct Catalog {
-    tools: BTreeMap<::std::string::String, Tool>,
+    tools: BTreeMap<String, Tool>,
 }
 
 impl Catalog {
@@ -18,10 +18,10 @@ impl Catalog {
     }
 
     /// Add a tool to the catalog.
-    pub fn add(&mut self, name: impl Into<::std::string::String>) {
+    pub fn add(&mut self, name: impl Into<std::string::String>) {
         let name = name.into();
         self.tools.insert(
-            ::std::clone::Clone::clone(&name),
+            name.clone(),
             Tool {
                 name,
             },
@@ -30,7 +30,7 @@ impl Catalog {
 
     /// Look up a tool by name.
     #[must_use]
-    pub fn get(&self, name: &str) -> ::core::option::Option<&Tool> {
+    pub fn get(&self, name: &str) -> Option<&Tool> {
         self.tools.get(name)
     }
 
@@ -47,7 +47,7 @@ impl Catalog {
     }
 }
 
-#[derive(::core::fmt::Debug, ::core::clone::Clone, ::core::cmp::PartialEq, ::core::cmp::Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Tool {
-    pub name: ::std::string::String,
+    pub name: String,
 }

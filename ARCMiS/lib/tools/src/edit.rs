@@ -1,25 +1,30 @@
 //! `edit` applies one hashline patch to one file inside the sandbox root.
 
+use std::path::PathBuf;
+use std::sync::Arc;
+
+use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
+
 /// `edit` applies hashline patches and consumes snapshot tags for validation.
 pub struct Edit {
     /// Root directory. Tool paths resolve inside it.
-    pub root: ::std::path::PathBuf,
+    pub root: PathBuf,
     /// Shared snapshot cache. Tags must match the last read or write.
-    pub snapshots: ::std::sync::Arc<crate::util::snapshots::SnapshotStore>,
+    pub snapshots: Arc<crate::util::snapshots::SnapshotStore>,
 }
 
-impl ::rig::tool::Tool for Edit {
+impl Tool for Edit {
     const NAME: &'static str = "edit";
-    type Error = ::rig::tool::ToolExecutionError;
+    type Error = ToolExecutionError;
     type Args = EditArgs;
-    type Output = ::rig::tool::ToolOutput;
+    type Output = ToolOutput;
 
-    fn description(&self) -> ::std::string::String {
+    fn description(&self) -> String {
         "Apply one hashline patch to one file inside the sandbox root.".to_owned()
     }
 
-    fn parameters(&self) -> ::serde_json::Value {
-        ::serde_json::json!({
+    fn parameters(&self) -> serde_json::Value {
+        serde_json::json!({
             "type": "object",
             "properties": {
                 "input": {
@@ -31,36 +36,30 @@ impl ::rig::tool::Tool for Edit {
         })
     }
 
-    async fn call(
-        &self,
-        _context: &mut ::rig::tool::ToolContext,
-        args: Self::Args,
-    ) -> ::core::result::Result<Self::Output, Self::Error> {
-        let patch = parse_patch(&args.input).map_err(::rig::tool::ToolExecutionError::other)?;
+    async fn call(&self, _context: &mut ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
+        let patch = parse_patch(&args.input).map_err(ToolExecutionError::other)?;
         let requested = patch.path.clone();
-        let absolute =
-            crate::util::path::path_sanitize(&self.root, &requested).map_err(::rig::tool::ToolExecutionError::other)?;
+        let absolute = crate::util::path::path_sanitize(&self.root, &requested).map_err(ToolExecutionError::other)?;
         let snapshot = self
             .snapshots
             .lookup(&patch.tag)
             .ok_or_else(|| stale_tag_error(&requested, &patch.tag))
-            .map_err(::rig::tool::ToolExecutionError::other)?;
+            .map_err(ToolExecutionError::other)?;
         let (snapshot_path, lines) = snapshot;
         if snapshot_path != requested {
-            return ::core::result::Result::Err(::rig::tool::ToolExecutionError::other(::std::format!(
+            return Err(ToolExecutionError::other(format!(
                 "tag '{}' belongs to '{snapshot_path}', not '{requested}'. Re-read the file.",
                 patch.tag
             )));
         }
-        let output = apply_ops(&lines, &patch.ops).map_err(|error| {
-            ::rig::tool::ToolExecutionError::other(::std::format!("edit failed for '{requested}': {error}"))
-        })?;
+        let output = apply_ops(&lines, &patch.ops)
+            .map_err(|error| ToolExecutionError::other(format!("edit failed for '{requested}': {error}")))?;
         let text = join_lines(&output);
-        ::tokio::fs::write(&absolute, text.as_bytes()).await.map_err(|error| {
-            ::rig::tool::ToolExecutionError::other(::std::format!("edit failed for '{requested}': {error}"))
-        })?;
+        tokio::fs::write(&absolute, text.as_bytes())
+            .await
+            .map_err(|error| ToolExecutionError::other(format!("edit failed for '{requested}': {error}")))?;
         let tag = self.snapshots.mint(&requested, &text);
-        ::core::result::Result::Ok(::rig::tool::ToolOutput::text(::std::format!(
+        Ok(ToolOutput::text(format!(
             "¶{requested}#{tag}\nApplied {} op(s) to '{requested}'. Re-read before the next edit.",
             patch.ops.len()
         )))
@@ -68,22 +67,22 @@ impl ::rig::tool::Tool for Edit {
 }
 
 /// Arguments for `edit`.
-#[derive(::core::fmt::Debug, ::serde::Deserialize)]
+#[derive(Debug, serde::Deserialize)]
 pub struct EditArgs {
-    pub input: ::std::string::String,
+    pub input: String,
 }
 
 /// One parsed patch operation.
-#[derive(::core::fmt::Debug)]
+#[derive(Debug)]
 struct PatchOp {
     kind: OpKind,
     start: usize,
     end: usize,
-    rows: Vec<::std::string::String>,
+    rows: Vec<String>,
 }
 
 /// Kind of one patch operation.
-#[derive(::core::fmt::Debug)]
+#[derive(Debug)]
 enum OpKind {
     Replace,
     Delete,
@@ -94,15 +93,15 @@ enum OpKind {
 }
 
 /// One parsed patch: header plus operations.
-#[derive(::core::fmt::Debug)]
+#[derive(Debug)]
 struct Patch {
-    path: ::std::string::String,
-    tag: ::std::string::String,
+    path: String,
+    tag: String,
     ops: Vec<PatchOp>,
 }
 
 /// Parse the `¶PATH#TAG` header and the op lines from the patch input.
-fn parse_patch(input: &str) -> ::core::result::Result<Patch, ::std::string::String> {
+fn parse_patch(input: &str) -> Result<Patch, String> {
     let mut lines = input.lines();
     let header = lines.next().ok_or_else(|| "empty patch input. Start with a '¶PATH#TAG' header line.".to_owned())?;
     let header = header.trim();
@@ -112,7 +111,7 @@ fn parse_patch(input: &str) -> ::core::result::Result<Patch, ::std::string::Stri
     let path = path.trim().to_owned();
     let tag = tag.trim().to_owned();
     if path.is_empty() || tag.is_empty() {
-        return ::core::result::Result::Err("patch header is incomplete. Re-read the file.".to_owned());
+        return Err("patch header is incomplete. Re-read the file.".to_owned());
     }
     let mut ops = Vec::new();
     let mut index = 0usize;
@@ -129,9 +128,9 @@ fn parse_patch(input: &str) -> ::core::result::Result<Patch, ::std::string::Stri
         index += 1 + header_rows_consumed(line, consumed);
     }
     if ops.is_empty() {
-        return ::core::result::Result::Err("patch has no operations after the header.".to_owned());
+        return Err("patch has no operations after the header.".to_owned());
     }
-    ::core::result::Result::Ok(Patch {
+    Ok(Patch {
         path,
         tag,
         ops,
@@ -149,10 +148,10 @@ fn header_rows_consumed(header: &str, row_count: usize) -> usize {
 }
 
 /// Parse one op header plus its `+TEXT` body rows from the remaining lines.
-fn parse_op(header: &str, rest: &[&str]) -> ::core::result::Result<PatchOp, ::std::string::String> {
+fn parse_op(header: &str, rest: &[&str]) -> Result<PatchOp, String> {
     let trimmed = header.trim();
     if trimmed.starts_with("insert head:") {
-        return ::core::result::Result::Ok(PatchOp {
+        return Ok(PatchOp {
             kind: OpKind::InsertHead,
             start: 0,
             end: 0,
@@ -160,7 +159,7 @@ fn parse_op(header: &str, rest: &[&str]) -> ::core::result::Result<PatchOp, ::st
         });
     }
     if trimmed.starts_with("insert tail:") {
-        return ::core::result::Result::Ok(PatchOp {
+        return Ok(PatchOp {
             kind: OpKind::InsertTail,
             start: 0,
             end: 0,
@@ -169,7 +168,7 @@ fn parse_op(header: &str, rest: &[&str]) -> ::core::result::Result<PatchOp, ::st
     }
     if let Some(target) = trimmed.strip_prefix("insert before ") {
         let line = parse_line_number(target.trim_end_matches(':'))?;
-        return ::core::result::Result::Ok(PatchOp {
+        return Ok(PatchOp {
             kind: OpKind::InsertBefore,
             start: line,
             end: line,
@@ -178,7 +177,7 @@ fn parse_op(header: &str, rest: &[&str]) -> ::core::result::Result<PatchOp, ::st
     }
     if let Some(target) = trimmed.strip_prefix("insert after ") {
         let line = parse_line_number(target.trim_end_matches(':'))?;
-        return ::core::result::Result::Ok(PatchOp {
+        return Ok(PatchOp {
             kind: OpKind::InsertAfter,
             start: line,
             end: line,
@@ -187,7 +186,7 @@ fn parse_op(header: &str, rest: &[&str]) -> ::core::result::Result<PatchOp, ::st
     }
     if let Some(range) = trimmed.strip_prefix("delete ") {
         let (start, end) = parse_range(range.trim_end_matches(':'))?;
-        return ::core::result::Result::Ok(PatchOp {
+        return Ok(PatchOp {
             kind: OpKind::Delete,
             start,
             end,
@@ -196,20 +195,18 @@ fn parse_op(header: &str, rest: &[&str]) -> ::core::result::Result<PatchOp, ::st
     }
     if let Some(range) = trimmed.strip_prefix("replace ") {
         let (start, end) = parse_range(range.trim_end_matches(':'))?;
-        return ::core::result::Result::Ok(PatchOp {
+        return Ok(PatchOp {
             kind: OpKind::Replace,
             start,
             end,
             rows: collect_rows(rest)?,
         });
     }
-    ::core::result::Result::Err(::std::format!(
-        "unknown op '{trimmed}'. Use 'replace N..M:', 'delete N..M', or 'insert before/after/head/tail:'."
-    ))
+    Err(format!("unknown op '{trimmed}'. Use 'replace N..M:', 'delete N..M', or 'insert before/after/head/tail:'."))
 }
 
 /// Collect the `+TEXT` body rows that follow one op header.
-fn collect_rows(rest: &[&str]) -> ::core::result::Result<Vec<::std::string::String>, ::std::string::String> {
+fn collect_rows(rest: &[&str]) -> Result<Vec<String>, String> {
     let mut rows = Vec::new();
     for line in rest {
         if !line.starts_with('+') {
@@ -217,16 +214,16 @@ fn collect_rows(rest: &[&str]) -> ::core::result::Result<Vec<::std::string::Stri
         }
         rows.push(line[1..].to_owned());
     }
-    ::core::result::Result::Ok(rows)
+    Ok(rows)
 }
 
 /// Parse one 1-based line number.
-fn parse_line_number(text: &str) -> ::core::result::Result<usize, ::std::string::String> {
-    text.trim().parse::<usize>().map_err(|_| ::std::format!("bad line number '{text}' in patch op"))
+fn parse_line_number(text: &str) -> Result<usize, String> {
+    text.trim().parse::<usize>().map_err(|_| format!("bad line number '{text}' in patch op"))
 }
 
 /// Parse one `N..M` range with M optional (defaults to N).
-fn parse_range(text: &str) -> ::core::result::Result<(usize, usize), ::std::string::String> {
+fn parse_range(text: &str) -> Result<(usize, usize), String> {
     let (start_text, end_text) = match text.split_once("..") {
         Some((start, end)) => (start, Some(end)),
         None => (text, None),
@@ -237,43 +234,40 @@ fn parse_range(text: &str) -> ::core::result::Result<(usize, usize), ::std::stri
         None => start,
     };
     if end < start {
-        return ::core::result::Result::Err(::std::format!("range {start}..{end} has end before start"));
+        return Err(format!("range {start}..{end} has end before start"));
     }
-    ::core::result::Result::Ok((start, end))
+    Ok((start, end))
 }
 
 /// Build the stale-tag error the model sees after the file changed.
-fn stale_tag_error(path: &str, tag: &str) -> ::std::string::String {
-    ::std::format!(
+fn stale_tag_error(path: &str, tag: &str) -> String {
+    format!(
         "stale tag '{tag}' for '{path}'. The file changed since the last read. Re-read the file and use the new '¶PATH#TAG' header."
     )
 }
 
 /// Apply the operations in order to the snapshot lines.
-fn apply_ops(
-    lines: &[::std::string::String],
-    ops: &[PatchOp],
-) -> ::core::result::Result<Vec<::std::string::String>, ::std::string::String> {
-    let mut output: Vec<::std::string::String> = lines.to_vec();
+fn apply_ops(lines: &[String], ops: &[PatchOp]) -> Result<Vec<String>, String> {
+    let mut output: Vec<String> = lines.to_vec();
     for op in ops {
         match op.kind {
             OpKind::Replace => {
                 let end = op.end.min(output.len());
                 let start = op.start.min(end.saturating_add(1)).saturating_sub(1);
                 if op.start > output.len() {
-                    return ::core::result::Result::Err(::std::format!(
+                    return Err(format!(
                         "replace {}..{} is past the end ({} lines). Re-read the file.",
                         op.start,
                         op.end,
                         output.len()
                     ));
                 }
-                let replacement: Vec<::std::string::String> = op.rows.clone();
+                let replacement: Vec<String> = op.rows.clone();
                 output.splice(start..end, replacement);
             },
             OpKind::Delete => {
                 if op.start > output.len() {
-                    return ::core::result::Result::Err(::std::format!(
+                    return Err(format!(
                         "delete {}..{} is past the end ({} lines). Re-read the file.",
                         op.start,
                         op.end,
@@ -301,12 +295,12 @@ fn apply_ops(
             },
         }
     }
-    ::core::result::Result::Ok(output)
+    Ok(output)
 }
 
 /// Insert one op's rows into the output at the given index.
-fn splice_rows(output: &mut Vec<::std::string::String>, index: usize, op: &PatchOp) {
-    let mut insert: Vec<::std::string::String> = Vec::with_capacity(op.rows.len());
+fn splice_rows(output: &mut Vec<String>, index: usize, op: &PatchOp) {
+    let mut insert: Vec<String> = Vec::with_capacity(op.rows.len());
     for row in &op.rows {
         insert.push(row.clone());
     }
@@ -316,9 +310,9 @@ fn splice_rows(output: &mut Vec<::std::string::String>, index: usize, op: &Patch
 }
 
 /// Join lines back into one string with a trailing newline.
-fn join_lines(lines: &[::std::string::String]) -> ::std::string::String {
+fn join_lines(lines: &[String]) -> String {
     if lines.is_empty() {
-        ::std::string::String::new()
+        String::new()
     } else {
         let mut text = lines.join("\n");
         text.push('\n');

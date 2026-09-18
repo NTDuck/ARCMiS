@@ -1,13 +1,13 @@
 //! Minimal agent registry. Real behavior grows here. The shape holds the
 //! dependency direction: agents may use tools, never the reverse.
 
-use ::std::collections::BTreeMap;
-use ::std::sync::Arc;
+use std::collections::BTreeMap;
+use std::sync::Arc;
 
 /// Registry of agents keyed by name.
-#[derive(::core::fmt::Debug, ::core::default::Default)]
+#[derive(Debug, Default)]
 pub struct Registry {
-    agents: BTreeMap<::std::string::String, Arc<Agent>>,
+    agents: BTreeMap<String, Arc<Agent>>,
 }
 
 impl Registry {
@@ -20,18 +20,18 @@ impl Registry {
     }
 
     /// Register an agent under `name`.
-    pub fn register(&mut self, name: impl Into<::std::string::String>) -> Arc<Agent> {
+    pub fn register(&mut self, name: impl Into<String>) -> Arc<Agent> {
         let name = name.into();
         let agent = Arc::new(Agent {
-            name: ::std::clone::Clone::clone(&name),
+            name: name.clone(),
         });
-        self.agents.insert(name, ::core::clone::Clone::clone(&agent));
+        self.agents.insert(name, agent.clone());
         agent
     }
 
     /// Look up an agent by name.
     #[must_use]
-    pub fn get(&self, name: &str) -> ::core::option::Option<&Arc<Agent>> {
+    pub fn get(&self, name: &str) -> Option<&Arc<Agent>> {
         self.agents.get(name)
     }
 
@@ -49,7 +49,7 @@ impl Registry {
 }
 
 /// A registered agent identity.
-#[derive(::core::fmt::Debug, ::core::clone::Clone, ::core::cmp::PartialEq, ::core::cmp::Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Agent {
-    pub name: ::std::string::String,
+    pub name: String,
 }
