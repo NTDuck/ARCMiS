@@ -17,11 +17,12 @@ Numbered, immutable Architecture Decision Records. Format and policy: [`.omp/rul
 | [0007](0007-ollama-migration-agent.md) | Ollama-driven migration agent over GildedRose | accepted |
 | [0008](0008-clarity-logging-no-tuning-nested-layout.md) | Code clarity, minimal code, logging, no tuning, nested layout | accepted |
 | [0009](0009-crate-naming-manifest-structure-module-layout.md) | Crate naming, manifest structure, and module layout | accepted |
-| [0010](0010-user-facing-code-order-and-macro-qualification.md) | User-facing code order, macro qualification, and module flattening | accepted |
+| [0010](0010-user-facing-code-order-and-macro-qualification.md) | User-facing code order, macro qualification, and module flattening | macro qualification superseded by [0016](0016-readability-style-anyhow-result-yml.md) |
 | [0011](0011-util-directory-layout.md) | Util directory layout | accepted |
 | [0012](0012-seventeen-tool-surface.md) | Seventeen-tool surface after oh-my-pi | accepted |
 | [0013](0013-react-default-agent.md) | ReAct default agent | superseded by [0015](0015-two-structured-artifact-agents.md) |
 | [0015](0015-two-structured-artifact-agents.md) | Two structured-artifact agents: monolith and validator | accepted |
+| [0016](0016-readability-style-anyhow-result-yml.md) | Readability-first style: plain paths, anyhow, struct init | accepted |
 
 ## References
 
