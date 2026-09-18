@@ -149,6 +149,27 @@ let hits = index.top_n::<WordDefinition>(req).await?; // Vec<(score, id, doc)>
   retrieved tool).
 - Rerank smoke test: assert `rerank(..)` returns results sorted by score.
 
+## Reference Examples (upstream `examples/`)
+
+Runnable, idiomatic usage of this sub-skill's API surface. Captured from
+upstream `main` at commit `9b94481` (2026-09-17) — newer than the Ground
+Truth pin. Treat example APIs as the current idiom and re-verify against
+your rig version.
+
+| Example | Demonstrates |
+| --- | --- |
+| `rag` | `Embed` derive, `EmbeddingsBuilder`, `InMemoryVectorStore`, `dynamic_context` agent. Also under extraction. |
+| `chain` | Manual retrieve-then-fold pipeline (`top_n` lookup before prompting). |
+| `vector_search` | Direct index query. Compares `top_n` with `top_n_ids`. |
+| `pdf_agent` | `PdfFileLoader` documents into a RAG chatbot (Ollama). Uses the shared `documents/` sample-PDF dir. |
+| `vector_search_ollama` | Local Ollama embeddings against the in-memory index. |
+| `vector_search_cohere` | Separate Cohere document and query embedding models. |
+| `cohere_image_embeddings` | Embedding an image with Cohere Embed v3. |
+| `custom_vector_store` | Redis-backed `VectorStoreIndex` implementation template. |
+| `rag_ollama` | RAG pipeline fully on a local Ollama stack. |
+| `gemini_extractor_with_rag` | RAG-grounded extraction (also under extraction). |
+| `complex_agentic_loop_claude` | RAG + `ThinkTool` builtin in a Claude agentic loop. |
+
 ## Provenance
 
 - Repo: `0xPlaygrounds/rig`, commit `6828097`, 2026-09-14.

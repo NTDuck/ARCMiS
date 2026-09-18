@@ -127,7 +127,27 @@ Use when implementing rig LLM tools (typed `Tool` impls, `#[rig_tool]` derive, r
 
 - `cargo check` after a new `Tool` impl — associated-type and schema-shape errors surface here.
 - Assert schema shape: `tools.tool_definitions()` returns `Vec<::rig::completion::ToolDefinition>` in registration order.
-- Reference examples (upstream `examples/`): `agent_with_tools` (dynamic tools), `manual_tool_calls` (raw loop), `force_tool_first_turn` (patch footgun), `tool_result_outcomes` (classification + policy hooks), `agent_with_approval_policy`, `rag_dynamic_tools` (retrieved tools).
+
+## Reference Examples (upstream `examples/`)
+
+Runnable, idiomatic usage of this sub-skill's API surface. Captured from
+upstream `main` at commit `9b94481` (2026-09-17) — newer than the Ground
+Truth pin. Treat example APIs as the current idiom and re-verify against
+your rig version.
+
+| Example | Demonstrates |
+| --- | --- |
+| `agent_with_tools` | `DynamicTool` registration on an agent. |
+| `calculator_chatbot` | `ToolEmbedding` tools + `ToolSet` + RAG-selected tools in a chatbot. |
+| `manual_tool_calls` | Raw `CompletionModel` request, `ToolSet::execute`, `tool_result_for` feedback loop. |
+| `force_tool_first_turn` | `tool_choice = Required` patch footgun and the `ctx.turn() == 1` fix. |
+| `tool_result_outcomes` | Structured `ToolExecutionError` classification plus ordered policy hooks. |
+| `agent_with_approval_policy` | Fail-closed `DispatchAction::proceed`/`skip` allow-list hook. |
+| `agent_with_human_in_the_loop` | Interactive approval: `on_dispatch` pause, human maps to `DispatchAction`. |
+| `agent_with_durable_approval` | `AgentRun` serialized with pending tool calls, resumed from JSON. |
+| `rag_dynamic_tools` | `ToolEmbedding` plus `ToolSet::add_retrieved_tool` per-prompt tool retrieval. |
+| `rag_dynamic_tools_multi_turn` | Retrieved tools across a multi-turn conversation. |
+| `agent_with_echochambers` | Custom reqwest headers on a client feeding a `ToolEmbedding` toolset. |
 
 ## Provenance
 

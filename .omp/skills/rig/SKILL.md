@@ -28,6 +28,14 @@ Rust library for LLM-powered applications: 20+ model providers under one interfa
 | [`memory`](sub-skills/memory/SKILL.md) | Conversation memory traits, in-memory backend, history-shaping policies |
 | [`providers`](sub-skills/providers/SKILL.md) | Provider clients, model constants, facade features, transcription/image/audio, candle local models |
 
+## Reference Examples
+
+Upstream maintains runnable, idiomatic examples per capability:
+[`0xPlaygrounds/rig/examples/*`](https://github.com/0xPlaygrounds/rig/tree/main/examples) —
+one package per directory, each with a README table entry. Load the chosen
+sub-skill first: its **Reference Examples** section maps each upstream
+example to the API surface it demonstrates.
+
 ## Anti-Hallucination Gate (binding, see .omp/rules/skills.md)
 
 Before writing rig code: read the chosen sub-skill; every rig symbol in your diff must appear in that sub-skill's Ground Truth **or** be grep-verified in the rig checkout pinned by its Provenance section. Unverified symbol → stop, ground, then write.

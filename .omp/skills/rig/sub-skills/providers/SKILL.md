@@ -153,6 +153,30 @@ let model = ::rig::candle::CandleModel::from_gguf(::rig::candle::ModelData {
 - Grep the constant: `rg "pub const GPT_5_2" upstream/crates/rig-core/src/providers/openai/`.
 - Capability presence: grep `impl Has<ImageGeneration|AudioGeneration> for <Provider>`.
 
+## Reference Examples (upstream `examples/`)
+
+Runnable, idiomatic usage of this sub-skill's API surface. Captured from
+upstream `main` at commit `9b94481` (2026-09-17) — newer than the Ground
+Truth pin. Treat example APIs as the current idiom and re-verify against
+your rig version.
+
+| Example | Demonstrates |
+| --- | --- |
+| `agent` | `OpenAI::from_env()?.bound()?` → agent → prompt. |
+| `openai_agent_completions_api_otel` | `.completions_api()` fallback with OTel tracing. |
+| `transcription` | Transcription across OpenAI-wire providers (Groq, Mistral, ...) and Gemini. |
+| `gemini_nanobanana_image_generation` | Image generation (facade `image` feature). |
+| `gemini_video_understanding` | Video URL input + provider-specific `AdditionalParameters`. |
+| `gemini_deep_research` | Interactions API: `Interaction`/`Step` streaming with thinking summaries. |
+| `gemini_stream_kill_token_count` | Token accounting when a stream dies mid-response. |
+| `gemini_default_api_recovery` | Recovering from the legacy `default_api` tool name. |
+| `candle_local` | Local GGUF inference through `rig::candle` (facade `candle` feature). |
+| `candle_wasm_chat` | The same candle path compiled to WASM for a browser chat UI. |
+| `http_middleware` | `HttpMiddleware` on the erased client: headers, body logging, rate-limit reads. |
+| `reqwest_middleware` | Binding a custom reqwest client with retry middleware. |
+| `rmcp` | MCP integration: static fetch and `McpClientHandler` auto-updating tools. |
+| `discord_bot` | Agent embedded in a Discord bot. Own workspace. Also under agents. |
+
 ## Provenance
 
 - Repo: 0xPlaygrounds/rig, commit 6828097, 2026-09-14.

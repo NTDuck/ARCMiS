@@ -136,6 +136,21 @@ let rag_extractor = client
 3. Force a failure path and confirm you get `StructuredOutputError::EmptyResponse` or
    `PromptError` after retries are spent.
 
+## Reference Examples (upstream `examples/`)
+
+Runnable, idiomatic usage of this sub-skill's API surface. Captured from
+upstream `main` at commit `9b94481` (2026-09-17) — newer than the Ground
+Truth pin. Treat example APIs as the current idiom and re-verify against
+your rig version.
+
+| Example | Demonstrates |
+| --- | --- |
+| `extractor` | Typed extraction plus usage metadata from `TypedPromptResponse`. |
+| `sentiment_classifier` | Smallest extractable type: enum classification. |
+| `multi_extract` | `try_join!` fan-out plus `.buffered(n)` over inputs. |
+| `gemini_extractor_with_rag` | `dynamic_context`-grounded extraction on Gemini. Also under rag-vector. |
+| `agent_autonomous` | Extractor loop feeding its own output back until a stop condition. |
+
 ## Provenance
 
 - Repo: `0xPlaygrounds/rig`, commit `6828097` (2026-09-14).

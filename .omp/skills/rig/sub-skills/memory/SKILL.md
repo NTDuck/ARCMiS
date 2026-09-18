@@ -126,6 +126,18 @@ history (`chat`/`history`) or vector stores.
 - Build a bin per Workflow 1 against a live provider; assert turn 2 recalls
   turn 1's fact and `memory_append.is_acknowledged()` is true.
 
+## Reference Examples (upstream `examples/`)
+
+Runnable, idiomatic usage of this sub-skill's API surface. Captured from
+upstream `main` at commit `9b94481` (2026-09-17) — newer than the Ground
+Truth pin. Treat example APIs as the current idiom and re-verify against
+your rig version.
+
+| Example | Demonstrates |
+| --- | --- |
+| `agent_with_memory` | `.memory(InMemoryConversationMemory::new())` + `.conversation(id)` per prompt. |
+| `agent_with_memory_streaming` | Same wiring with `.stream()`. The `FinalResponse` item carries `memory_append`. |
+
 ## Provenance
 
 - Repo: `0xPlaygrounds/rig`, commit `6828097`, 2026-09-14 (facade `rig`

@@ -129,6 +129,26 @@ evaluator-optimizer, and debate. Single-agent basics are in sibling skills.
   `TypedPromptResponse`s parse.
 - Evaluator-optimizer: mock a failing first generation; assert the loop re-prompts.
 
+## Reference Examples (upstream `examples/`)
+
+Runnable, idiomatic usage of this sub-skill's API surface. Captured from
+upstream `main` at commit `9b94481` (2026-09-17) — newer than the Ground
+Truth pin. Treat example APIs as the current idiom and re-verify against
+your rig version.
+
+| Example | Demonstrates |
+| --- | --- |
+| `agent_with_agent_tool` | `Agent::into_tool()` delegation (typed wrapper). |
+| `multi_agent` | Manual `Tool` impls wrapping sub-agents in a chatbot. |
+| `agent_routing` | Classifier output selects the follow-up agent/prompt. |
+| `agent_parallelization` | `join!`/`try_join!` over concurrent extractors. |
+| `agent_prompt_chaining` | Two agents in sequence, output → prompt. |
+| `agent_orchestrator` | Extractor-built plan, workers, judge over serialized results. |
+| `agent_evaluator_optimizer` | Extracted `Pass/NeedsImprovement/Fail` feedback loop. |
+| `debate` | Opposed preambles exchanging `history` per round, cross-provider. |
+| `reasoning_loop` | Extractor derives reasoning steps, executor runs them, extractor evaluates. |
+| `enum_dispatch` | Multi-provider agent registry behind one enum + prompt facade. |
+
 ## Provenance
 
 - Repo: `0xPlaygrounds/rig`, commit `6828097`, date 2026-09-14.

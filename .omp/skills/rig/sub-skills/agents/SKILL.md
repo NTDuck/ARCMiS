@@ -159,6 +159,32 @@ definitions themselves.
 - Stepping: serialize an `AgentRun` at `CallTools`, deserialize, assert the
   resumed run re-emits the same pending calls from `next_step()`.
 
+## Reference Examples (upstream `examples/`)
+
+Runnable, idiomatic usage of this sub-skill's API surface. Captured from
+upstream `main` at commit `9b94481` (2026-09-17) — newer than the Ground
+Truth pin. Treat example APIs as the current idiom and re-verify against
+your rig version.
+
+| Example | Demonstrates |
+| --- | --- |
+| `agent` | Smallest client → agent → prompt flow. |
+| `agent_stream_chat` | Streamed run over prior history: `prompt(..).history(..).stream()`. |
+| `multi_turn_agent` | Sequential prompts with typed tools (Anthropic). |
+| `multi_turn_agent_extended` | Multi-turn arithmetic chat with a larger tool set. |
+| `agent_with_context` | Small context documents passed directly to the agent. |
+| `agent_with_loaders` | `FileLoader` (with glob) documents in agent context. |
+| `agent_with_default_max_turns` | Builder turn budget for tool-heavy prompts. |
+| `agent_run_stepping` | Hand-driven `AgentRun` state machine plus runner-with-hooks. |
+| `agent_no_tokio` | `run_channel` on `bevy_tasks` with an erased `BoxedHttpClient`. Depends on neither tokio nor reqwest. |
+| `agent_with_retry_hook` | Retry policy in the `HookContext` scratchpad. Retries consume the turn budget. |
+| `request_hook` | Stacked hooks all run. `RequestPatch::extra_context` injects context per turn. |
+| `openai_streaming_per_call_usage` | Per-completion-call usage from a stream. |
+| `discord_bot` | Agent deployed as a Discord bot (own workspace — run with `--manifest-path`). |
+| `agent_with_memory_streaming` | Rig-managed memory plus streaming. Also under memory. |
+| `agent_with_tools_otel` | Multi-turn tool run traced to an OTel collector. |
+| `openai_streaming_with_tools_otel` | Streaming a tool-using run to stdout, traced to OTel (`stream_to_stdout`). |
+
 ## Provenance
 
 - Repo: `0xPlaygrounds/rig`, commit `6828097`, 2026-09-14 (facade rig
