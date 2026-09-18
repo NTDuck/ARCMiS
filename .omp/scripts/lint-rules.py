@@ -14,8 +14,10 @@ Enforced rules (each maps to a section of .omp/rules/*):
 - rust.md §5: prefer turbofish over type annotations on local let with
   collect()/parse() — reported as advisory findings
 - logging.md: no println!/eprintln!/dbg!/print! in workspace code
-- code-clarity.md: description purity — no `Args:` payload inside
-  model-facing description strings
+- code-clarity.md (Stepdown Rule): description purity — no `Args:`
+  payload inside model-facing description strings
+- code-clarity.md (Stepdown Rule): declaration before implementation —
+  an impl block must follow its type declaration
 - code-clarity.md: advisory — files longer than 300 lines are listed for review
 """
 
@@ -48,9 +50,10 @@ def iter_rust_files(root: Path, only: list[Path]) -> list[Path]:
 
 
 def check_decl_order(path: Path, text: str) -> list[str]:
-    """code-clarity.md §Declaration before implementation: a type's impl
-    block must come after its declaration. Track impl blocks whose primary
-    type is declared later in the file, or never declared in-file."""
+    """code-clarity.md (Stepdown Rule) §Declaration before implementation:
+    a type's impl block must come after its declaration. Track impl blocks
+    whose primary type is declared later in the file, or never declared
+    in-file."""
     errors: list[str] = []
     decl_line: dict[str, int] = {}
     impl_line: dict[str, int] = {}

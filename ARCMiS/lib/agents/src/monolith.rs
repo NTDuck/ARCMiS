@@ -84,9 +84,14 @@ pub async fn run(
     ::serde_json::from_str(&raw).map_err(|error| request_error(::std::format!("monolith result parse failed: {error}")))
 }
 
+/// Wrap an internal failure into a rig prompt error.
+fn request_error(message: ::std::string::String) -> ::rig::completion::PromptError {
+    ::rig::completion::PromptError::CompletionError(::rig::completion::CompletionError::ProviderError(message))
+}
+
 // Input and output artifacts owned exclusively by this agent. Per the
-// artifact-ownership rule, the DTOs live here. Per the block-order rule,
-// they come after the agent entry functions as secondary types.
+// artifact-ownership rule, the DTOs live here. Per the Stepdown Rule, they
+// sit below the entry functions as secondary types that serve them.
 #[derive(::core::fmt::Debug, ::core::clone::Clone, ::serde::Serialize, ::serde::Deserialize, ::schemars::JsonSchema)]
 pub struct MonolithRequest {
     /// Input codebase: ordered map of relative path to file content.
@@ -107,9 +112,4 @@ pub struct MonolithResponse {
     pub files_written: u32,
     /// One-line summary of the translation approach, for the validator's context.
     pub approach: ::std::string::String,
-}
-
-/// Wrap an internal failure into a rig prompt error.
-fn request_error(message: ::std::string::String) -> ::rig::completion::PromptError {
-    ::rig::completion::PromptError::CompletionError(::rig::completion::CompletionError::ProviderError(message))
 }

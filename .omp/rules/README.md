@@ -5,7 +5,7 @@ Every rule file in this directory, with its enforcement. A script name means the
 | Rule | Description | Enforcement |
 |---|---|---|
 | [build-and-gates.md](build-and-gates.md) | Build, test, and commit gates. Nextest-only test runs. Never commit a red tree. | enforced in review |
-| [code-clarity.md](code-clarity.md) | Show the module map first. Small named functions. User-facing code first, callees follow depth-first. Do not mix abstraction levels. Keep description strings pure. | `lint-rules.py` (fails `Args:` in description strings and lists files over 300 lines as advisory) + enforced in review |
+| [code-clarity.md](code-clarity.md) | Apply the Stepdown Rule (Clean Code) to every entity: crate, module, file, item, type, function. Reading proceeds top-down, each level drops one step. Callers before callees. One abstraction level per body. Keep description strings pure. | `lint-rules.py` (fails `Args:` in description strings and impl-after-declaration, lists files over 300 lines as advisory) + enforced in review |
 | [commits.md](commits.md) | Conventional Commits 1.0.0. One commit per verified change. | enforced in review |
 | [config.md](config.md) | No hardcoded configuration. Settings bubble up to the call site. | enforced in review |
 | [decisions.md](decisions.md) | Log hidden decisions as a site comment plus a numbered ADR. | enforced in review |

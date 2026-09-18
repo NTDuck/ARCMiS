@@ -71,9 +71,14 @@ pub async fn run(
         .map_err(|error| request_error(::std::format!("validator result parse failed: {error}")))
 }
 
+/// Wrap an internal failure into a rig prompt error.
+fn request_error(message: ::std::string::String) -> ::rig::completion::PromptError {
+    ::rig::completion::PromptError::CompletionError(::rig::completion::CompletionError::ProviderError(message))
+}
+
 // Input and output artifacts owned exclusively by this agent. Per the
-// artifact-ownership rule, the DTOs live here. Per the block-order rule,
-// they come after the agent entry functions as secondary types.
+// artifact-ownership rule, the DTOs live here. Per the Stepdown Rule, they
+// sit below the entry functions as secondary types that serve them.
 #[derive(::core::fmt::Debug, ::core::clone::Clone, ::serde::Serialize, ::serde::Deserialize, ::schemars::JsonSchema)]
 pub struct ValidatorRequest {
     /// Path of the codebase root to validate.
@@ -109,9 +114,4 @@ pub struct ValidatorResponse {
     pub test_pass_rate: ::core::option::Option<f64>,
     /// Outcomes of the executed toolchain steps, in execution order.
     pub steps: ::std::vec::Vec<ValidatorStepOutcome>,
-}
-
-/// Wrap an internal failure into a rig prompt error.
-fn request_error(message: ::std::string::String) -> ::rig::completion::PromptError {
-    ::rig::completion::PromptError::CompletionError(::rig::completion::CompletionError::ProviderError(message))
 }

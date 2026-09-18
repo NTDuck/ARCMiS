@@ -69,7 +69,15 @@ Do not annotate a binding when the type comes from the expression. Use the turbo
 
 ## 6. Function Order: Caller Before Callee
 
-Order functions so a reader sees the high level first. If `pub fn foo()` calls private `bar()` and `baz()`, then `foo()` comes first. `bar()` and `baz()` come immediately after it, before any other `pub fn`. Types follow the same rule: the type the reader meets first comes first in the file. Example: declare `Registry` before `Agent` when readers need the registry concept first.
+This is the Stepdown Rule of `code-clarity.md`, applied to functions.
+Within one file, order functions so a reader sees the high level first:
+the caller comes before each callee, and each next function sits one
+level lower. If `pub fn foo()` calls private `bar()` and `baz()`, then
+`foo()` comes first. `bar()` and `baz()` come immediately after it,
+before any other `pub fn`. Types follow the same rule: the type the
+reader meets first comes first in the file. Example: declare `Registry`
+before `Agent` when readers need the registry concept first. The full
+ordering law for every entity: `code-clarity.md`.
 
 ## 7. Builders via bon
 

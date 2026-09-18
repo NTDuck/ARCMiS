@@ -15,7 +15,7 @@
 3. Rust style: fully qualified paths, derives, and macros. Caller before callee. Tap-chained instead of nested calls. Functional style within functions. See `.omp/rules/rust.md`.
 4. Run the gates before you commit: `cargo fmt --check`, `cargo clippy`, `cargo nextest run` (see `.omp/rules/build-and-gates.md`), and `python3 .omp/scripts/lint-rules.py` (qualified paths, derives, naming, print). Mise tasks: `mise run lint-rustfmt`, `mise run lint-clippy`. Never commit a red tree.
 5. Tests: unit runs through `cargo nextest` locally and in CI. Behavior tests are cucumber suites under `{crate}/tests/features/`. Run them with `cargo test --features cucumber-tests --workspace --test cucumber`. See `.omp/rules/build-and-gates.md` and `docs/adr/0006-workspace-layout-and-cucumber-tests.md`.
-7. Code clarity: the module opens with the list of things. User-facing code comes first. Callees follow their caller, depth-first. Each item reads as small named functions. Keep description strings pure. Do not mix abstraction levels. See `.omp/rules/code-clarity.md`.
+7. Code clarity: apply the Stepdown Rule (Clean Code) to every entity: crate, module, file, item, type, function. Reading proceeds top-down, each level drops one step. Callers come before callees. One abstraction level per body. Keep description strings pure. See `.omp/rules/code-clarity.md`.
 8. Minimal code: prefer external crates. Do not re-implement general capabilities without a why comment. See `.omp/rules/minimal-code.md`.
 9. No print. Log through `tracing` with structured fields. Keep messages STE-clean. See `.omp/rules/logging.md`.
 10. Do not hand-tune against the problem set. Run-specific values live only in the config file. See `.omp/rules/no-tuning.md`.
