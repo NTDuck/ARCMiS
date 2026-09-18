@@ -1,7 +1,7 @@
 # 0003. Distill rig into AREX-style skill graph
 
 - **Date:** 2026-09-14
-- **Status:** accepted
+- **Status:** superseded by [0014](0014-replace-rig-skill-graph-with-verbatim-corpus.md)
 
 ## Context
 

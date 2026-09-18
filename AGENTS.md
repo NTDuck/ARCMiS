@@ -2,9 +2,9 @@
 
 `AGENTS.md` is the map, not the manual. Start here, then follow pointers to deeper sources of truth.
 
-- **Workflow rules (binding):** [`.omp/rules/`](.omp/rules/) — commits, code clarity, config, decision logging, logging, minimal code, no tuning, Rust style, distilled-skill usage, nextest, STE.
+- **Workflow rules (binding):** [`.omp/rules/`](.omp/rules/) — commits, code clarity, config, decision logging, logging, minimal code, no tuning, Rust style, skill-corpus usage, nextest, STE.
 - **Workspace layout:** members at `ARCMiS/lib/*` and `ARCMiS/bin/*` (ADR 0008).
-- **Distilled framework skills:** [`.omp/skills/rig/`](.omp/skills/rig/SKILL.md) — AREX-style skill graph for the rig Rust LLM framework (router + 7 sub-skills, pinned upstream commit).
+- **Framework skill:** [`.omp/skills/rig/`](.omp/skills/rig/SKILL.md) — thin router + verbatim upstream `references/` corpus (examples from `0xPlaygrounds/rig`, pinned commit).
 - **Enforcement scripts:** `.omp/scripts/lint-rules.py` (Rust style, naming, layout, logging, clarity) and `~/.omp/agent/skills/asd-ste100/scripts/ste-lint.py` (STE).
 - **CI:** [`.github/workflows/`](.github/workflows/) — lint → build → test → dependencies-check (fmt/clippy on nightly, matrix test via nextest, cargo-deny + cargo-audit).
 

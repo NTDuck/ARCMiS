@@ -1,0 +1,24 @@
+//! Demonstrates the smallest useful agent setup with OpenAI.
+//! Requires `OPENAI_API_KEY`.
+//! Run it to see the provider/client/agent/prompt flow end to end.
+
+use anyhow::Result;
+use rig::prelude::*;
+use rig::providers::openai::{self, OpenAI};
+
+const PREAMBLE: &str = "You are a comedian here to entertain the user using humour and jokes.";
+const PROMPT: &str = "Entertain me!";
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    let agent = OpenAI::from_env()?
+        .bound()?
+        .agent(openai::GPT_4O)
+        .preamble(PREAMBLE)
+        .build();
+
+    let response = agent.prompt(PROMPT).await?.output;
+    println!("{response}");
+
+    Ok(())
+}
