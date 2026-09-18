@@ -20,8 +20,8 @@ Numbered, immutable Architecture Decision Records. Format and policy: [`.omp/rul
 | [0010](0010-user-facing-code-order-and-macro-qualification.md) | User-facing code order, macro qualification, and module flattening | accepted |
 | [0011](0011-util-directory-layout.md) | Util directory layout | accepted |
 | [0012](0012-seventeen-tool-surface.md) | Seventeen-tool surface after oh-my-pi | accepted |
-| [0013](0013-react-default-agent.md) | ReAct default agent | accepted |
-| [0014](0014-replace-rig-skill-graph-with-verbatim-corpus.md) | Replace the rig skill graph with a verbatim upstream corpus | accepted |
+| [0013](0013-react-default-agent.md) | ReAct default agent | superseded by [0015](0015-two-structured-artifact-agents.md) |
+| [0015](0015-two-structured-artifact-agents.md) | Two structured-artifact agents: monolith and validator | accepted |
 
 ## References
 
