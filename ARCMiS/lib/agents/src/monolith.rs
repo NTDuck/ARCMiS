@@ -17,6 +17,8 @@ use crate::util::config::Config;
 use rig::agent::{Agent, AgentHook, OutputMode};
 use rig::client::AgentClientExt;
 use rig::providers::ollama::Client;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use tools::{Bash, Write};
 
@@ -84,7 +86,7 @@ impl Monolith {
 // Input and output artifacts owned exclusively by this agent. Per the
 // artifact-ownership rule, the DTOs live here. Per the Stepdown Rule, they
 // sit below the entry functions as secondary types that serve them.
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct MonolithRequest {
     /// Input codebase: ordered map of relative path to file content.
     pub sources: BTreeMap<String, String>,
@@ -96,7 +98,7 @@ pub struct MonolithRequest {
     pub test_command: String,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct MonolithResponse {
     /// Absolute or workspace-relative path of the output codebase root.
     pub output_dir: String,

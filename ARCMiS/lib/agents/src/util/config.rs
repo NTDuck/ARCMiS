@@ -3,12 +3,13 @@
 //! agent. See .omp/rules/config.md.
 
 use anyhow::Context as _;
+use serde::Deserialize;
 use std::fs::read_to_string;
 use std::path::Path;
 use std::path::PathBuf;
 
 /// Top-level config file shape.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct Config {
     pub run: Run,
     pub output: Output,
@@ -16,7 +17,7 @@ pub struct Config {
 }
 
 /// Run section: model identity and agent budget.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(default)]
 pub struct Run {
     pub model: String,
@@ -46,13 +47,13 @@ impl Default for Run {
 }
 
 /// Output section: where the transformed codebase and logs land.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct Output {
     pub dir: PathBuf,
 }
 
 /// Source section: input codebase, target language, and toolchain.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct Source {
     pub language: String,
     pub root: PathBuf,
@@ -60,7 +61,7 @@ pub struct Source {
 }
 
 /// Target section: output language and test invocation.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct Target {
     pub language: String,
     pub test_command: String,

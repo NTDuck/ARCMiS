@@ -1,6 +1,7 @@
 //! `edit` applies one hashline patch to one file inside the sandbox root.
 
 use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
+use serde::Deserialize;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -66,7 +67,7 @@ impl Tool for Edit {
 }
 
 /// Arguments for `edit`.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct EditArgs {
     pub input: String,
 }

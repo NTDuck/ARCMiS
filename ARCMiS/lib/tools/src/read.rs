@@ -1,6 +1,7 @@
 //! `read` reads files, directories, SQLite, and URLs for the agent.
 
 use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
+use serde::Deserialize;
 use std::fs::{metadata, read, read_dir};
 use std::path::Path;
 use std::path::PathBuf;
@@ -59,7 +60,7 @@ impl Tool for Read {
 }
 
 /// Arguments for `read`.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct ReadArgs {
     pub path: String,
 }

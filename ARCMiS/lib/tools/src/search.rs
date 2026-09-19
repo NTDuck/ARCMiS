@@ -3,6 +3,7 @@
 use crate::util::paths::{relative_path, resolve_roots};
 use grep_matcher::Matcher as _;
 use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
+use serde::Deserialize;
 use std::fs::read;
 use std::path::Path;
 use std::path::PathBuf;
@@ -68,7 +69,7 @@ impl Tool for Search {
 }
 
 /// Arguments for `search`.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct SearchArgs {
     pub pattern: String,
     pub paths: Option<Vec<String>>,

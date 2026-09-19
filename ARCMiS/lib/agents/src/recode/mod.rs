@@ -20,6 +20,8 @@ use crate::monolith::MonolithRequest;
 use crate::util::config::Config;
 use rig::agent::AgentHook;
 use rig::providers::ollama::Client;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use tools::{Bash, Write};
 
 pub mod analyzer;
@@ -181,7 +183,7 @@ impl Recode {
 // artifact-ownership rule, the DTO lives here. Per the Stepdown Rule, it
 // sits below the entry function as a secondary type that serves it. The
 // input artifact is the shared [`MonolithRequest`].
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct RecodeResponse {
     /// Build outcome of the translated codebase: `pass` when the build
     /// succeeds, `fail` otherwise.

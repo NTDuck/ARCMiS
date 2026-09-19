@@ -5,6 +5,7 @@
 //! them back through its own channel.
 
 use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
+use serde::Deserialize;
 use std::collections::BTreeSet;
 
 /// `ask` validates and renders a question set for the harness.
@@ -61,13 +62,13 @@ impl Tool for Ask {
 }
 
 /// Arguments for `ask`.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct AskArgs {
     pub questions: Vec<AskQuestion>,
 }
 
 /// One question with its choices.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct AskQuestion {
     pub id: String,
     pub question: String,
@@ -79,7 +80,7 @@ pub struct AskQuestion {
 }
 
 /// One answer choice.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct AskOption {
     pub label: String,
 }

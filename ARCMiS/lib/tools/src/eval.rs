@@ -9,6 +9,7 @@
 use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
 
 use crate::util::proc::{capture, clamp_seconds, truncate_output, Captured, ProcError};
+use serde::Deserialize;
 
 /// `eval` runs code cells in Python or JavaScript and reports each result.
 pub struct Eval {}
@@ -99,13 +100,13 @@ impl Tool for Eval {
 }
 
 /// Arguments for `eval`.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct EvalArgs {
     pub cells: Vec<EvalCell>,
 }
 
 /// One code cell of the eval run.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct EvalCell {
     pub language: String,
     pub code: String,

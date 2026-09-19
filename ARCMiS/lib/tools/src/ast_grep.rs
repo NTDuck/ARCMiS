@@ -5,6 +5,7 @@ use ast_grep_core::language::Language as _;
 use ast_grep_core::tree_sitter::LanguageExt as _;
 use ast_grep_language::SupportLang;
 use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
+use serde::Deserialize;
 use std::fs::read_to_string;
 use std::path::Path;
 use std::path::PathBuf;
@@ -75,7 +76,7 @@ impl Tool for AstGrep {
 }
 
 /// Arguments for `ast_grep`.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct AstGrepArgs {
     pub pat: String,
     pub paths: Option<Vec<String>>,

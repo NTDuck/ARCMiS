@@ -6,6 +6,8 @@ use crate::util::noop_hook::NoopHook;
 use rig::agent::{Agent, OutputMode};
 use rig::client::AgentClientExt;
 use rig::providers::ollama::Client;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use tools::{Bash, Write};
 
 /// Preamble for the planner agent. Working rules and the role duties of
@@ -63,7 +65,7 @@ impl Planner {
 }
 
 /// Structured implementation plan of the planner phase.
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct PlanningOutput {
     /// Part A of the plan: source files to translate, in bottom-up
     /// dependency order.

@@ -1,6 +1,7 @@
 //! `write` creates or overwrites one file inside the sandbox root.
 
 use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
+use serde::Deserialize;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -67,7 +68,7 @@ impl Tool for Write {
 }
 
 /// Arguments for `write`.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct WriteArgs {
     pub path: String,
     pub content: String,

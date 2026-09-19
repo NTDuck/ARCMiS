@@ -6,6 +6,7 @@
 //! in progress and demotes every other in-progress item to pending.
 
 use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
+use serde::Deserialize;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::MutexGuard;
@@ -69,13 +70,13 @@ impl Tool for Todo {
 }
 
 /// Arguments for `todo`.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct TodoArgs {
     pub ops: Vec<TodoOp>,
 }
 
 /// One list edit.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct TodoOp {
     pub op: String,
     #[serde(default)]

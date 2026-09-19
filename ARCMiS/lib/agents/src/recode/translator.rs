@@ -5,6 +5,8 @@ use crate::util::config::Config;
 use rig::agent::{Agent, AgentHook, OutputMode};
 use rig::client::AgentClientExt;
 use rig::providers::ollama::Client;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use tools::{Bash, Write};
 
 /// Preamble for the translator agent. Working rules and the role duties
@@ -60,7 +62,7 @@ impl Translator {
 /// workspace state. The schema rides the prompt (OutputMode::Prompted)
 /// and the helper parses the final text, so the weak local model needs
 /// no tool call to close the phase.
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct TranslatorReport {
     /// Short summary of what the translator did in this round.
     pub summary: String,

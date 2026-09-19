@@ -6,6 +6,7 @@
 //! this pass. A later pass grows replies and await handling.
 
 use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
+use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -66,7 +67,7 @@ impl Tool for Irc {
 }
 
 /// Arguments for `irc`.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct IrcArgs {
     pub op: String,
     #[serde(default)]

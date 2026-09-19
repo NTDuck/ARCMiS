@@ -7,6 +7,8 @@ use rig::agent::{Agent, AgentHook, OutputMode};
 use rig::client::AgentClientExt;
 use rig::providers::ollama::Client;
 use rig::tool::DynamicTool;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 
 /// Preamble for the ledger manager. The loop: read the workspace, delegate
 /// one task per call, re-curate the task list, verify, stop when done.
@@ -53,7 +55,7 @@ impl LedgerManager {
 // artifact-ownership rule, the DTO lives here. Per the Stepdown Rule, it
 // sits below the entry functions as a secondary type that serves them. The
 // input artifact is the shared [`crate::monolith::MonolithRequest`].
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct LedgerResponse {
     /// Build outcome of the translated codebase: `pass` when the build
     /// succeeds, `fail` otherwise.

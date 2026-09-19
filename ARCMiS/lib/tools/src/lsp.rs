@@ -5,6 +5,7 @@
 //! server is configured.
 
 use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
+use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::future::{ready, Future};
 use std::pin::Pin;
@@ -90,7 +91,7 @@ impl Default for Lsp {
 }
 
 /// Arguments for `lsp`.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct LspArgs {
     /// Language server action to run.
     pub action: LspAction,
@@ -113,7 +114,7 @@ pub struct LspArgs {
 }
 
 /// One `lsp` action.
-#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum LspAction {
     Diagnostics,

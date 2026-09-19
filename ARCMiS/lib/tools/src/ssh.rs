@@ -15,6 +15,7 @@ use std::path::PathBuf;
 use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
 
 use crate::util::proc::{capture, clamp_seconds};
+use serde::Deserialize;
 
 /// `ssh` runs one command on a configured remote host and returns its output.
 pub struct Ssh {
@@ -97,7 +98,7 @@ impl Tool for Ssh {
 }
 
 /// Arguments for `ssh`.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct SshArgs {
     pub host: String,
     pub command: String,
@@ -112,7 +113,7 @@ const DEFAULT_TIMEOUT: u64 = 60;
 const CONTROL_PERSIST: &str = "3600";
 
 /// One host record of the ssh host file.
-#[derive(Debug, serde::Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct SshHost {
     pub hostname: String,
     pub user: Option<String>,

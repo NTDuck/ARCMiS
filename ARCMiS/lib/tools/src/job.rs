@@ -6,6 +6,7 @@
 //! not a thrown error.
 
 use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
+use serde::Deserialize;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::MutexGuard;
@@ -44,7 +45,7 @@ impl Tool for Job {
 }
 
 /// Arguments for `job`.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct JobArgs {
     #[serde(default)]
     pub poll: Option<Vec<String>>,

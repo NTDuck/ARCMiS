@@ -5,6 +5,7 @@ use ast_grep_core::language::Language as _;
 use ast_grep_core::tree_sitter::LanguageExt as _;
 use ast_grep_language::SupportLang;
 use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
+use serde::Deserialize;
 use std::fs::read_to_string;
 use std::path::Path;
 use std::path::PathBuf;
@@ -83,14 +84,14 @@ impl Tool for AstEdit {
 }
 
 /// Arguments for `ast_edit`.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct AstEditArgs {
     pub ops: Vec<OpSpec>,
     pub paths: Vec<String>,
 }
 
 /// One requested pattern rewrite.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct OpSpec {
     pub pat: String,
     pub out: String,

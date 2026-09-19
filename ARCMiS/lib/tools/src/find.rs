@@ -1,6 +1,7 @@
 //! `find` walks the sandbox root and lists files by glob pattern.
 
 use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
+use serde::Deserialize;
 use std::path::Path;
 use std::path::PathBuf;
 use std::time::SystemTime;
@@ -63,7 +64,7 @@ impl Tool for Find {
 }
 
 /// Arguments for `find`.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct FindArgs {
     pub paths: Option<Vec<String>>,
     pub hidden: Option<bool>,

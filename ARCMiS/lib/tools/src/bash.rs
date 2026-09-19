@@ -11,6 +11,7 @@ use std::path::PathBuf;
 use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
 
 use crate::util::proc::{capture, clamp_seconds, truncate_output};
+use serde::Deserialize;
 
 /// `bash` runs one shell command inside the tool root and returns its output.
 pub struct Bash {
@@ -86,7 +87,7 @@ impl Tool for Bash {
 }
 
 /// Arguments for `bash`.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct BashArgs {
     pub command: String,
     pub env: Option<HashMap<String, String>>,

@@ -6,6 +6,7 @@
 //! completes, and the job tool keeps reporting it as running.
 
 use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
+use serde::Deserialize;
 use std::collections::BTreeSet;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -60,7 +61,7 @@ impl Tool for Task {
 }
 
 /// Arguments for `task`.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct TaskArgs {
     pub tasks: Vec<TaskDefinition>,
     #[serde(default)]
@@ -74,7 +75,7 @@ pub struct TaskArgs {
 }
 
 /// One queued task definition.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct TaskDefinition {
     pub id: String,
     #[serde(default)]

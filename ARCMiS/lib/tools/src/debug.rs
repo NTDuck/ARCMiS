@@ -5,6 +5,7 @@
 //! backend reports that no adapter is configured.
 
 use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
+use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::future::{ready, Future};
 use std::pin::Pin;
@@ -173,7 +174,7 @@ impl Debug {
 }
 
 /// Arguments for `debug`.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct DebugArgs {
     /// Debug adapter operation to run.
     pub action: DebugAction,
@@ -250,7 +251,7 @@ pub struct DebugArgs {
 }
 
 /// One `debug` operation.
-#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DebugAction {
     Launch,
@@ -284,7 +285,7 @@ pub enum DebugAction {
 }
 
 /// Access kind for a data breakpoint.
-#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum DebugAccessType {
     Read,

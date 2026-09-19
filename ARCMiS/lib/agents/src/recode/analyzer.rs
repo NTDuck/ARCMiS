@@ -6,6 +6,8 @@ use crate::util::noop_hook::NoopHook;
 use rig::agent::{Agent, OutputMode};
 use rig::client::AgentClientExt;
 use rig::providers::ollama::Client;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use tools::{Bash, Write};
 
 /// Preamble for the analyzer agent. Working rules and the role duties of
@@ -59,7 +61,7 @@ impl Analyzer {
 }
 
 /// Structured research and design report of the analyzer phase.
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct AnalyzerReport {
     /// One-paragraph summary of the target project design. The full
     /// design lives in design.md in the workspace.

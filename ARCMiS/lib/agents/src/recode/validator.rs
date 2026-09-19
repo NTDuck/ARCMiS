@@ -5,6 +5,8 @@ use crate::util::config::Config;
 use rig::agent::{Agent, AgentHook, OutputMode};
 use rig::client::AgentClientExt;
 use rig::providers::ollama::Client;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use tools::{Bash, Write};
 
 /// Preamble for the validator agent. Working rules and the role duties
@@ -58,7 +60,7 @@ impl Validator {
 }
 
 /// Structured validation report of the validator phase.
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct ValidationReport {
     /// True when the build succeeds and every test passes.
     pub all_success: bool,

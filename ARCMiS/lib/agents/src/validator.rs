@@ -13,6 +13,8 @@ use crate::util::config::Config;
 use rig::agent::{Agent, AgentHook, OutputMode};
 use rig::client::AgentClientExt;
 use rig::providers::ollama::Client;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use tools::Bash;
 
 /// Preamble for the validator agent. Working rules only. The task data
@@ -69,7 +71,7 @@ impl Validator {
 // Input and output artifacts owned exclusively by this agent. Per the
 // artifact-ownership rule, the DTOs live here. Per the Stepdown Rule, they
 // sit below the entry functions as secondary types that serve them.
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct ValidatorRequest {
     /// Path of the codebase root to validate.
     pub output_dir: String,
@@ -81,7 +83,7 @@ pub struct ValidatorRequest {
     pub approach: String,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct ValidatorStepOutcome {
     /// Step name, for example `build` or `test`.
     pub step: String,
@@ -95,7 +97,7 @@ pub struct ValidatorStepOutcome {
     pub detail_tail: String,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct ValidatorResponse {
     /// True when every toolchain step passed.
     pub compilation_status: String,
