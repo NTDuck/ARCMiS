@@ -28,9 +28,9 @@ multi-agent alternatives worth benchmarking on the same task:
 - The crate hosts three methods, each a struct namespace with `build` and
   `run`: `Monolith`, `Ledger`, `Recode`. The harness selects the method from
   the config directory name.
-- `Ledger` and `Recode` reuse `MonolithRequest` and `MonolithResponse` as
-  the common translation DTO pair. The harness dispatch stays uniform: one
-  request in, one response out, regardless of method.
+- `Ledger` and `Recode` reuse `MonolithRequest` as the common input
+  artifact. The harness dispatch stays uniform: one request in, one
+  response out, regardless of method.
 - Each method owns its own coordination result DTO: `LedgerResponse` and
   `RecodeResponse`. They mirror `ValidatorResponse` fields plus the method's
   own counters.

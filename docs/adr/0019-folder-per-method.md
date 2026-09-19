@@ -22,15 +22,16 @@ scroll through unrelated agents to find the loop.
 - One agent per file. The inner fold structure is
   `ledger/{mod,manager,worker}.rs` and
   `recode/{mod,analyzer,planner,translator,validator,reporter}.rs`.
-  Files inside a folder refer to siblings through `super::` paths.
+  Sibling modules resolve through the folder namespace, for example
+  `validator::ValidationReport` inside `recode::mod`.
 - The hook default is the shared `agents::util::noop_hook::NoopHook`.
   Agent modules do not define private hook copies.
 
 ## Consequences
 
-- Harness imports stay unchanged. `lib.rs` re-exports the method structs
-  from the folders, so `agents::Ledger::build` and `agents::Recode::build`
-  call sites keep their shape.
+- Harness imports stay unchanged. `lib.rs` re-exports the method
+  structs from the folders, so `agents::Ledger::build` and
+  `agents::Recode::run` call sites keep their shape.
 - Each agent module is unit-testable on its own. The file boundary matches
   the agent boundary, so a test targets one role at a time.
 - Method orchestration is readable in one place: the `run` function in

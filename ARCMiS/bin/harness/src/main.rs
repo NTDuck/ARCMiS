@@ -10,14 +10,15 @@
 //! 6. Wire the validator agent (tool: `bash` in the output root), pass it
 //!    the structured [`ValidatorRequest`], and run it with the same hook. The
 //!    validator returns a structured [`ValidatorResponse`].
-//!    The `recode-method` config selects the ReCode pipeline: a
+//!    The `ReCodeAgent-method` config selects the ReCode pipeline: a
 //!    four-agent deterministic loop (analyze, plan, translate, validate)
 //!    over `MAX_ITER` outer iterations.
 //! 7. Write the result yaml into `{output_dir}/.ARCMiS/result/` and log
 //!    its path.
 //!
 //! Every agent boundary carries a typed artifact. No prompt-side coercion:
-//! the rig output schemas (`OutputMode::Tool`) enforce the shapes.
+//! the rig output schemas enforce the shapes: tool calls under
+//! `OutputMode::Tool`, prompted JSON under `OutputMode::Prompted`.
 //!
 //! Exit code: success iff the validator reports `pass`.
 
