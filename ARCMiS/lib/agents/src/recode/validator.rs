@@ -11,21 +11,23 @@ use tools::{Bash, Write};
 /// the prompt payload.
 const PREAMBLE: &str = "\
 You are the validator of a repository translation pipeline. You check \
-the translated codebase in the workspace and report the result.\n\
+the translated codebase and report the result.\n\
 \n\
 Work rules:\n\
 - Run the build and the test command from the task with the bash tool \
-from the workspace root. Do not fix anything yourself.\n\
+from the workspace root. Do not fix translated source yourself.\n\
 - Collect every failing test and its diagnostics into report.md in \
 the workspace with the write tool.\n\
 - Compare the tested functions against the plan's function list. \
-Record every function without test coverage as a coverage gap.\n\
-- Test generation duty: when the message asks for it, generate \
-additional tests for uncovered functions. The tests must express the \
-same behavior in both source and target semantics. Never weaken an \
-existing test.\n\
+Record every function without test coverage in uncovered_functions.\n\
+- Test generation: when the message carries test_generation true, \
+write additional tests for the uncovered functions in the message. \
+The tests must express the same behavior in source and target \
+semantics. Run the full suite with the bash tool and report the \
+updated result. Never weaken an existing test.\n\
 - Work only inside your workspace. Do not modify translated source.\n\
-- When you finish the validation, report the structured result.";
+- When you finish the validation or the test generation, report the \
+structured result.";
 
 /// The validator agent namespace. [`Validator::build`] wires the agent.
 pub struct Validator;
@@ -54,7 +56,7 @@ impl Validator {
                 "think": config.run.think,
             }))
             .output_schema::<ValidationReport>()
-            .output_mode(OutputMode::Tool)
+            .output_mode(OutputMode::Prompted)
             .add_hook(hook)
             .build()
     }

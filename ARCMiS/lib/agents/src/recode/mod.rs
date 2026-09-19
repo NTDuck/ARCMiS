@@ -86,10 +86,15 @@ impl Recode {
         let plan_value = serde_json::to_value(&planning_output)?;
 
         // Phase 3 and 4: the translate, validate, and fix loop. The
-        // first round executes the plan. Later rounds carry the validation
-        // report so the translator fixes the reported failures.
+        // first round executes the plan. Later rounds carry the previous
+        // report: failures drive translator fixes, uncovered functions
+        // drive validator test generation. Paper 3.5(b) closes the
+        // coverage gap with a second validation pass over the new tests.
         let mut validation_report: Option<validator::ValidationReport> = None;
         for iteration in 1..=max_iter {
+            // The fix round prompt: the plan on round one, the plan
+            // plus the previous report on later rounds. The report
+            // carries both the failures and the coverage gaps.
             let translator_prompt = if iteration == 1 {
                 plan_value.clone()
             } else {
@@ -126,19 +131,44 @@ impl Recode {
                 },
                 hook.clone(),
             );
+            let validator_prompt = serde_json::json!({
+                "translator_report": &translator_report,
+                "test_command": &task.test_command,
+                "test_generation": false,
+            });
             let report: validator::ValidationReport =
-                crate::util::task::task(&validator, &translator_report, max_turns).await?;
+                crate::util::task::task(&validator, &validator_prompt, max_turns).await?;
 
-            let done = report.all_success;
-            validation_report = Some(report);
-            if done {
+            // Full success closes the loop: the build passes, every
+            // test passes, and no plan function lacks coverage.
+            if report.all_success && report.uncovered_functions.is_empty() {
+                validation_report = Some(report);
                 break;
             }
+
+            // Paper 3.5(b): the validator closes the coverage gap in a
+            // second pass. It generates the tests for the uncovered
+            // functions, runs them, and reports the updated coverage.
+            // One generation pass per loop round.
+            if !report.uncovered_functions.is_empty() {
+                let generator_prompt = serde_json::json!({
+                    "translator_report": &translator_report,
+                    "test_command": &task.test_command,
+                    "test_generation": true,
+                    "uncovered_functions": &report.uncovered_functions,
+                });
+                let coverage_report: validator::ValidationReport =
+                    crate::util::task::task(&validator, &generator_prompt, max_turns).await?;
+                validation_report = Some(coverage_report);
+                continue;
+            }
+
+            validation_report = Some(report);
         }
         let validation_report = validation_report.expect("validation never ran");
 
-        // Phase 5: emit the final typed response from the last validation
-        // report.
+        // Phase 5: emit the final typed response from the last
+        // validation report.
         let reporter = reporter::Reporter::build(client, config);
         let response: RecodeResponse = crate::util::task::task(&reporter, &validation_report, max_turns).await?;
         Ok(response)

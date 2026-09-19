@@ -2,7 +2,7 @@
 //! fixes failures from the validation report.
 
 use crate::util::config::Config;
-use rig::agent::Agent;
+use rig::agent::{Agent, OutputMode};
 use rig::client::AgentClientExt;
 use tools::{Bash, Write};
 
@@ -25,17 +25,16 @@ before you continue.\n\
 - Fix mode: when the message carries a validation report, fix the \
 reported failures and nothing else. Rebuild and rerun the failing \
 tests after each fix.\n\
-- When you finish the plan or the fixes, reply with a short plain \
-text summary of what you did.";
+- When you finish the plan or the fixes, reply with a short JSON \
+object with one key, summary, whose value is a short summary of \
+what you did.";
 
 /// The translator agent namespace. [`Translator::build`] wires the agent.
 pub struct Translator;
-
 impl Translator {
     /// Build the translator agent. The agent executes the plan with the
-    /// write and bash tools. Its deliverable is the workspace plus a
-    /// plain text ack, so it has no output schema. `hook` observes every
-    /// model call and tool call.
+    /// write and bash tools and closes the phase with a structured ack.
+    /// `hook` observes every model call and tool call.
     pub fn build(
         client: &rig::providers::ollama::Client,
         config: &Config,
@@ -55,13 +54,17 @@ impl Translator {
                 "num_ctx": config.run.num_ctx,
                 "think": config.run.think,
             }))
+            .output_schema::<TranslatorReport>()
+            .output_mode(OutputMode::Prompted)
             .add_hook(hook)
             .build()
     }
 }
 
-/// Plain text ack of the translator phase. The real deliverable is the
-/// workspace state.
+/// Structured ack of the translator phase. The real deliverable is the
+/// workspace state. The schema rides the prompt (OutputMode::Prompted)
+/// and the helper parses the final text, so the weak local model needs
+/// no tool call to close the phase.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct TranslatorReport {
     /// Short summary of what the translator did in this round.
