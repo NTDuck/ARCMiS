@@ -30,3 +30,6 @@ cucumber-tests = []
 name = "cucumber"
 harness = false
 required-features = ["cucumber-tests"]
+
+[lints]
+workspace = true

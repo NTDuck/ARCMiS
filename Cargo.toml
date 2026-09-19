@@ -24,3 +24,4 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 
 [workspace.lints.clippy]
 let_and_return = "allow"
+too_many_arguments = "allow"
