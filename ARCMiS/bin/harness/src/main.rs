@@ -26,6 +26,7 @@ use rig::client::ProviderClient;
 use serde::Serialize;
 use std::env::args;
 use std::fs::create_dir_all;
+use std::path::Path;
 use std::path::PathBuf;
 use std::process::ExitCode;
 use std::time::{Duration, Instant};
@@ -76,10 +77,33 @@ async fn run() -> Result<ExitCode> {
 
     let task = MonolithTask::build(&config)?;
 
-    // Wire and run the monolith. The shared hook logs every turn and tool
-    // call to the console.
-    let monolith = agents::Monolith::build(&client, &config, RunLog);
-    let monolith_result = agents::Monolith::run(&monolith, &task, config.run.max_turns).await?;
+    // The method comes from the config directory name. Unknown names run
+    // the monolith sequence.
+    let method = config_path
+        .parent()
+        .and_then(Path::parent)
+        .and_then(|dir| dir.file_name())
+        .and_then(|name| name.to_str())
+        .unwrap_or_default()
+        .to_owned();
+    match method.as_str() {
+        "ledger-method" => run_ledger(&client, &config, &task, started).await,
+        "ReCodeAgent-method" => run_recode(&client, &config, &task, started).await,
+        _ => run_monolith(&client, &config, &task, started).await,
+    }
+}
+
+/// Wire and run the monolith, then validate its output with the validator
+/// agent. The original two-agent sequence.
+async fn run_monolith(
+    client: &rig::providers::ollama::Client,
+    config: &Config,
+    task: &MonolithRequest,
+    started: Instant,
+) -> Result<ExitCode> {
+    // The shared hook logs every turn and tool call to the console.
+    let monolith = agents::Monolith::build(client, config, RunLog);
+    let monolith_result = agents::Monolith::run(&monolith, task, config.run.max_turns).await?;
     tracing::info!(
         files_written = monolith_result.files_written,
         approach = %monolith_result.approach,
@@ -93,7 +117,7 @@ async fn run() -> Result<ExitCode> {
         test_command: config.source.target.test_command.clone(),
         approach: monolith_result.approach.clone(),
     };
-    let validator = agents::Validator::build(&client, &config, RunLog);
+    let validator = agents::Validator::build(client, config, RunLog);
     let validation = agents::Validator::run(&validator, &validation_task, config.run.max_turns).await?;
     tracing::info!(
         compilation_status = %validation.compilation_status,
@@ -101,8 +125,68 @@ async fn run() -> Result<ExitCode> {
         "validator finished"
     );
 
-    RunResult::write(&config, &validation, started.elapsed())?;
+    RunResult::write(config, &validation, started.elapsed())?;
 
+    if validation.compilation_status == "pass" {
+        Ok(ExitCode::SUCCESS)
+    } else {
+        Ok(ExitCode::FAILURE)
+    }
+}
+
+/// Wire and run the ledger method. The manager reports its own validation,
+/// so no second agent runs. The result lands in the same yaml shape.
+async fn run_ledger(
+    client: &rig::providers::ollama::Client,
+    config: &Config,
+    task: &MonolithRequest,
+    started: Instant,
+) -> Result<ExitCode> {
+    let ledger = agents::Ledger::build(client, config, RunLog);
+    let result = agents::Ledger::run(&ledger, task, config.run.max_turns).await?;
+    tracing::info!(
+        compilation_status = %result.compilation_status,
+        test_pass_rate = ?result.test_pass_rate,
+        approach = %result.approach,
+        "ledger finished"
+    );
+    let validation = ValidatorResponse {
+        compilation_status: result.compilation_status,
+        test_pass_rate: result.test_pass_rate,
+        steps: Vec::new(),
+    };
+    RunResult::write(config, &validation, started.elapsed())?;
+    if validation.compilation_status == "pass" {
+        Ok(ExitCode::SUCCESS)
+    } else {
+        Ok(ExitCode::FAILURE)
+    }
+}
+
+/// Wire and run the ReCode method. Same self-validating result shape as
+/// the ledger method.
+async fn run_recode(
+    client: &rig::providers::ollama::Client,
+    config: &Config,
+    task: &MonolithRequest,
+    started: Instant,
+) -> Result<ExitCode> {
+    let recode = agents::Recode::build(client, config, RunLog);
+    let result = agents::Recode::run(&recode, task, config.run.max_turns).await?;
+    tracing::info!(
+        compilation_status = %result.compilation_status,
+        test_pass_rate = ?result.test_pass_rate,
+        repos_translated = result.repos_translated,
+        files_written = result.files_written,
+        approach = %result.approach,
+        "recode finished"
+    );
+    let validation = ValidatorResponse {
+        compilation_status: result.compilation_status,
+        test_pass_rate: result.test_pass_rate,
+        steps: Vec::new(),
+    };
+    RunResult::write(config, &validation, started.elapsed())?;
     if validation.compilation_status == "pass" {
         Ok(ExitCode::SUCCESS)
     } else {
