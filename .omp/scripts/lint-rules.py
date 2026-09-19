@@ -7,7 +7,9 @@ With no arguments, checks all workspace Rust files plus .omp text files.
 Enforced rules (each maps to a section of .omp/rules/*):
 
 - rust.md §1: no leading `::` on `use` items, expressions, types, or
-  attributes. Plain paths: `foo::bar`, not `::foo::bar`.
+  attributes. Plain paths: `foo::bar`, not `::foo::bar`. Verbose std/core
+  paths (`std::string::String`, `core::option::Option::Some`, `std::format!`)
+  also fail; prelude names stay bare.
 - rust.md §9/macros: every non-prelude macro invocation carries its crate
   path with a bang (`serde_json::json!`, not `json!`); prelude macros stay
   bare; no leading `::`
@@ -37,7 +39,18 @@ COMMENT_RE = re.compile(r"^\s*//")
 ARGS_IN_DESCRIPTION_RE = re.compile(r'"[^"]*\bArgs:')
 PRINT_RE = re.compile(r"\b(println!|eprintln!|print!|dbg!)\s*\(")
 SINGLE_LETTER_RE = re.compile(r"\blet\s+([a-z])\s*(?::[^=]+)?=")
-TURBOFISH_ADVISORY_RE = re.compile(r"let\s+\w+\s*:\s*[^=]+=\s*[\w:.]+(?:\.\w+)?\(\)\.(collect|parse)\(")
+VERBOSE_PATH_RE = re.compile(
+    r"\b(?:std|core)::(?:"
+    r"string::String(?:::(?:from|new|from_utf8(?:_lossy))?)?"
+    r"|vec::Vec(?:::new)?|vec!"
+    r"|option::Option(?:::(?:Some|None|unwrap_or(?:_else)?)?)?"
+    r"|result::Result(?:::(?:Ok|Err|ok|err|is_ok|is_err|map|map_err)?)?"
+    r"|format!|boxed::Box(?:::pin)?|future::ready|marker::(?:Send|Sync|Unpin)"
+    r"|path::Path(?:Buf)?(?:::new|::from)?|sync::(?:Arc(?:::new)?|Mutex|MutexGuard)"
+    r"|collections::(?:BTreeMap|BTreeSet|HashMap)"
+    r"|process::Stdio|pin::(?:pin|Pin)|iter::repeat|default::Default"
+    r"|matches!|tree!)"
+)
 PRELUDE_MACROS = {
     "format",
     "vec",
@@ -51,6 +64,7 @@ PRELUDE_MACROS = {
     "assert_eq",
     "assert_ne",
     "panic",
+    "pin",
     "todo",
     "unimplemented",
     "unreachable",
@@ -66,6 +80,9 @@ PRELUDE_MACROS = {
     "option_env",
 }
 DERIVE_RE = re.compile(r"#\[\s*derive\s*\(([^)]*)\)\s*\]")
+TURBOFISH_ADVISORY_RE = re.compile(r"let\s+\w+\s*:\s*[^=]+=\s*[\w:.]+(?:\.\w+)?\(\)\.(collect|parse)\(")
+QUALIFIED_USE_RE = re.compile(r"^\s*use\s+::")
+USE_LINE_RE = re.compile(r"^\s*use\s")
 
 def iter_rust_files(root: Path, only: list[Path]) -> list[Path]:
     if only:
@@ -117,6 +134,8 @@ def check_rust(path: Path, text: str) -> tuple[list[str], list[str]]:
             continue
         if QUALIFIED_EXPR_RE.search(line) and not QUALIFIED_MACRO_ONLY_RE.search(line):
             errors.append(f"{path}:{no}: leading :: on path (rust.md §1): {line.strip()}")
+        if VERBOSE_PATH_RE.search(line) and not USE_LINE_RE.match(line):
+            errors.append(f"{path}:{no}: verbose std/core path; use the bare prelude name (rust.md §1): {line.strip()}")
         for match in MACRO_BANG_RE.finditer(line):
             if MACRO_IN_STRING_RE.search(line):
                 continue

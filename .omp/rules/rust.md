@@ -12,6 +12,9 @@ Write plain paths. Do not write a leading `::`. Write `foo::bar`, not `::foo::ba
 
 - Paths in expressions, types, `use` items, and attributes stay bare.
 - Prelude and standard-library names stay bare: `Debug`, `Clone`, `String`, `Vec`, `format!`.
+- Do not write the verbose module path for a prelude name. Write `String`,
+  not `std::string::String`. Write `Some`, not `core::option::Option::Some`.
+  Write `format!`, not `std::format!`. The linter fails these forms.
 - Names from a `use` import stay bare at the call site. Do not re-qualify them.
 
 ```rust
@@ -27,6 +30,8 @@ let f = ::std::collections::HashMap::<::std::string::String, u32>::new();
 
 2026-09-18: this section replaces the fully-qualified-path rule of ADR 0010.
 The `::` noise hid each item behind a wall of qualifiers. See ADR 0016.
+2026-09-19: the verbose `std::*`/`core::*` prelude paths gained a mechanical
+detector in `lint-rules.py`. See ADR 0017.
 
 ## 2. Tap Chaining, Not Nesting
 
