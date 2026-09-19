@@ -55,8 +55,19 @@ impl RunResult {
 }
 
 /// Record the validation result and map the outcome to the exit code.
-pub fn finish(config: &Config, validation: &ValidatorResponse, elapsed: Duration) -> Result<std::process::ExitCode> {
+/// When `experiment` is present, the run also writes the per-problem
+/// record and copies the aggregate yaml into the experiment directory.
+pub fn finish(
+    config: &Config,
+    validation: &ValidatorResponse,
+    elapsed: Duration,
+    experiment: Option<&std::path::Path>,
+) -> Result<std::process::ExitCode> {
     RunResult::write(config, validation, elapsed)?;
+    if let Some(dir) = experiment {
+        crate::experiment::write_per_problem(dir, config, validation)?;
+        crate::experiment::copy_result(dir, config)?;
+    }
     if validation.compilation_status == "pass" {
         Ok(std::process::ExitCode::SUCCESS)
     } else {

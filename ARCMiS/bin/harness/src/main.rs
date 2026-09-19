@@ -22,9 +22,9 @@
 //!
 //! Exit code: success iff the validator reports `pass`.
 
+mod experiment;
 mod result;
 mod run_log;
-
 use agents::util::sources;
 use agents::{Config, MonolithRequest, ValidatorRequest, ValidatorResponse};
 use anyhow::{Context, Result};
@@ -61,10 +61,24 @@ async fn run() -> Result<ExitCode> {
         .get(1)
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from("assets/configs/GildedRose-Refactoring-Kata/config.yml"));
+    // Optional second argument: the experiment directory. When present,
+    // the run writes manifest, result, and trace into it.
+    let experiment_dir = args.get(2).map(PathBuf::from);
 
     let started = Instant::now();
     let config =
         Config::load(&config_path).with_context(|| format!("config load failed for {}", config_path.display()))?;
+    let log = match &experiment_dir {
+        Some(dir) => {
+            let trace = dir.join("traces").join("turns.jsonl");
+            run_log::ensure_parent(&trace);
+            run_log::RunLog::with_trace(trace)
+        },
+        None => run_log::RunLog::default(),
+    };
+    if let Some(dir) = &experiment_dir {
+        experiment::write_manifest(dir, &config, &config_path)?;
+    }
 
     // The output dir must exist before the agents write into it. The
     // package structure itself is the monolith's job. No scaffold here.
@@ -93,17 +107,24 @@ async fn run() -> Result<ExitCode> {
         .unwrap_or_default()
         .to_owned();
     match method.as_str() {
-        "ledger-method" => run_ledger(&client, &config, &task, started).await,
-        "ReCodeAgent-method" => run_recode(&client, &config, &task, started).await,
-        _ => run_monolith(&client, &config, &task, started).await,
+        "ledger-method" => run_ledger(&client, &config, &task, &log, started, experiment_dir.as_deref()).await,
+        "ReCodeAgent-method" => run_recode(&client, &config, &task, &log, started, experiment_dir.as_deref()).await,
+        _ => run_monolith(&client, &config, &task, &log, started, experiment_dir.as_deref()).await,
     }
 }
 
 /// Wire and run the monolith, then validate its output with the validator
 /// agent. The original two-agent sequence.
-async fn run_monolith(client: &Client, config: &Config, task: &MonolithRequest, started: Instant) -> Result<ExitCode> {
+async fn run_monolith(
+    client: &Client,
+    config: &Config,
+    task: &MonolithRequest,
+    log: &run_log::RunLog,
+    started: Instant,
+    experiment_dir: Option<&std::path::Path>,
+) -> Result<ExitCode> {
     // The shared hook logs every turn and tool call to the console.
-    let monolith = agents::Monolith::build(client, config, run_log::RunLog);
+    let monolith = agents::Monolith::build(client, config, log.clone());
     let monolith_result = agents::Monolith::run(&monolith, task, config.run.max_turns).await?;
     tracing::info!(
         files_written = monolith_result.files_written,
@@ -118,7 +139,7 @@ async fn run_monolith(client: &Client, config: &Config, task: &MonolithRequest, 
         test_command: config.source.target.test_command.clone(),
         approach: monolith_result.approach.clone(),
     };
-    let validator = agents::Validator::build(client, config, run_log::RunLog);
+    let validator = agents::Validator::build(client, config, log.clone());
     let validation = agents::Validator::run(&validator, &validation_task, config.run.max_turns).await?;
     tracing::info!(
         compilation_status = %validation.compilation_status,
@@ -126,13 +147,20 @@ async fn run_monolith(client: &Client, config: &Config, task: &MonolithRequest, 
         "validator finished"
     );
 
-    result::finish(config, &validation, started.elapsed())
+    result::finish(config, &validation, started.elapsed(), experiment_dir)
 }
 
 /// Wire and run the ledger method. The manager reports its own validation,
 /// so no second agent runs. The result lands in the same yaml shape.
-async fn run_ledger(client: &Client, config: &Config, task: &MonolithRequest, started: Instant) -> Result<ExitCode> {
-    let ledger = agents::Ledger::build(client, config, run_log::RunLog);
+async fn run_ledger(
+    client: &Client,
+    config: &Config,
+    task: &MonolithRequest,
+    log: &run_log::RunLog,
+    started: Instant,
+    experiment_dir: Option<&std::path::Path>,
+) -> Result<ExitCode> {
+    let ledger = agents::Ledger::build(client, config, log.clone());
     let result = agents::Ledger::run(&ledger, task, config.run.max_turns).await?;
     tracing::info!(
         compilation_status = %result.compilation_status,
@@ -145,7 +173,7 @@ async fn run_ledger(client: &Client, config: &Config, task: &MonolithRequest, st
         test_pass_rate: result.test_pass_rate,
         steps: Vec::new(),
     };
-    result::finish(config, &validation, started.elapsed())
+    result::finish(config, &validation, started.elapsed(), experiment_dir)
 }
 
 /// Wire and run the ReCode method. The Recode namespace builds its four
@@ -153,8 +181,15 @@ async fn run_ledger(client: &Client, config: &Config, task: &MonolithRequest, st
 /// deterministic pipeline from the paper's Algorithm 1. The final reporter
 /// reports its own validation, so no second agent runs. The result lands
 /// in the same yaml shape.
-async fn run_recode(client: &Client, config: &Config, task: &MonolithRequest, started: Instant) -> Result<ExitCode> {
-    let result = agents::Recode::run(client, config, task, run_log::RunLog, config.run.max_turns, MAX_ITER).await?;
+async fn run_recode(
+    client: &Client,
+    config: &Config,
+    task: &MonolithRequest,
+    log: &run_log::RunLog,
+    started: Instant,
+    experiment_dir: Option<&std::path::Path>,
+) -> Result<ExitCode> {
+    let result = agents::Recode::run(client, config, task, log.clone(), config.run.max_turns, MAX_ITER).await?;
     tracing::info!(
         compilation_status = %result.compilation_status,
         test_pass_rate = ?result.test_pass_rate,
@@ -168,7 +203,7 @@ async fn run_recode(client: &Client, config: &Config, task: &MonolithRequest, st
         test_pass_rate: result.test_pass_rate,
         steps: Vec::new(),
     };
-    result::finish(config, &validation, started.elapsed())
+    result::finish(config, &validation, started.elapsed(), experiment_dir)
 }
 
 /// The structured monolith task. Discovers the input sources and bundles
