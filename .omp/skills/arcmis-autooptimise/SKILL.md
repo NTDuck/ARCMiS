@@ -22,9 +22,8 @@ own every diagnosis and every hypothesis.
 - The proposer reads anything in the tree through its own tools. The
   proposer never writes into an existing experiment directory.
 - Success is decided by a toolchain rerun in the workspace
-  (`cargo build` + the config test command), never by the harness
-  exit code or the result-yaml status string (known defect: rc is 1
-  even on success).
+  (`cargo build` + the config test command). The harness exit code
+  reports the agents' build verdict only.
 
 ## One experiment
 

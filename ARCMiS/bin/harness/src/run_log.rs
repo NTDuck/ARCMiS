@@ -14,7 +14,7 @@ use serde::Serialize;
 use std::fs::OpenOptions;
 use std::io::Write as _;
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 /// Tool-call args preview length. Longer args are cut and marked.
 const ARG_PREVIEW_CHARS: usize = 200;
@@ -98,13 +98,13 @@ pub struct RunLog {
 
 /// Cheap cloneable share over one trace sink.
 #[derive(Clone, Default)]
-struct SinkHandle(Option<std::sync::Arc<TraceSink>>);
+struct SinkHandle(Option<Arc<TraceSink>>);
 
 impl RunLog {
     /// Build a run log that writes its trace under `trace_path`.
     pub fn with_trace(trace_path: PathBuf) -> Self {
         Self {
-            sink: SinkHandle(Some(std::sync::Arc::new(TraceSink::new(trace_path)))),
+            sink: SinkHandle(Some(Arc::new(TraceSink::new(trace_path)))),
         }
     }
 }

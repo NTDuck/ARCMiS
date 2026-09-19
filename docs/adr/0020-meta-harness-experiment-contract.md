@@ -60,8 +60,10 @@ experiment tree.
 - Runs stay ~2 to 3 minutes on the local 27B model, so a 20-iteration
   search with 2 candidates per iteration fits the existing 3600 s
   per-run timeout with headroom.
-- The `compilation_status` defect (skill note: rc is 1 even on success)
-  stays unrepaired here; `frontier.py` derives success from the
-  toolchain rerun, not from the yaml string.
+- We fixed the old `compilation_status` string defect (rc was 1 even
+  on success). The agent responses now carry the boolean `compiled`:
+  the build gate. The process exit code derives from `compiled`. The
+  quality score still comes from the toolchain rerun, which
+  `frontier.py` reads.
 - The hook currently logs to the console only. Trace capture lands in
   the run log module, so console output and the JSONL stay identical.
