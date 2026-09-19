@@ -2,6 +2,7 @@
 [workspace]
 resolver = "2"
 members = ["ARCMiS/lib/*", "ARCMiS/bin/*"]
+exclude = [".artifacts"]
 
 [workspace.package]
 version = "0.1.0"
