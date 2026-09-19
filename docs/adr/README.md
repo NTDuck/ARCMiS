@@ -23,6 +23,10 @@ Numbered, immutable Architecture Decision Records. Format and policy: [`.omp/rul
 | [0013](0013-react-default-agent.md) | ReAct default agent | superseded by [0015](0015-two-structured-artifact-agents.md) |
 | [0015](0015-two-structured-artifact-agents.md) | Two structured-artifact agents: monolith and validator | accepted |
 | [0016](0016-readability-style-anyhow-result-yml.md) | Readability-first style: plain paths, anyhow, struct init | accepted |
+| [0017](0017-rig-idiom-corpus-style.md) | Rig idiom: bare names from a one-import corpus style | accepted |
+| [0018](0018-multi-method-agents.md) | Multi-method agents: monolith, ledger, recode | accepted |
+| [0019](0019-folder-per-method.md) | One folder per method | accepted |
+| [0020](0020-meta-harness-experiment-contract.md) | Meta-Harness experiment contract | accepted |
 
 ## References
 
