@@ -1,6 +1,8 @@
 //! `search` finds regex matches across files and directories.
 
+use crate::util::paths::{relative_path, resolve_roots};
 use grep_matcher::Matcher as _;
+use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
 use std::fs::read;
 use std::path::Path;
 use std::path::PathBuf;
@@ -14,11 +16,11 @@ pub struct Search {
     pub snapshots: Arc<crate::util::snapshots::SnapshotStore>,
 }
 
-impl rig::tool::Tool for Search {
+impl Tool for Search {
     const NAME: &'static str = "search";
-    type Error = rig::tool::ToolExecutionError;
+    type Error = ToolExecutionError;
     type Args = SearchArgs;
-    type Output = rig::tool::ToolOutput;
+    type Output = ToolOutput;
 
     fn description(&self) -> String {
         "Search files under the sandbox root for one regex and return matches with context.".to_owned()
@@ -46,22 +48,22 @@ impl rig::tool::Tool for Search {
         })
     }
 
-    async fn call(&self, _context: &mut rig::tool::ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
+    async fn call(&self, _context: &mut ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
         let pattern = grep_regex::RegexMatcherBuilder::new()
             .case_insensitive(args.i.unwrap_or(false))
             .build(&args.pattern)
-            .map_err(|error| rig::tool::ToolExecutionError::other(format!("bad regex '{}': {error}", args.pattern)))?;
-        let roots = resolve_roots(&self.root, &args.paths).map_err(rig::tool::ToolExecutionError::other)?;
+            .map_err(|error| ToolExecutionError::other(format!("bad regex '{}': {error}", args.pattern)))?;
+        let roots = resolve_roots(&self.root, args.paths.as_deref()).map_err(ToolExecutionError::other)?;
         let mut output = String::new();
         for root in roots {
             let report = search_root(&root, &self.root, &pattern)
-                .map_err(|error| rig::tool::ToolExecutionError::other(format_root_error(&root, &error)))?;
+                .map_err(|error| ToolExecutionError::other(format_root_error(&root, &error)))?;
             output.push_str(&report);
         }
         if output.is_empty() {
             output.push_str(&format!("no matches for '{}'\n", args.pattern));
         }
-        Ok(rig::tool::ToolOutput::text(output))
+        Ok(ToolOutput::text(output))
     }
 }
 
@@ -74,24 +76,11 @@ pub struct SearchArgs {
 }
 
 /// Maximum bytes emitted per search.
-const MAX_SEARCH_BYTES: usize = 50 * 1024;
+const MAX_SEARCH_BYTES: usize = crate::util::proc::OUTPUT_LIMIT;
 /// Context lines shown before each match.
 const BEFORE_CONTEXT: usize = 1;
 /// Context lines shown after each match.
 const AFTER_CONTEXT: usize = 3;
-
-/// Resolve the requested roots under the sandbox root.
-fn resolve_roots(root: &Path, paths: &Option<Vec<String>>) -> Result<Vec<PathBuf>, String> {
-    let requested = match paths {
-        Some(paths) if !paths.is_empty() => paths.clone(),
-        _ => vec![".".to_owned()],
-    };
-    let mut resolved = Vec::with_capacity(requested.len());
-    for path in requested {
-        resolved.push(crate::util::path::path_sanitize(root, &path)?);
-    }
-    Ok(resolved)
-}
 
 /// Search one root path and return the tagged report text.
 fn search_root(root: &Path, sandbox: &Path, matcher: &grep_regex::RegexMatcher) -> Result<String, String> {
@@ -159,13 +148,6 @@ fn search_file(path: &Path, relative: &str, matcher: &grep_regex::RegexMatcher) 
         last_end = Some(end);
     }
     Ok(output)
-}
-
-/// Render one relative display path for a file under the sandbox.
-fn relative_path(sandbox: &Path, path: &Path) -> String {
-    path.strip_prefix(sandbox)
-        .map(|relative| relative.to_string_lossy().into_owned())
-        .unwrap_or_else(|_| path.to_string_lossy().into_owned())
 }
 
 /// Format one root-level error message for the model.

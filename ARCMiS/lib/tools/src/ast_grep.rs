@@ -1,8 +1,10 @@
 //! `ast_grep` finds AST pattern matches across source files.
 
+use crate::util::paths::{relative_path, resolve_roots};
 use ast_grep_core::language::Language as _;
 use ast_grep_core::tree_sitter::LanguageExt as _;
 use ast_grep_language::SupportLang;
+use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
 use std::fs::read_to_string;
 use std::path::Path;
 use std::path::PathBuf;
@@ -13,11 +15,11 @@ pub struct AstGrep {
     pub root: PathBuf,
 }
 
-impl rig::tool::Tool for AstGrep {
+impl Tool for AstGrep {
     const NAME: &'static str = "ast_grep";
-    type Error = rig::tool::ToolExecutionError;
+    type Error = ToolExecutionError;
     type Args = AstGrepArgs;
-    type Output = rig::tool::ToolOutput;
+    type Output = ToolOutput;
 
     fn description(&self) -> String {
         "Find AST pattern matches in source files under the sandbox root.".to_owned()
@@ -49,15 +51,15 @@ impl rig::tool::Tool for AstGrep {
         })
     }
 
-    async fn call(&self, _context: &mut rig::tool::ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
-        let roots = resolve_roots(&self.root, &args.paths).map_err(rig::tool::ToolExecutionError::other)?;
+    async fn call(&self, _context: &mut ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
+        let roots = resolve_roots(&self.root, args.paths.as_deref()).map_err(ToolExecutionError::other)?;
         let skip = args.skip.unwrap_or(0).max(0) as usize;
         let mut output = String::new();
         let mut remaining = skip;
         for root in roots {
             let report =
                 grep_root(&root, &self.root, &args.pat, args.lang.as_deref(), &mut remaining).map_err(|error| {
-                    rig::tool::ToolExecutionError::other(format!("ast_grep failed for '{}': {error}", root.display()))
+                    ToolExecutionError::other(format!("ast_grep failed for '{}': {error}", root.display()))
                 })?;
             output.push_str(&report);
             if output.len() > MAX_OUTPUT_BYTES {
@@ -68,7 +70,7 @@ impl rig::tool::Tool for AstGrep {
         if output.is_empty() {
             output.push_str(&format!("no AST matches for '{}'\n", args.pat));
         }
-        Ok(rig::tool::ToolOutput::text(output))
+        Ok(ToolOutput::text(output))
     }
 }
 
@@ -82,22 +84,9 @@ pub struct AstGrepArgs {
 }
 
 /// Maximum bytes emitted per ast_grep call.
-const MAX_OUTPUT_BYTES: usize = 50 * 1024;
+const MAX_OUTPUT_BYTES: usize = crate::util::proc::OUTPUT_LIMIT;
 /// Maximum matches shown per call.
 const MAX_MATCHES: usize = 50;
-
-/// Resolve one root path to match.
-fn resolve_roots(root: &Path, paths: &Option<Vec<String>>) -> Result<Vec<PathBuf>, String> {
-    let requested = match paths {
-        Some(paths) if !paths.is_empty() => paths.clone(),
-        _ => vec![".".to_owned()],
-    };
-    let mut resolved = Vec::with_capacity(requested.len());
-    for path in requested {
-        resolved.push(crate::util::path::path_sanitize(root, &path)?);
-    }
-    Ok(resolved)
-}
 
 /// Run the pattern over one root path and build the report.
 fn grep_root(
@@ -130,7 +119,6 @@ fn grep_root(
     Ok(output)
 }
 
-/// Match one file and append its `*LINE:text` rows when it matches.
 fn grep_file(
     path: &Path,
     relative: &str,
@@ -175,11 +163,4 @@ fn resolve_language(language: Option<&str>, relative: &str) -> Result<SupportLan
         return name.parse::<SupportLang>().map_err(|error| format!("unsupported language '{name}': {error:?}"));
     }
     SupportLang::from_path(relative).ok_or_else(|| format!("cannot infer a language for '{relative}'. Pass 'lang'."))
-}
-
-/// Render one relative display path for a file under the sandbox.
-fn relative_path(sandbox: &Path, path: &Path) -> String {
-    path.strip_prefix(sandbox)
-        .map(|relative| relative.to_string_lossy().into_owned())
-        .unwrap_or_else(|_| path.to_string_lossy().into_owned())
 }

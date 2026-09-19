@@ -1,8 +1,10 @@
 //! `ast_edit` stages AST pattern rewrites as preview diffs.
 
+use crate::util::paths::{relative_path, resolve_roots};
 use ast_grep_core::language::Language as _;
 use ast_grep_core::tree_sitter::LanguageExt as _;
 use ast_grep_language::SupportLang;
+use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
 use std::fs::read_to_string;
 use std::path::Path;
 use std::path::PathBuf;
@@ -13,11 +15,11 @@ pub struct AstEdit {
     pub root: PathBuf,
 }
 
-impl rig::tool::Tool for AstEdit {
+impl Tool for AstEdit {
     const NAME: &'static str = "ast_edit";
-    type Error = rig::tool::ToolExecutionError;
+    type Error = ToolExecutionError;
     type Args = AstEditArgs;
-    type Output = rig::tool::ToolOutput;
+    type Output = ToolOutput;
 
     fn description(&self) -> String {
         "Stage AST pattern rewrites as a preview diff without changing files.".to_owned()
@@ -49,19 +51,19 @@ impl rig::tool::Tool for AstEdit {
         })
     }
 
-    async fn call(&self, _context: &mut rig::tool::ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
+    async fn call(&self, _context: &mut ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
         if args.ops.is_empty() {
-            return Err(rig::tool::ToolExecutionError::other("ast_edit needs at least one op with 'pat' and 'out'."));
+            return Err(ToolExecutionError::other("ast_edit needs at least one op with 'pat' and 'out'."));
         }
         if args.paths.is_empty() {
-            return Err(rig::tool::ToolExecutionError::other("ast_edit needs at least one path."));
+            return Err(ToolExecutionError::other("ast_edit needs at least one path."));
         }
-        let roots = resolve_roots(&self.root, &args.paths).map_err(rig::tool::ToolExecutionError::other)?;
+        let roots = resolve_roots(&self.root, Some(&args.paths)).map_err(ToolExecutionError::other)?;
         let mut output = String::new();
         let mut changed = 0usize;
         for root in roots {
             let report = preview_root(&root, &self.root, &args.ops, &mut changed).map_err(|error| {
-                rig::tool::ToolExecutionError::other(format!("ast_edit failed for '{}': {error}", root.display()))
+                ToolExecutionError::other(format!("ast_edit failed for '{}': {error}", root.display()))
             })?;
             output.push_str(&report);
             if output.len() > MAX_OUTPUT_BYTES {
@@ -76,7 +78,7 @@ impl rig::tool::Tool for AstEdit {
                 "{changed} file(s) staged. Review the diff, then call the resolve tool to apply it.\n"
             ));
         }
-        Ok(rig::tool::ToolOutput::text(output))
+        Ok(ToolOutput::text(output))
     }
 }
 
@@ -95,18 +97,9 @@ pub struct OpSpec {
 }
 
 /// Maximum bytes emitted per ast_edit call.
-const MAX_OUTPUT_BYTES: usize = 50 * 1024;
+const MAX_OUTPUT_BYTES: usize = crate::util::proc::OUTPUT_LIMIT;
 /// Maximum staged rewrites shown per file.
 const MAX_MATCHES_PER_FILE: usize = 50;
-
-/// Resolve requested roots under the sandbox root.
-fn resolve_roots(root: &Path, paths: &[String]) -> Result<Vec<PathBuf>, String> {
-    let mut resolved = Vec::with_capacity(paths.len());
-    for path in paths {
-        resolved.push(crate::util::path::path_sanitize(root, path)?);
-    }
-    Ok(resolved)
-}
 
 /// Preview the rewrites over one root path and return diff text.
 fn preview_root(root: &Path, sandbox: &Path, ops: &[OpSpec], changed: &mut usize) -> Result<String, String> {
@@ -162,11 +155,4 @@ fn preview_file(path: &Path, relative: &str, ops: &[OpSpec], changed: &mut usize
     }
     *changed += 1;
     Ok(format!("staged (not applied): {relative}\n{diff}\n"))
-}
-
-/// Render one relative display path for a file under the sandbox.
-fn relative_path(sandbox: &Path, path: &Path) -> String {
-    path.strip_prefix(sandbox)
-        .map(|relative| relative.to_string_lossy().into_owned())
-        .unwrap_or_else(|_| path.to_string_lossy().into_owned())
 }

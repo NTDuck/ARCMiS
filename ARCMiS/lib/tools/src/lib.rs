@@ -15,6 +15,8 @@ pub mod util {
     pub mod catalog;
     pub mod jobs;
     pub mod path;
+    pub mod paths;
+    pub mod proc;
     pub mod snapshots;
 }
 
