@@ -10,6 +10,9 @@
 //! 6. Wire the validator agent (tool: `bash` in the output root), pass it
 //!    the structured [`ValidatorRequest`], and run it with the same hook. The
 //!    validator returns a structured [`ValidatorResponse`].
+//!    The `recode-method` config selects the ReCode pipeline: a
+//!    four-agent deterministic loop (analyze, plan, translate, validate)
+//!    over `MAX_ITER` outer iterations.
 //! 7. Write the result yaml into `{output_dir}/.ARCMiS/result/` and log
 //!    its path.
 //!
@@ -34,6 +37,8 @@ use time::OffsetDateTime;
 
 /// Tool-call args preview length. Longer args are cut and marked.
 const ARG_PREVIEW_CHARS: usize = 200;
+/// Algorithm 1 maximum outer iterations for the ReCode method.
+const MAX_ITER: usize = 5;
 
 #[tokio::main]
 async fn main() -> ExitCode {
@@ -163,16 +168,18 @@ async fn run_ledger(
     }
 }
 
-/// Wire and run the ReCode method. Same self-validating result shape as
-/// the ledger method.
+/// Wire and run the ReCode method. The Recode namespace builds its four
+/// agents (analyzer, planner, translator, validator) and runs the
+/// deterministic pipeline from the paper's Algorithm 1. The final reporter
+/// reports its own validation, so no second agent runs. The result lands
+/// in the same yaml shape.
 async fn run_recode(
     client: &rig::providers::ollama::Client,
     config: &Config,
     task: &MonolithRequest,
     started: Instant,
 ) -> Result<ExitCode> {
-    let recode = agents::Recode::build(client, config, RunLog);
-    let result = agents::Recode::run(&recode, task, config.run.max_turns).await?;
+    let result = agents::Recode::run(client, config, task, RunLog, config.run.max_turns, MAX_ITER).await?;
     tracing::info!(
         compilation_status = %result.compilation_status,
         test_pass_rate = ?result.test_pass_rate,
