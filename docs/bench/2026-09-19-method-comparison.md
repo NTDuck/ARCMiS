@@ -1,4 +1,53 @@
 # Migration method benchmark: Monolith vs Ledger vs Recode
+## Revision 2 (2026-09-19, separate-agent implementations)
+
+The v1 measurement below ran two flattened methods: one file per paper,
+both shapes collapsed toward a manager-tool design. After the restructure
+to paper-faithful agent teams, the same 5x3 protocol ran again: same task,
+same model, same budgets, fresh workspaces. Verification against the
+papers changed the code in three ways that affect the measurement: the
+Recode pipeline now runs four specialized agents in a deterministic loop
+with a coverage-gap pass (paper 3.5(b)), the Ledger manager delegates
+through a worker tool and re-curates the task list, and phase agents
+return prompted JSON instead of plain text.
+
+| Method | Compilation rate | Full-test-pass rate | Test pass rate | Wall time per pass |
+|---|---|---|---|---|
+| Monolith | 5/5 | 0/5 | 0.50 += 0.00 | 97.4 += 34.0 s |
+| Ledger (arXiv:2608.26480) | 5/5 | 1/5 | 0.60 += 0.22 | 116.3 += 21.6 s |
+| Recode (arXiv:2604.07341) | 5/5 | 1/5 | 0.65 += 0.22 | 160.5 += 19.1 s |
+
+Per-pass pass rates (tests passed / total):
+
+| Method | Rep 1 | Rep 2 | Rep 3 | Rep 4 | Rep 5 |
+|---|---|---|---|---|---|
+| Monolith | 1/2 | 1/2 | 1/2 | 1/2 | 1/2 |
+| Ledger | 1/2 | 1/2 | 1/2 | 1/2 | 2/2 pass |
+| Recode | 1/2 | 2/2 pass | 1/2 | 3/4 | 1/2 |
+
+Reading:
+
+- The ordering flipped with the faithful implementations: the two
+  multi-agent methods now sit above the monolith (0.65 and 0.60 vs
+  0.50), while v1 had the monolith on top. The monolith's pass rate
+  collapsed to a flat 0.50 with zero variance across all five passes.
+  The v1 monolith numbers came from a run before the validator prompt
+  and output-mode changes, so the v1 and v2 monolith columns are not
+  one method measured twice. They are two harness generations.
+- Wall time ranking is stable: more agents, more seconds. Recode pays
+  for the analyzer and planner phases plus the coverage pass on top of
+  the translate-validate loop.
+- The deltas still sit inside one SD of each other (n=5). The v1
+  conclusion stands in revised form: on this task the faithful
+  scaffolds no longer hurt, but the evidence for them paying is one
+  full pass in five for each method.
+- Raw artifacts live in `.artifacts/bench/` (the v2 run overwrote the
+  v1 run directories). The v2 aggregates live in
+  `.artifacts/bench/summary-2026-09-19-restructure.json`.
+
+---
+
+# Migration method benchmark: Monolith vs Ledger vs Recode
 
 - **Date:** 2026-09-19
 - **Task:** GildedRose-Refactoring-Kata, C to Rust, `cargo test`
