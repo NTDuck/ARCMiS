@@ -22,23 +22,22 @@
 //!
 //! Exit code: success iff the validator reports `pass`.
 
+mod result;
+mod run_log;
+
 use agents::util::sources;
-use agents::{Config, MonolithRequest, ValidatorRequest, ValidatorResponse, ValidatorStepOutcome};
+use agents::{Config, MonolithRequest, ValidatorRequest, ValidatorResponse};
 use anyhow::{Context, Result};
-use rig::agent::{AgentHook, CompletionCallAction, CompletionCallEvent, HookContext, ToolCall, ToolCallAction};
 use rig::client::ProviderClient;
 use rig::providers::ollama::Client;
-use serde::Serialize;
+use run_log::Tracing;
 use std::env::args;
 use std::fs::create_dir_all;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::ExitCode;
-use std::time::{Duration, Instant};
-use time::OffsetDateTime;
+use std::time::Instant;
 
-/// Tool-call args preview length. Longer args are cut and marked.
-const ARG_PREVIEW_CHARS: usize = 200;
 /// Algorithm 1 maximum outer iterations for the ReCode method.
 const MAX_ITER: usize = 5;
 
@@ -104,7 +103,7 @@ async fn run() -> Result<ExitCode> {
 /// agent. The original two-agent sequence.
 async fn run_monolith(client: &Client, config: &Config, task: &MonolithRequest, started: Instant) -> Result<ExitCode> {
     // The shared hook logs every turn and tool call to the console.
-    let monolith = agents::Monolith::build(client, config, RunLog);
+    let monolith = agents::Monolith::build(client, config, run_log::RunLog);
     let monolith_result = agents::Monolith::run(&monolith, task, config.run.max_turns).await?;
     tracing::info!(
         files_written = monolith_result.files_written,
@@ -119,7 +118,7 @@ async fn run_monolith(client: &Client, config: &Config, task: &MonolithRequest, 
         test_command: config.source.target.test_command.clone(),
         approach: monolith_result.approach.clone(),
     };
-    let validator = agents::Validator::build(client, config, RunLog);
+    let validator = agents::Validator::build(client, config, run_log::RunLog);
     let validation = agents::Validator::run(&validator, &validation_task, config.run.max_turns).await?;
     tracing::info!(
         compilation_status = %validation.compilation_status,
@@ -127,19 +126,13 @@ async fn run_monolith(client: &Client, config: &Config, task: &MonolithRequest, 
         "validator finished"
     );
 
-    RunResult::write(config, &validation, started.elapsed())?;
-
-    if validation.compilation_status == "pass" {
-        Ok(ExitCode::SUCCESS)
-    } else {
-        Ok(ExitCode::FAILURE)
-    }
+    result::finish(config, &validation, started.elapsed())
 }
 
 /// Wire and run the ledger method. The manager reports its own validation,
 /// so no second agent runs. The result lands in the same yaml shape.
 async fn run_ledger(client: &Client, config: &Config, task: &MonolithRequest, started: Instant) -> Result<ExitCode> {
-    let ledger = agents::Ledger::build(client, config, RunLog);
+    let ledger = agents::Ledger::build(client, config, run_log::RunLog);
     let result = agents::Ledger::run(&ledger, task, config.run.max_turns).await?;
     tracing::info!(
         compilation_status = %result.compilation_status,
@@ -152,12 +145,7 @@ async fn run_ledger(client: &Client, config: &Config, task: &MonolithRequest, st
         test_pass_rate: result.test_pass_rate,
         steps: Vec::new(),
     };
-    RunResult::write(config, &validation, started.elapsed())?;
-    if validation.compilation_status == "pass" {
-        Ok(ExitCode::SUCCESS)
-    } else {
-        Ok(ExitCode::FAILURE)
-    }
+    result::finish(config, &validation, started.elapsed())
 }
 
 /// Wire and run the ReCode method. The Recode namespace builds its four
@@ -166,7 +154,7 @@ async fn run_ledger(client: &Client, config: &Config, task: &MonolithRequest, st
 /// reports its own validation, so no second agent runs. The result lands
 /// in the same yaml shape.
 async fn run_recode(client: &Client, config: &Config, task: &MonolithRequest, started: Instant) -> Result<ExitCode> {
-    let result = agents::Recode::run(client, config, task, RunLog, config.run.max_turns, MAX_ITER).await?;
+    let result = agents::Recode::run(client, config, task, run_log::RunLog, config.run.max_turns, MAX_ITER).await?;
     tracing::info!(
         compilation_status = %result.compilation_status,
         test_pass_rate = ?result.test_pass_rate,
@@ -180,27 +168,7 @@ async fn run_recode(client: &Client, config: &Config, task: &MonolithRequest, st
         test_pass_rate: result.test_pass_rate,
         steps: Vec::new(),
     };
-    RunResult::write(config, &validation, started.elapsed())?;
-    if validation.compilation_status == "pass" {
-        Ok(ExitCode::SUCCESS)
-    } else {
-        Ok(ExitCode::FAILURE)
-    }
-}
-
-/// The tracing subscriber. One global install with an env filter.
-struct Tracing;
-
-impl Tracing {
-    /// Install the subscriber. `RUST_LOG` selects the filter. `info` is the default.
-    fn init() {
-        tracing_subscriber::fmt()
-            .with_env_filter(
-                tracing_subscriber::EnvFilter::try_from_default_env()
-                    .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
-            )
-            .init();
-    }
+    result::finish(config, &validation, started.elapsed())
 }
 
 /// The structured monolith task. Discovers the input sources and bundles
@@ -221,111 +189,5 @@ impl MonolithTask {
             target_language: config.source.target.language.clone(),
             test_command: config.source.target.test_command.clone(),
         })
-    }
-}
-
-/// The run log. Tool calls surface through the rig hook. The agents'
-/// structured results land in the tracing log and the result yaml.
-#[derive(Clone, Default)]
-struct RunLog;
-
-impl AgentHook for RunLog {
-    async fn on_completion_call(&self, ctx: &HookContext, _event: CompletionCallEvent<'_>) -> CompletionCallAction {
-        tracing::info!(turn = ctx.turn(), "model call");
-        CompletionCallAction::continue_run()
-    }
-
-    async fn on_tool_call(&self, ctx: &HookContext, event: ToolCall<'_>) -> ToolCallAction {
-        tracing::info!(
-            turn = ctx.turn(),
-            tool = event.tool_name,
-            args = %truncate_args(event.args),
-            "tool call"
-        );
-        ToolCallAction::run()
-    }
-}
-
-/// One run's recorded result. Rendered as yaml into the output dir.
-struct RunResult;
-
-impl RunResult {
-    /// Render the validation result as yaml and write it to
-    /// `{output_dir}/.ARCMiS/result/{timestamp}.yml`.
-    fn write(config: &Config, validation: &ValidatorResponse, elapsed: Duration) -> Result<()> {
-        let record = RunRecord {
-            compilation_status: validation.compilation_status.clone(),
-            test_pass_rate: fmt_pass_rate(validation.test_pass_rate),
-            elapsed: format!("{elapsed:?}"),
-            steps: validation
-                .steps
-                .iter()
-                .map(|step| RunStepRecord {
-                    step: step.step.clone(),
-                    passed: step.passed,
-                    detail: step_report_line(step),
-                })
-                .collect(),
-        };
-        // Dotdir prefix keeps the result out of the translated codebase listing.
-        let result_dir = config.output.dir.join(".ARCMiS").join("result");
-        create_dir_all(&result_dir).with_context(|| format!("result dir create failed at {}", result_dir.display()))?;
-        let timestamp = OffsetDateTime::now_utc()
-            .format(&time::macros::format_description!("[year][month][day]T[hour][minute][second]Z"))
-            .context("run result timestamp format failed")?;
-        let result_path = result_dir.join(format!("{timestamp}.yml"));
-        std::fs::write(&result_path, serde_yaml::to_string(&record)?)
-            .with_context(|| format!("run result write failed at {}", result_path.display()))?;
-        tracing::info!(
-            result = %result_path.display(),
-            compilation_status = %validation.compilation_status,
-            test_pass_rate = ?validation.test_pass_rate,
-            elapsed = ?elapsed,
-            "run result written"
-        );
-        Ok(())
-    }
-}
-
-/// The yaml document for one run.
-#[derive(Serialize)]
-struct RunRecord {
-    compilation_status: String,
-    test_pass_rate: String,
-    elapsed: String,
-    steps: Vec<RunStepRecord>,
-}
-
-/// One toolchain step in the yaml document.
-#[derive(Serialize)]
-struct RunStepRecord {
-    step: String,
-    passed: bool,
-    detail: String,
-}
-
-/// Cut `args` to `ARG_PREVIEW_CHARS` characters and append `...` when cut.
-fn truncate_args(args: &str) -> String {
-    if args.chars().count() <= ARG_PREVIEW_CHARS {
-        return args.to_owned();
-    }
-    let cut: String = args.chars().take(ARG_PREVIEW_CHARS).collect();
-    format!("{cut}...")
-}
-
-/// Render one toolchain step outcome as a detail line. Test counts appear
-/// when the step reported them.
-fn step_report_line(step: &ValidatorStepOutcome) -> String {
-    match (step.tests_passed, step.tests_failed) {
-        (Some(passed), Some(failed)) => format!("tests passed {passed}, failed {failed}"),
-        _ => String::new(),
-    }
-}
-
-/// Render the pass rate for the record: `n/a` when no test step reported.
-fn fmt_pass_rate(rate: Option<f64>) -> String {
-    match rate {
-        Some(rate) => format!("{rate:.2}"),
-        None => "n/a".to_owned(),
     }
 }
