@@ -2848,6 +2848,7 @@ dependencies = [
  "cucumber",
  "rig",
  "serde",
+ "serde_json",
  "serde_yaml",
  "time",
  "tokio",
