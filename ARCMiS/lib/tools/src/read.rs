@@ -1,5 +1,6 @@
 //! `read` reads files, directories, SQLite, and URLs for the agent.
 
+use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
 use std::fs::{metadata, read, read_dir};
 use std::path::Path;
 use std::path::PathBuf;
@@ -14,11 +15,11 @@ pub struct Read {
     pub snapshots: Arc<crate::util::snapshots::SnapshotStore>,
 }
 
-impl rig::tool::Tool for Read {
+impl Tool for Read {
     const NAME: &'static str = "read";
-    type Error = rig::tool::ToolExecutionError;
+    type Error = ToolExecutionError;
     type Args = ReadArgs;
-    type Output = rig::tool::ToolOutput;
+    type Output = ToolOutput;
 
     fn description(&self) -> String {
         "Read a file, directory, archive, SQLite database, or URL and return text with line anchors.".to_owned()
@@ -37,12 +38,12 @@ impl rig::tool::Tool for Read {
         })
     }
 
-    async fn call(&self, _context: &mut rig::tool::ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
+    async fn call(&self, _context: &mut ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
         let raw = args.path.trim().to_owned();
         if raw.contains("://") {
-            return Ok(rig::tool::ToolOutput::text(read_url(&raw).await?));
+            return Ok(ToolOutput::text(read_url(&raw).await?));
         }
-        let path = crate::util::path::path_sanitize(&self.root, &raw).map_err(rig::tool::ToolExecutionError::other)?;
+        let path = crate::util::path::path_sanitize(&self.root, &raw).map_err(ToolExecutionError::other)?;
         let (target, selector) = split_selector(&raw);
         let target = target.to_string_lossy().into_owned();
         let relative = relative_display(&path);
@@ -51,9 +52,9 @@ impl rig::tool::Tool for Read {
             read_local(&absolute, &relative, &selector, &target)
         })
         .await
-        .map_err(|error| rig::tool::ToolExecutionError::other(format!("read join failed: {error}")))?
-        .map_err(rig::tool::ToolExecutionError::other)?;
-        Ok(rig::tool::ToolOutput::text(output))
+        .map_err(|error| ToolExecutionError::other(format!("read join failed: {error}")))?
+        .map_err(ToolExecutionError::other)?;
+        Ok(ToolOutput::text(output))
     }
 }
 
@@ -357,6 +358,6 @@ fn format_sql_value(value: &rusqlite::types::Value) -> String {
 }
 
 /// Fetch one URL and return cleaned text or raw HTML.
-async fn read_url(raw: &str) -> Result<String, rig::tool::ToolExecutionError> {
-    Err(rig::tool::ToolExecutionError::other(format!("read does not fetch remote URLs in this build: {raw}")))
+async fn read_url(raw: &str) -> Result<String, ToolExecutionError> {
+    Err(ToolExecutionError::other(format!("read does not fetch remote URLs in this build: {raw}")))
 }

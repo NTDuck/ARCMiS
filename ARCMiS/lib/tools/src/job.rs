@@ -5,6 +5,7 @@
 //! jobs. Every op returns text sections, and async disabled is a text error,
 //! not a thrown error.
 
+use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::MutexGuard;
@@ -15,11 +16,11 @@ pub struct Job {
     pub jobs: Arc<Mutex<crate::util::jobs::JobRegistry>>,
 }
 
-impl rig::tool::Tool for Job {
+impl Tool for Job {
     const NAME: &'static str = "job";
-    type Error = rig::tool::ToolExecutionError;
+    type Error = ToolExecutionError;
     type Args = JobArgs;
-    type Output = rig::tool::ToolOutput;
+    type Output = ToolOutput;
 
     fn description(&self) -> String {
         "Poll, cancel, or list background jobs in the registry.".to_owned()
@@ -36,9 +37,9 @@ impl rig::tool::Tool for Job {
         })
     }
 
-    async fn call(&self, _context: &mut rig::tool::ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
+    async fn call(&self, _context: &mut ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
         let text = run_ops(&self.jobs, &args)?;
-        Ok(rig::tool::ToolOutput::text(text))
+        Ok(ToolOutput::text(text))
     }
 }
 
@@ -54,10 +55,7 @@ pub struct JobArgs {
 }
 
 /// Run the requested ops in poll, cancel, list order. Build the text report.
-fn run_ops(
-    jobs: &Mutex<crate::util::jobs::JobRegistry>,
-    args: &JobArgs,
-) -> Result<String, rig::tool::ToolExecutionError> {
+fn run_ops(jobs: &Mutex<crate::util::jobs::JobRegistry>, args: &JobArgs) -> Result<String, ToolExecutionError> {
     let mut registry = lock_registry(jobs)?;
     registry.retain();
     let mut sections = Vec::new();
@@ -71,7 +69,7 @@ fn run_ops(
         sections.push(render_poll(&registry.poll(&[])));
     }
     if sections.is_empty() {
-        sections.push(String::from("no op given. Pass \"poll\", \"cancel\", or \"list\": true."));
+        sections.push("no op given. Pass \"poll\", \"cancel\", or \"list\": true.".to_owned());
     }
     Ok(sections.join("\n\n"))
 }
@@ -79,7 +77,7 @@ fn run_ops(
 /// Render the cancelled-id section.
 fn render_cancelled(cancelled: &[String]) -> String {
     if cancelled.is_empty() {
-        return String::from("## Cancelled\nnone");
+        return "## Cancelled\nnone".to_owned();
     }
     format!("## Cancelled\n{}", cancelled.join("\n"))
 }
@@ -108,7 +106,7 @@ fn render_poll(entries: &[crate::util::jobs::JobEntry]) -> String {
 /// Render rows, or the word "none" when the section holds no rows.
 fn render_rows(rows: &[String]) -> String {
     if rows.is_empty() {
-        return String::from("none");
+        return "none".to_owned();
     }
     rows.join("\n")
 }
@@ -125,6 +123,6 @@ fn render_entry(entry: &crate::util::jobs::JobEntry) -> String {
 /// Lock the job registry. A poisoned lock returns an execution error.
 fn lock_registry(
     jobs: &Mutex<crate::util::jobs::JobRegistry>,
-) -> Result<MutexGuard<'_, crate::util::jobs::JobRegistry>, rig::tool::ToolExecutionError> {
-    jobs.lock().map_err(|error| rig::tool::ToolExecutionError::other(format!("job registry lock failed: {error}")))
+) -> Result<MutexGuard<'_, crate::util::jobs::JobRegistry>, ToolExecutionError> {
+    jobs.lock().map_err(|error| ToolExecutionError::other(format!("job registry lock failed: {error}")))
 }

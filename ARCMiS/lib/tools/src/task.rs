@@ -5,6 +5,7 @@
 //! execution lands when the runtime grows a spawner. Until then no job ever
 //! completes, and the job tool keeps reporting it as running.
 
+use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
 use std::collections::BTreeSet;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -16,11 +17,11 @@ pub struct Task {
     pub jobs: Arc<Mutex<crate::util::jobs::JobRegistry>>,
 }
 
-impl rig::tool::Tool for Task {
+impl Tool for Task {
     const NAME: &'static str = "task";
-    type Error = rig::tool::ToolExecutionError;
+    type Error = ToolExecutionError;
     type Args = TaskArgs;
-    type Output = rig::tool::ToolOutput;
+    type Output = ToolOutput;
 
     fn description(&self) -> String {
         "Validate task definitions and queue them as background jobs.".to_owned()
@@ -52,9 +53,9 @@ impl rig::tool::Tool for Task {
         })
     }
 
-    async fn call(&self, _context: &mut rig::tool::ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
+    async fn call(&self, _context: &mut ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
         let summary = queue_tasks(&self.jobs, &args)?;
-        Ok(rig::tool::ToolOutput::text(summary))
+        Ok(ToolOutput::text(summary))
     }
 }
 
@@ -82,10 +83,7 @@ pub struct TaskDefinition {
 }
 
 /// Validate the task list, register each entry, and build the summary text.
-fn queue_tasks(
-    jobs: &Mutex<crate::util::jobs::JobRegistry>,
-    args: &TaskArgs,
-) -> Result<String, rig::tool::ToolExecutionError> {
+fn queue_tasks(jobs: &Mutex<crate::util::jobs::JobRegistry>, args: &TaskArgs) -> Result<String, ToolExecutionError> {
     validate(&args.tasks)?;
     let mut registry = lock_registry(jobs)?;
     let ids = args
@@ -102,23 +100,20 @@ fn queue_tasks(
 }
 
 /// Reject empty assignments and duplicate task ids.
-fn validate(tasks: &[TaskDefinition]) -> Result<(), rig::tool::ToolExecutionError> {
+fn validate(tasks: &[TaskDefinition]) -> Result<(), ToolExecutionError> {
     if tasks.is_empty() {
-        return Err(rig::tool::ToolExecutionError::invalid_args("tasks must hold at least one entry"));
+        return Err(ToolExecutionError::invalid_args("tasks must hold at least one entry"));
     }
     let mut seen = BTreeSet::new();
     for task in tasks {
         if task.id.is_empty() {
-            return Err(rig::tool::ToolExecutionError::invalid_args("task id must not be empty"));
+            return Err(ToolExecutionError::invalid_args("task id must not be empty"));
         }
         if task.assignment.trim().is_empty() {
-            return Err(rig::tool::ToolExecutionError::invalid_args(format!(
-                "task \"{}\" needs a non-empty assignment",
-                task.id
-            )));
+            return Err(ToolExecutionError::invalid_args(format!("task \"{}\" needs a non-empty assignment", task.id)));
         }
         if !seen.insert(task.id.clone()) {
-            return Err(rig::tool::ToolExecutionError::invalid_args(format!("duplicate task id \"{}\"", task.id)));
+            return Err(ToolExecutionError::invalid_args(format!("duplicate task id \"{}\"", task.id)));
         }
     }
     Ok(())
@@ -127,6 +122,6 @@ fn validate(tasks: &[TaskDefinition]) -> Result<(), rig::tool::ToolExecutionErro
 /// Lock the job registry. A poisoned lock returns an execution error.
 fn lock_registry(
     jobs: &Mutex<crate::util::jobs::JobRegistry>,
-) -> Result<MutexGuard<'_, crate::util::jobs::JobRegistry>, rig::tool::ToolExecutionError> {
-    jobs.lock().map_err(|error| rig::tool::ToolExecutionError::other(format!("job registry lock failed: {error}")))
+) -> Result<MutexGuard<'_, crate::util::jobs::JobRegistry>, ToolExecutionError> {
+    jobs.lock().map_err(|error| ToolExecutionError::other(format!("job registry lock failed: {error}")))
 }

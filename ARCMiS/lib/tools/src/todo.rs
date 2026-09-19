@@ -5,6 +5,7 @@
 //! the returned tree. `init` replaces the whole list. `start` marks one item
 //! in progress and demotes every other in-progress item to pending.
 
+use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::MutexGuard;
@@ -15,11 +16,11 @@ pub struct Todo {
     pub phases: Arc<Mutex<Vec<TodoPhase>>>,
 }
 
-impl rig::tool::Tool for Todo {
+impl Tool for Todo {
     const NAME: &'static str = "todo";
-    type Error = rig::tool::ToolExecutionError;
+    type Error = ToolExecutionError;
     type Args = TodoArgs;
-    type Output = rig::tool::ToolOutput;
+    type Output = ToolOutput;
 
     fn description(&self) -> String {
         "Apply edits to the phased task list and return the tree summary.".to_owned()
@@ -50,9 +51,9 @@ impl rig::tool::Tool for Todo {
         })
     }
 
-    async fn call(&self, _context: &mut rig::tool::ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
+    async fn call(&self, _context: &mut ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
         if args.ops.is_empty() {
-            return Err(rig::tool::ToolExecutionError::invalid_args("ops must hold at least one entry"));
+            return Err(ToolExecutionError::invalid_args("ops must hold at least one entry"));
         }
         let mut phases = lock_phases(&self.phases)?;
         let mut errors = Vec::new();
@@ -63,7 +64,7 @@ impl rig::tool::Tool for Todo {
         if !errors.is_empty() {
             output.insert_str(0, &format!("errors:\n{}\n\n", errors.join("\n")));
         }
-        Ok(rig::tool::ToolOutput::text(output))
+        Ok(ToolOutput::text(output))
     }
 }
 
@@ -300,8 +301,6 @@ fn render_tree(phases: &[TodoPhase]) -> String {
 }
 
 /// Lock the phase list. A poisoned lock returns an execution error.
-fn lock_phases(
-    phases: &Mutex<Vec<TodoPhase>>,
-) -> Result<MutexGuard<'_, Vec<TodoPhase>>, rig::tool::ToolExecutionError> {
-    phases.lock().map_err(|error| rig::tool::ToolExecutionError::other(format!("todo state lock failed: {error}")))
+fn lock_phases(phases: &Mutex<Vec<TodoPhase>>) -> Result<MutexGuard<'_, Vec<TodoPhase>>, ToolExecutionError> {
+    phases.lock().map_err(|error| ToolExecutionError::other(format!("todo state lock failed: {error}")))
 }

@@ -4,6 +4,7 @@
 //! action to a backend group. Real adapter wiring lands later. The default
 //! backend reports that no adapter is configured.
 
+use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
 use std::fmt;
 use std::future::{ready, Future};
 use std::pin::Pin;
@@ -24,11 +25,11 @@ impl fmt::Debug for Debug {
     }
 }
 
-impl rig::tool::Tool for Debug {
+impl Tool for Debug {
     const NAME: &'static str = "debug";
-    type Error = rig::tool::ToolExecutionError;
+    type Error = ToolExecutionError;
     type Args = DebugArgs;
-    type Output = rig::tool::ToolOutput;
+    type Output = ToolOutput;
 
     fn description(&self) -> String {
         "Run one debug adapter operation and return the adapter response.".to_owned()
@@ -92,41 +93,41 @@ impl rig::tool::Tool for Debug {
         })
     }
 
-    async fn call(&self, _context: &mut rig::tool::ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
+    async fn call(&self, _context: &mut ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
         let action = args.action;
         let timeout = args.timeout.unwrap_or(30).clamp(5, 300);
         validate(action, &args)?;
         let request = DebugRequest {
             action,
-            program: args.program.clone(),
-            args: args.args.clone().unwrap_or_default(),
-            adapter: args.adapter.clone(),
-            cwd: args.cwd.clone(),
-            file: args.file.clone(),
+            program: args.program,
+            args: args.args.unwrap_or_default(),
+            adapter: args.adapter,
+            cwd: args.cwd,
+            file: args.file,
             line: args.line,
-            function: args.function.clone(),
-            name: args.name.clone(),
-            condition: args.condition.clone(),
-            hit_condition: args.hit_condition.clone(),
-            expression: args.expression.clone(),
-            context: args.context.clone().unwrap_or_else(|| "repl".to_owned()),
+            function: args.function,
+            name: args.name,
+            condition: args.condition,
+            hit_condition: args.hit_condition,
+            expression: args.expression,
+            context: args.context.unwrap_or_else(|| "repl".to_owned()),
             frame_id: args.frame_id,
             scope_id: args.scope_id,
             variable_ref: args.variable_ref,
             pid: args.pid,
             port: args.port,
-            host: args.host.clone(),
+            host: args.host,
             levels: args.levels,
-            memory_reference: args.memory_reference.clone(),
-            instruction_reference: args.instruction_reference.clone(),
+            memory_reference: args.memory_reference,
+            instruction_reference: args.instruction_reference,
             instruction_count: args.instruction_count,
             instruction_offset: args.instruction_offset,
             count: args.count,
-            data: args.data.clone(),
-            data_id: args.data_id.clone(),
+            data: args.data,
+            data_id: args.data_id,
             access_type: args.access_type,
-            command: args.command.clone(),
-            arguments: args.arguments.clone(),
+            command: args.command,
+            arguments: args.arguments,
             offset: args.offset,
             resolve_symbols: args.resolve_symbols.unwrap_or(false),
             allow_partial: args.allow_partial.unwrap_or(false),
@@ -140,7 +141,7 @@ impl rig::tool::Tool for Debug {
             self.release_session();
         }
         let action_name = serde_json::to_value(action).unwrap_or(serde_json::Value::Null);
-        Ok(rig::tool::ToolOutput::json(serde_json::json!({
+        Ok(ToolOutput::json(serde_json::json!({
             "action": action_name,
             "result": result,
         })))
@@ -149,14 +150,14 @@ impl rig::tool::Tool for Debug {
 
 impl Debug {
     /// Record the session for launch and attach. Reject a second live session.
-    fn claim_session(&self, action: DebugAction, request: &DebugRequest) -> Result<(), rig::tool::ToolExecutionError> {
+    fn claim_session(&self, action: DebugAction, request: &DebugRequest) -> Result<(), ToolExecutionError> {
         let starts = matches!(action, DebugAction::Launch | DebugAction::Attach);
         if !starts {
             return Ok(());
         }
         let mut session = self.session.lock().unwrap_or_else(|error| error.into_inner());
         if let Some(active) = session.as_ref() {
-            return Err(rig::tool::ToolExecutionError::other(format!(
+            return Err(ToolExecutionError::other(format!(
                 "Debug session {active} is still active. Terminate it before launching another."
             )));
         }
@@ -414,7 +415,7 @@ fn session_id(request: &DebugRequest) -> String {
 }
 
 /// Reject operations whose required arguments are missing.
-fn validate(action: DebugAction, args: &DebugArgs) -> Result<(), rig::tool::ToolExecutionError> {
+fn validate(action: DebugAction, args: &DebugArgs) -> Result<(), ToolExecutionError> {
     match action {
         DebugAction::Launch => require(args.program.is_some(), "program is required for launch"),
         DebugAction::Attach => require(args.pid.is_some() || args.port.is_some(), "pid or port is required for attach"),
@@ -460,11 +461,11 @@ fn validate(action: DebugAction, args: &DebugArgs) -> Result<(), rig::tool::Tool
 }
 
 /// Fail with an invalid args error when a requirement is not met.
-fn require(met: bool, message: &str) -> Result<(), rig::tool::ToolExecutionError> {
+fn require(met: bool, message: &str) -> Result<(), ToolExecutionError> {
     if met {
         Ok(())
     } else {
-        Err(rig::tool::ToolExecutionError::invalid_args(message))
+        Err(ToolExecutionError::invalid_args(message))
     }
 }
 

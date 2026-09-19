@@ -1,5 +1,6 @@
 //! `write` creates or overwrites one file inside the sandbox root.
 
+use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -11,11 +12,11 @@ pub struct Write {
     pub snapshots: Arc<crate::util::snapshots::SnapshotStore>,
 }
 
-impl rig::tool::Tool for Write {
+impl Tool for Write {
     const NAME: &'static str = "write";
-    type Error = rig::tool::ToolExecutionError;
+    type Error = ToolExecutionError;
     type Args = WriteArgs;
-    type Output = rig::tool::ToolOutput;
+    type Output = ToolOutput;
 
     fn description(&self) -> String {
         "Create or overwrite one file inside the sandbox root.".to_owned()
@@ -38,9 +39,8 @@ impl rig::tool::Tool for Write {
         })
     }
 
-    async fn call(&self, _context: &mut rig::tool::ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
-        let path =
-            crate::util::path::path_sanitize(&self.root, &args.path).map_err(rig::tool::ToolExecutionError::other)?;
+    async fn call(&self, _context: &mut ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
+        let path = crate::util::path::path_sanitize(&self.root, &args.path).map_err(ToolExecutionError::other)?;
         let cleaned = strip_echo(&args.content);
         let text = if cleaned.ends_with('\n') || cleaned.is_empty() {
             cleaned
@@ -54,15 +54,15 @@ impl rig::tool::Tool for Write {
             Some(parent) => parent.to_path_buf(),
             None => self.root.clone(),
         };
-        tokio::fs::create_dir_all(parent).await.map_err(|error| {
-            rig::tool::ToolExecutionError::other(format!("write failed for '{requested}': {error}"))
-        })?;
-        tokio::fs::write(&absolute, text.as_bytes()).await.map_err(|error| {
-            rig::tool::ToolExecutionError::other(format!("write failed for '{requested}': {error}"))
-        })?;
+        tokio::fs::create_dir_all(parent)
+            .await
+            .map_err(|error| ToolExecutionError::other(format!("write failed for '{requested}': {error}")))?;
+        tokio::fs::write(&absolute, text.as_bytes())
+            .await
+            .map_err(|error| ToolExecutionError::other(format!("write failed for '{requested}': {error}")))?;
         let tag = self.snapshots.mint(&requested, &text);
         let header = format!("¶{requested}#{tag}\n");
-        Ok(rig::tool::ToolOutput::text(format!("{header}Wrote {bytes} bytes to '{requested}'.")))
+        Ok(ToolOutput::text(format!("{header}Wrote {bytes} bytes to '{requested}'.")))
     }
 }
 

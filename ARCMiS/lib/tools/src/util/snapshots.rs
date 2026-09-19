@@ -37,8 +37,8 @@ impl SnapshotStore {
     pub fn mint(&self, path: &str, text: &str) -> String {
         let tag = self.next_tag(path, text);
         let lines = split_lines(text);
-        self.by_path.lock().expect("snapshot store poisoned").insert(String::from(path), (tag.clone(), lines.clone()));
-        self.by_tag.lock().expect("snapshot store poisoned").insert(tag.clone(), (String::from(path), lines));
+        self.by_path.lock().expect("snapshot store poisoned").insert(path.to_owned(), (tag.clone(), lines.clone()));
+        self.by_tag.lock().expect("snapshot store poisoned").insert(tag.clone(), (path.to_owned(), lines));
         tag
     }
 

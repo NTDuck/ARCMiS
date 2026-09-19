@@ -5,6 +5,7 @@
 //! not-found style result text, not an error. There is no LLM reply loop in
 //! this pass. A later pass grows replies and await handling.
 
+use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -27,11 +28,11 @@ pub struct Peer {
     pub inbox: Vec<String>,
 }
 
-impl rig::tool::Tool for Irc {
+impl Tool for Irc {
     const NAME: &'static str = "irc";
-    type Error = rig::tool::ToolExecutionError;
+    type Error = ToolExecutionError;
     type Args = IrcArgs;
-    type Output = rig::tool::ToolOutput;
+    type Output = ToolOutput;
 
     fn description(&self) -> String {
         "List peers or deliver one message into a peer inbox.".to_owned()
@@ -50,17 +51,17 @@ impl rig::tool::Tool for Irc {
         })
     }
 
-    async fn call(&self, _context: &mut rig::tool::ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
+    async fn call(&self, _context: &mut ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
         let text = match args.op.as_str() {
             "list" => list_peers(&self.peers)?,
             "send" => send_message(&self.peers, &args)?,
             other => {
-                return Err(rig::tool::ToolExecutionError::invalid_args(format!(
+                return Err(ToolExecutionError::invalid_args(format!(
                     "unknown op \"{other}\". Use \"list\" or \"send\"."
                 )))
             },
         };
-        Ok(rig::tool::ToolOutput::text(text))
+        Ok(ToolOutput::text(text))
     }
 }
 
@@ -77,10 +78,10 @@ pub struct IrcArgs {
 }
 
 /// Render every peer with its status and inbox size.
-fn list_peers(peers: &Mutex<BTreeMap<String, Peer>>) -> Result<String, rig::tool::ToolExecutionError> {
+fn list_peers(peers: &Mutex<BTreeMap<String, Peer>>) -> Result<String, ToolExecutionError> {
     let registry = lock_peers(peers)?;
     if registry.is_empty() {
-        return Ok(String::from("no peers registered"));
+        return Ok("no peers registered".to_owned());
     }
     let rows = registry
         .values()
@@ -90,16 +91,13 @@ fn list_peers(peers: &Mutex<BTreeMap<String, Peer>>) -> Result<String, rig::tool
 }
 
 /// Append the message to one peer inbox and return the delivery summary.
-fn send_message(
-    peers: &Mutex<BTreeMap<String, Peer>>,
-    args: &IrcArgs,
-) -> Result<String, rig::tool::ToolExecutionError> {
+fn send_message(peers: &Mutex<BTreeMap<String, Peer>>, args: &IrcArgs) -> Result<String, ToolExecutionError> {
     let peer_name = args.to.as_deref().unwrap_or_default();
     if peer_name.is_empty() {
-        return Err(rig::tool::ToolExecutionError::invalid_args("send needs a \"to\" peer name"));
+        return Err(ToolExecutionError::invalid_args("send needs a \"to\" peer name"));
     }
     if args.message.as_deref().unwrap_or_default().is_empty() {
-        return Err(rig::tool::ToolExecutionError::invalid_args("send needs a non-empty \"message\""));
+        return Err(ToolExecutionError::invalid_args("send needs a non-empty \"message\""));
     }
     let message_text = args.message.clone().unwrap_or_default();
     let mut registry = lock_peers(peers)?;
@@ -117,6 +115,6 @@ fn send_message(
 /// Lock the peer registry. A poisoned lock returns an execution error.
 fn lock_peers(
     peers: &Mutex<BTreeMap<String, Peer>>,
-) -> Result<MutexGuard<'_, BTreeMap<String, Peer>>, rig::tool::ToolExecutionError> {
-    peers.lock().map_err(|error| rig::tool::ToolExecutionError::other(format!("peer registry lock failed: {error}")))
+) -> Result<MutexGuard<'_, BTreeMap<String, Peer>>, ToolExecutionError> {
+    peers.lock().map_err(|error| ToolExecutionError::other(format!("peer registry lock failed: {error}")))
 }

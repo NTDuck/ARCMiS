@@ -1,5 +1,6 @@
 //! `find` walks the sandbox root and lists files by glob pattern.
 
+use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
 use std::path::Path;
 use std::path::PathBuf;
 use std::time::SystemTime;
@@ -11,11 +12,11 @@ pub struct Find {
     pub root: PathBuf,
 }
 
-impl rig::tool::Tool for Find {
+impl Tool for Find {
     const NAME: &'static str = "find";
-    type Error = rig::tool::ToolExecutionError;
+    type Error = ToolExecutionError;
     type Args = FindArgs;
-    type Output = rig::tool::ToolOutput;
+    type Output = ToolOutput;
 
     fn description(&self) -> String {
         "List files under the sandbox root that match one glob, newest first.".to_owned()
@@ -47,17 +48,17 @@ impl rig::tool::Tool for Find {
         })
     }
 
-    async fn call(&self, _context: &mut rig::tool::ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
+    async fn call(&self, _context: &mut ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
         let limit = args.limit.unwrap_or(2000).max(1) as usize;
         let hidden = args.hidden.unwrap_or(false);
         let gitignore = args.gitignore.unwrap_or(true);
-        let matchers = build_matchers(&args.paths).map_err(rig::tool::ToolExecutionError::other)?;
-        let mut files = walk_files(&self.root, hidden, gitignore, &matchers, limit)
-            .map_err(rig::tool::ToolExecutionError::other)?;
+        let matchers = build_matchers(&args.paths).map_err(ToolExecutionError::other)?;
+        let mut files =
+            walk_files(&self.root, hidden, gitignore, &matchers, limit).map_err(ToolExecutionError::other)?;
         files.sort_by(|left, right| right.modified.cmp(&left.modified));
         files.truncate(limit);
         let output = render_list(&files);
-        Ok(rig::tool::ToolOutput::text(output))
+        Ok(ToolOutput::text(output))
     }
 }
 

@@ -4,6 +4,7 @@
 //! language server wiring lands later. The default backend reports that no
 //! server is configured.
 
+use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
 use std::fmt;
 use std::future::{ready, Future};
 use std::pin::Pin;
@@ -21,11 +22,11 @@ impl fmt::Debug for Lsp {
     }
 }
 
-impl rig::tool::Tool for Lsp {
+impl Tool for Lsp {
     const NAME: &'static str = "lsp";
-    type Error = rig::tool::ToolExecutionError;
+    type Error = ToolExecutionError;
     type Args = LspArgs;
-    type Output = rig::tool::ToolOutput;
+    type Output = ToolOutput;
 
     fn description(&self) -> String {
         "Send one request to a language server and return the server response.".to_owned()
@@ -57,23 +58,23 @@ impl rig::tool::Tool for Lsp {
         })
     }
 
-    async fn call(&self, _context: &mut rig::tool::ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
+    async fn call(&self, _context: &mut ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
         let action = args.action;
         let timeout = clamp_timeout(args.timeout, 20, 5, 60);
         validate(action, &args)?;
         let request = LspRequest {
-            file: args.file.clone(),
+            file: args.file,
             line: args.line,
-            symbol: args.symbol.clone(),
-            query: args.query.clone(),
-            new_name: args.new_name.clone(),
+            symbol: args.symbol,
+            query: args.query,
+            new_name: args.new_name,
             apply: args.apply.unwrap_or(false),
-            payload: args.payload.clone(),
+            payload: args.payload,
             timeout,
         };
         let result = dispatch(self.backend.as_ref(), action, &request).await;
         let action_name = serde_json::to_value(action).unwrap_or(serde_json::Value::Null);
-        Ok(rig::tool::ToolOutput::json(serde_json::json!({
+        Ok(ToolOutput::json(serde_json::json!({
             "action": action_name,
             "result": result,
         })))
@@ -245,7 +246,7 @@ fn clamp_timeout(value: Option<u64>, default: u64, minimum: u64, maximum: u64) -
 }
 
 /// Reject actions whose required arguments are missing.
-fn validate(action: LspAction, args: &LspArgs) -> Result<(), rig::tool::ToolExecutionError> {
+fn validate(action: LspAction, args: &LspArgs) -> Result<(), ToolExecutionError> {
     match action {
         LspAction::Rename | LspAction::RenameFile => {
             require(args.new_name.is_some(), "new_name is required for a rename action")
@@ -264,11 +265,11 @@ fn validate(action: LspAction, args: &LspArgs) -> Result<(), rig::tool::ToolExec
 }
 
 /// Fail with an invalid args error when a requirement is not met.
-fn require(met: bool, message: &str) -> Result<(), rig::tool::ToolExecutionError> {
+fn require(met: bool, message: &str) -> Result<(), ToolExecutionError> {
     if met {
         Ok(())
     } else {
-        Err(rig::tool::ToolExecutionError::invalid_args(message))
+        Err(ToolExecutionError::invalid_args(message))
     }
 }
 

@@ -76,8 +76,8 @@ impl JobRegistry {
             id.clone(),
             JobEntry {
                 id: id.clone(),
-                job_type: String::from(job_type),
-                label: String::from(label),
+                job_type: job_type.to_owned(),
+                label: label.to_owned(),
                 status: JobStatus::Running,
                 result_text: None,
                 error_text: None,
@@ -91,7 +91,7 @@ impl JobRegistry {
     pub fn complete(&mut self, id: &str, result_text: &str) {
         self.update(id, |entry| {
             entry.status = JobStatus::Completed;
-            entry.result_text = Some(String::from(result_text));
+            entry.result_text = Some(result_text.to_owned());
         });
     }
 
@@ -99,7 +99,7 @@ impl JobRegistry {
     pub fn fail(&mut self, id: &str, error_text: &str) {
         self.update(id, |entry| {
             entry.status = JobStatus::Failed;
-            entry.error_text = Some(String::from(error_text));
+            entry.error_text = Some(error_text.to_owned());
         });
     }
 
