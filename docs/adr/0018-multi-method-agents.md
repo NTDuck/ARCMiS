@@ -9,13 +9,19 @@ The agents crate hosted one migration method: `Monolith`, one agent that
 translates the whole codebase in one tool loop. Two papers define
 multi-agent alternatives worth benchmarking on the same task:
 
-- arXiv:2608.26480 — a manager-worker scaffold over a shared filesystem
-  workspace. Zero-shot self-orchestration: every role is the same model in a
-  fresh context, the manager curates tasks and delegates, workers write and
-  build in the workspace.
-- arXiv:2604.07341 (ReCodeAgent) — a language-agnostic repository
-  translation pipeline: analyzer, planning, translator, and validator
-  phases, coordinated through tool calls, with iterative repair.
+- arXiv:2608.26480 — a dynamic LLM-driven manager-worker loop over a shared
+  filesystem workspace. Two agent roles only: manager and worker. Zero-shot
+  self-orchestration: every role is the same model in a fresh context. The
+  manager delegates tasks through the worker tool and re-curates the task
+  list in the same loop. Workers write and build in the workspace.
+- arXiv:2604.07341 (ReCodeAgent) — four specialized agents (analyzer,
+  planning, translator, validator) orchestrated by deterministic scaffold
+  code per Algorithm 1. The analyzer researches the target and designs the
+  migration. The planner produces fragments, a name mapping, a skeleton,
+  and a Part A/Part B plan. The translator executes the plan and repairs
+  from the validation report. The validator runs tests and reports
+  coverage gaps. The loop runs up to five iterations and stops early on
+  full success.
 
 ## Decision
 
@@ -28,10 +34,14 @@ multi-agent alternatives worth benchmarking on the same task:
 - Each method owns its own coordination result DTO: `LedgerResponse` and
   `RecodeResponse`. They mirror `ValidatorResponse` fields plus the method's
   own counters.
-- Worker agents ride into their manager through rig's `Agent::into_tool()`
-  dynamic tool. Every role therefore runs in a fresh context per call, which
-  is the mechanism both papers rely on. The worker tool name matches the
-  agent name (`ledger_worker`, `recode_worker`).
+- The `Ledger` manager carries its worker through rig's
+  `Agent::into_tool()` dynamic tool. Every role therefore runs in a fresh
+  context per call, which the paper relies on. The worker tool name
+  matches the agent name (`ledger_worker`). The manager delegates tasks
+  and re-curates the task list inside one LLM-driven loop.
+- The `Recode` phases run through deterministic scaffold code in
+  `Recode::run`. Each phase call starts a fresh context. No LLM manager
+  coordinates the phases.
 - Config files under `assets/configs/<method>/` select model, budgets, and
   paths per run. The run sequence (translation then validation) stays for
   the monolith config. The new methods report their own validation in their
