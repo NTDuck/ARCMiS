@@ -9,8 +9,10 @@
 //! The agent is thin: one preamble, one typed input, one tool, one typed
 //! output. No custom loop code.
 
-use rig::agent::{Agent, OutputMode};
+use crate::util::config::Config;
+use rig::agent::{Agent, AgentHook, OutputMode};
 use rig::client::AgentClientExt;
+use rig::providers::ollama::Client;
 use tools::Bash;
 
 /// Preamble for the validator agent. Working rules only. The task data
@@ -35,11 +37,7 @@ impl Validator {
     /// under validation. The model cannot escape that root through the tool.
     /// `hook` observes every model call and tool call. All knobs come from the
     /// config.
-    pub fn build(
-        client: &rig::providers::ollama::Client,
-        config: &crate::util::config::Config,
-        hook: impl rig::agent::AgentHook + 'static,
-    ) -> Agent {
+    pub fn build(client: &Client, config: &Config, hook: impl AgentHook + 'static) -> Agent {
         let bash = Bash {
             root: config.output.dir.clone(),
         };

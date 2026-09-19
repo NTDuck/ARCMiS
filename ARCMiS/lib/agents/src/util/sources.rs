@@ -72,11 +72,11 @@ impl Walk {
 /// Cut `text` to at most `max_bytes` bytes at a char boundary.
 fn truncate(text: &str, max_bytes: u64) -> String {
     if text.len() as u64 <= max_bytes {
-        return String::from(text);
+        return text.to_owned();
     }
     let mut end = max_bytes as usize;
     while !text.is_char_boundary(end) {
         end -= 1;
     }
-    String::from(&text[..end])
+    text[..end].to_owned()
 }

@@ -13,8 +13,10 @@
 //! The agent is thin: one preamble with the working rules, one typed input,
 //! two tools, one typed output. No custom loop code.
 
-use rig::agent::{Agent, OutputMode};
+use crate::util::config::Config;
+use rig::agent::{Agent, AgentHook, OutputMode};
 use rig::client::AgentClientExt;
+use rig::providers::ollama::Client;
 use std::collections::BTreeMap;
 use tools::{Bash, Write};
 
@@ -42,11 +44,7 @@ impl Monolith {
     /// Build the monolith agent. `hook` observes every model call and tool
     /// call. All knobs come from the config. The output root is the config's
     /// output dir.
-    pub fn build(
-        client: &rig::providers::ollama::Client,
-        config: &crate::util::config::Config,
-        hook: impl rig::agent::AgentHook + 'static,
-    ) -> Agent {
+    pub fn build(client: &Client, config: &Config, hook: impl AgentHook + 'static) -> Agent {
         // One snapshot store per build. `write` results carry fresh hashline
         // anchors minted from it.
         let snapshots = tools::SnapshotStore::new();

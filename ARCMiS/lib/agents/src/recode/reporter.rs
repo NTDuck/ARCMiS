@@ -1,9 +1,12 @@
 //! Reporter agent of the ReCode method. It turns the final validation
 //! report into the typed response.
 
+use crate::recode::RecodeResponse;
 use crate::util::config::Config;
+use crate::util::noop_hook::NoopHook;
 use rig::agent::{Agent, OutputMode};
 use rig::client::AgentClientExt;
+use rig::providers::ollama::Client;
 
 /// Preamble for the reporter agent. Working rules and the role duty of
 /// the paper's final report step. The validation report travels in the
@@ -23,7 +26,7 @@ impl Reporter {
     /// Build the reporter agent. The agent has no tools: it reads the
     /// validation report in the message and emits the typed response.
     /// It runs under the no-op hook.
-    pub fn build(client: &rig::providers::ollama::Client, config: &Config) -> Agent {
+    pub fn build(client: &Client, config: &Config) -> Agent {
         client
             .agent(&config.run.model)
             .name("recode_reporter")
@@ -34,9 +37,9 @@ impl Reporter {
                 "num_ctx": config.run.num_ctx,
                 "think": config.run.think,
             }))
-            .output_schema::<crate::recode::RecodeResponse>()
+            .output_schema::<RecodeResponse>()
             .output_mode(OutputMode::Tool)
-            .add_hook(crate::util::noop_hook::NoopHook)
+            .add_hook(NoopHook)
             .build()
     }
 }

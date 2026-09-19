@@ -2,8 +2,10 @@
 //! dependency ordered implementation plan.
 
 use crate::util::config::Config;
+use crate::util::noop_hook::NoopHook;
 use rig::agent::{Agent, OutputMode};
 use rig::client::AgentClientExt;
+use rig::providers::ollama::Client;
 use tools::{Bash, Write};
 
 /// Preamble for the planner agent. Working rules and the role duties of
@@ -40,7 +42,7 @@ impl Planner {
     /// Build the planner agent. The agent writes the plan and the
     /// skeleton files with the write and bash tools and returns a
     /// structured plan. It runs under the no-op hook.
-    pub fn build(client: &rig::providers::ollama::Client, config: &Config, write: Write, bash: Bash) -> Agent {
+    pub fn build(client: &Client, config: &Config, write: Write, bash: Bash) -> Agent {
         client
             .agent(&config.run.model)
             .name("recode_planner")
@@ -55,7 +57,7 @@ impl Planner {
             }))
             .output_schema::<PlanningOutput>()
             .output_mode(OutputMode::Tool)
-            .add_hook(crate::util::noop_hook::NoopHook)
+            .add_hook(NoopHook)
             .build()
     }
 }

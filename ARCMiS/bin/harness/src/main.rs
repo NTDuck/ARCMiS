@@ -27,6 +27,7 @@ use agents::{Config, MonolithRequest, ValidatorRequest, ValidatorResponse, Valid
 use anyhow::{Context, Result};
 use rig::agent::{AgentHook, CompletionCallAction, CompletionCallEvent, HookContext, ToolCall, ToolCallAction};
 use rig::client::ProviderClient;
+use rig::providers::ollama::Client;
 use serde::Serialize;
 use std::env::args;
 use std::fs::create_dir_all;
@@ -79,7 +80,7 @@ async fn run() -> Result<ExitCode> {
     );
 
     // One ollama client, constructed in run, shared by both agents.
-    let client = rig::providers::ollama::Client::from_env().context("ollama client construction failed")?;
+    let client = Client::from_env().context("ollama client construction failed")?;
 
     let task = MonolithTask::build(&config)?;
 
@@ -101,12 +102,7 @@ async fn run() -> Result<ExitCode> {
 
 /// Wire and run the monolith, then validate its output with the validator
 /// agent. The original two-agent sequence.
-async fn run_monolith(
-    client: &rig::providers::ollama::Client,
-    config: &Config,
-    task: &MonolithRequest,
-    started: Instant,
-) -> Result<ExitCode> {
+async fn run_monolith(client: &Client, config: &Config, task: &MonolithRequest, started: Instant) -> Result<ExitCode> {
     // The shared hook logs every turn and tool call to the console.
     let monolith = agents::Monolith::build(client, config, RunLog);
     let monolith_result = agents::Monolith::run(&monolith, task, config.run.max_turns).await?;
@@ -119,7 +115,7 @@ async fn run_monolith(
     // Wire and run the validator over the monolith's output.
     let validation_task = ValidatorRequest {
         output_dir: monolith_result.output_dir.clone(),
-        toolchain: vec![String::from("build"), String::from("test")],
+        toolchain: vec!["build".to_owned(), "test".to_owned()],
         test_command: config.source.target.test_command.clone(),
         approach: monolith_result.approach.clone(),
     };
@@ -142,12 +138,7 @@ async fn run_monolith(
 
 /// Wire and run the ledger method. The manager reports its own validation,
 /// so no second agent runs. The result lands in the same yaml shape.
-async fn run_ledger(
-    client: &rig::providers::ollama::Client,
-    config: &Config,
-    task: &MonolithRequest,
-    started: Instant,
-) -> Result<ExitCode> {
+async fn run_ledger(client: &Client, config: &Config, task: &MonolithRequest, started: Instant) -> Result<ExitCode> {
     let ledger = agents::Ledger::build(client, config, RunLog);
     let result = agents::Ledger::run(&ledger, task, config.run.max_turns).await?;
     tracing::info!(
@@ -174,12 +165,7 @@ async fn run_ledger(
 /// deterministic pipeline from the paper's Algorithm 1. The final reporter
 /// reports its own validation, so no second agent runs. The result lands
 /// in the same yaml shape.
-async fn run_recode(
-    client: &rig::providers::ollama::Client,
-    config: &Config,
-    task: &MonolithRequest,
-    started: Instant,
-) -> Result<ExitCode> {
+async fn run_recode(client: &Client, config: &Config, task: &MonolithRequest, started: Instant) -> Result<ExitCode> {
     let result = agents::Recode::run(client, config, task, RunLog, config.run.max_turns, MAX_ITER).await?;
     tracing::info!(
         compilation_status = %result.compilation_status,
@@ -321,7 +307,7 @@ struct RunStepRecord {
 /// Cut `args` to `ARG_PREVIEW_CHARS` characters and append `...` when cut.
 fn truncate_args(args: &str) -> String {
     if args.chars().count() <= ARG_PREVIEW_CHARS {
-        return String::from(args);
+        return args.to_owned();
     }
     let cut: String = args.chars().take(ARG_PREVIEW_CHARS).collect();
     format!("{cut}...")
@@ -340,6 +326,6 @@ fn step_report_line(step: &ValidatorStepOutcome) -> String {
 fn fmt_pass_rate(rate: Option<f64>) -> String {
     match rate {
         Some(rate) => format!("{rate:.2}"),
-        None => String::from("n/a"),
+        None => "n/a".to_owned(),
     }
 }

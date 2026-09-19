@@ -2,8 +2,10 @@
 //! and designs the target project.
 
 use crate::util::config::Config;
+use crate::util::noop_hook::NoopHook;
 use rig::agent::{Agent, OutputMode};
 use rig::client::AgentClientExt;
+use rig::providers::ollama::Client;
 use tools::{Bash, Write};
 
 /// Preamble for the analyzer agent. Working rules and the role duties of
@@ -36,7 +38,7 @@ impl Analyzer {
     /// Build the analyzer agent. The agent explores the source with the
     /// write and bash tools and returns a structured research and design
     /// report. It runs under the no-op hook.
-    pub fn build(client: &rig::providers::ollama::Client, config: &Config, write: Write, bash: Bash) -> Agent {
+    pub fn build(client: &Client, config: &Config, write: Write, bash: Bash) -> Agent {
         client
             .agent(&config.run.model)
             .name("recode_analyzer")
@@ -51,7 +53,7 @@ impl Analyzer {
             }))
             .output_schema::<AnalyzerReport>()
             .output_mode(OutputMode::Tool)
-            .add_hook(crate::util::noop_hook::NoopHook)
+            .add_hook(NoopHook)
             .build()
     }
 }

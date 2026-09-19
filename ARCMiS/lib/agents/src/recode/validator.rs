@@ -2,8 +2,9 @@
 //! and reports failures and coverage gaps.
 
 use crate::util::config::Config;
-use rig::agent::{Agent, OutputMode};
+use rig::agent::{Agent, AgentHook, OutputMode};
 use rig::client::AgentClientExt;
+use rig::providers::ollama::Client;
 use tools::{Bash, Write};
 
 /// Preamble for the validator agent. Working rules and the role duties
@@ -36,13 +37,7 @@ impl Validator {
     /// Build the validator agent. The agent runs the toolchain with the
     /// write and bash tools and returns a structured validation report.
     /// `hook` observes every model call and tool call.
-    pub fn build(
-        client: &rig::providers::ollama::Client,
-        config: &Config,
-        write: Write,
-        bash: Bash,
-        hook: impl rig::agent::AgentHook + 'static,
-    ) -> Agent {
+    pub fn build(client: &Client, config: &Config, write: Write, bash: Bash, hook: impl AgentHook + 'static) -> Agent {
         client
             .agent(&config.run.model)
             .name("recode_validator")

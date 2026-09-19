@@ -19,10 +19,11 @@ pub mod worker;
 
 pub use manager::{LedgerManager, LedgerResponse};
 
-use rig::agent::Agent;
-use tools::{Bash, Write};
-
 use crate::monolith::MonolithRequest;
+use crate::util::config::Config;
+use rig::agent::{Agent, AgentHook};
+use rig::providers::ollama::Client;
+use tools::{Bash, Write};
 
 /// The ledger agent namespace. `Ledger::build` wires the manager and the
 /// worker, `Ledger::run` executes one task.
@@ -33,11 +34,7 @@ impl Ledger {
     /// and tool call. All knobs come from the config. The output root is
     /// the config's output dir. The worker shares the same tool state and
     /// runs under the private no-op hook.
-    pub fn build(
-        client: &rig::providers::ollama::Client,
-        config: &crate::util::config::Config,
-        hook: impl rig::agent::AgentHook + 'static,
-    ) -> Agent {
+    pub fn build(client: &Client, config: &Config, hook: impl AgentHook + 'static) -> Agent {
         // One snapshot store per build. `write` results carry fresh hashline
         // anchors minted from it.
         let snapshots = tools::SnapshotStore::new();

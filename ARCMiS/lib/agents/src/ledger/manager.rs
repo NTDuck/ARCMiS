@@ -2,8 +2,11 @@
 //! per call through the worker tool, re-curates the task list after each
 //! round, and decides when to stop.
 
-use rig::agent::{Agent, OutputMode};
+use crate::util::config::Config;
+use rig::agent::{Agent, AgentHook, OutputMode};
 use rig::client::AgentClientExt;
+use rig::providers::ollama::Client;
+use rig::tool::DynamicTool;
 
 /// Preamble for the ledger manager. The loop: read the workspace, delegate
 /// one task per call, re-curate the task list, verify, stop when done.
@@ -27,12 +30,7 @@ impl LedgerManager {
     /// as a dynamic tool: the manager's only lever on the workspace. `hook`
     /// observes every manager model call and tool call. All knobs come from
     /// the config.
-    pub fn build(
-        client: &rig::providers::ollama::Client,
-        config: &crate::util::config::Config,
-        worker_tool: rig::tool::DynamicTool,
-        hook: impl rig::agent::AgentHook + 'static,
-    ) -> Agent {
+    pub fn build(client: &Client, config: &Config, worker_tool: DynamicTool, hook: impl AgentHook + 'static) -> Agent {
         client
             .agent(&config.run.model)
             .name("ledger_manager")

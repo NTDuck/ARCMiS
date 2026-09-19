@@ -2,8 +2,11 @@
 //! in the shared workspace. No output schema: the worker reports through
 //! its tool result and through `notes.md`.
 
+use crate::util::config::Config;
+use crate::util::noop_hook::NoopHook;
 use rig::agent::Agent;
 use rig::client::AgentClientExt;
+use rig::providers::ollama::Client;
 use tools::{Bash, Write};
 
 /// Preamble for the ledger worker. Working rules only. The task data
@@ -32,12 +35,7 @@ impl Worker {
     /// that the parent build created, rooted at the config's output dir.
     /// The worker runs under the shared no-op hook: the outer hook observes
     /// the manager.
-    pub fn build(
-        client: &rig::providers::ollama::Client,
-        config: &crate::util::config::Config,
-        write: Write,
-        bash: Bash,
-    ) -> Agent {
+    pub fn build(client: &Client, config: &Config, write: Write, bash: Bash) -> Agent {
         client
             .agent(&config.run.model)
             .name("ledger_worker")
@@ -50,7 +48,7 @@ impl Worker {
                 "num_ctx": config.run.num_ctx,
                 "think": config.run.think,
             }))
-            .add_hook(crate::util::noop_hook::NoopHook)
+            .add_hook(NoopHook)
             .build()
     }
 }

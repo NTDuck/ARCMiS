@@ -18,6 +18,8 @@
 
 use crate::monolith::MonolithRequest;
 use crate::util::config::Config;
+use rig::agent::AgentHook;
+use rig::providers::ollama::Client;
 use tools::{Bash, Write};
 
 pub mod analyzer;
@@ -38,10 +40,10 @@ impl Recode {
     /// each agent's model-call budget. `max_iter` bounds the fix
     /// rounds.
     pub async fn run(
-        client: &rig::providers::ollama::Client,
+        client: &Client,
         config: &Config,
         task: &MonolithRequest,
-        hook: impl rig::agent::AgentHook + Clone + 'static,
+        hook: impl AgentHook + Clone + 'static,
         max_turns: usize,
         max_iter: usize,
     ) -> anyhow::Result<RecodeResponse> {
