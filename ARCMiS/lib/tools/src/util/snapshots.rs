@@ -5,12 +5,13 @@
 //!
 //! The store keeps two maps: path to (tag, lines) and tag to (path, lines).
 //! It has no internal lock. Each stateful tool wraps it in an
-//! `std::sync::Arc<...Mutex...>` of its own.
+//! `Arc<...Mutex...>` of its own.
 //!
 //! Tag minting hashes the content with sha2 and mixes a uuid nonce. Equal
 //! content at different paths or moments still gets distinct tags.
 
 use std::collections::BTreeMap;
+use std::iter::repeat;
 use std::sync::{Arc, Mutex};
 
 /// Store of content snapshots keyed by path and by minted tag.
@@ -55,7 +56,7 @@ impl SnapshotStore {
 
     /// Derive the next 4-hex uppercase tag from content hash plus a uuid nonce.
     fn next_tag(&self, path: &str, text: &str) -> String {
-        std::iter::repeat(())
+        repeat(())
             .map(|()| mint_once(path, text))
             // The nonce makes collisions practically impossible. Loop anyway
             // so a repeated tag cannot overwrite an earlier snapshot.

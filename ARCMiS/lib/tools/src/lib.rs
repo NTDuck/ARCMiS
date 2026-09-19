@@ -8,8 +8,7 @@
 //! [`todo`], [`job`], [`ask`].
 //!
 //! Every tool implements [`rig::tool::Tool`]. Stateful tools hold their
-//! shared state behind `std::sync::Arc` fields constructed by the host.
-
+//! shared state behind `Arc` fields constructed by the host.
 pub mod util {
     //! Support modules for the tool domain. Nothing here implements a
     //! rig tool. The tools live in the crate root.

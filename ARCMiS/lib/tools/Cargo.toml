@@ -11,22 +11,18 @@ name = "tools"
 rig = "0.42.0"
 serde.workspace = true
 serde_json.workspace = true
-serde_yaml.workspace = true
 tokio = { workspace = true, features = ["process", "macros", "rt-multi-thread", "fs", "io-util", "sync", "time"] }
 tracing.workspace = true
 regex = "1.13.1"
 globset = "0.4.20"
 walkdir = "2.5.0"
-ignore = "0.4.33"
 grep-matcher = "0.1.9"
 grep-regex = "0.1.14"
-grep-searcher = "0.1.17"
 ast-grep-core = "0.45.3"
 ast-grep-language = "0.45.3"
 rusqlite = { version = "0.40.2", features = ["bundled"] }
 uuid = { version = "1.26.1", features = ["v4"] }
 sha2 = "0.10.9"
-libc = "0.2.183"
 
 [dev-dependencies]
 cucumber.workspace = true

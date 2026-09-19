@@ -5,6 +5,7 @@ use agents::Registry;
 use cucumber::{given, then, when, World};
 use std::sync::Arc;
 
+use std::sync::Arc;
 #[derive(Debug, Default)]
 #[derive(cucumber::World)]
 pub struct AgentWorld {

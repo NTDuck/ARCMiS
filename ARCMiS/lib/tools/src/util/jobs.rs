@@ -5,6 +5,9 @@
 //! label, a status, and the result or error text captured at completion.
 
 use std::collections::BTreeMap;
+use std::sync::Arc;
+use std::time::SystemTime;
+use std::time::UNIX_EPOCH;
 
 /// Status of one registered job.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -60,8 +63,8 @@ pub struct JobRegistry {
 impl JobRegistry {
     /// Create an empty shared registry.
     #[must_use]
-    pub fn new() -> std::sync::Arc<Self> {
-        std::sync::Arc::new(Self {
+    pub fn new() -> Arc<Self> {
+        Arc::new(Self {
             jobs: BTreeMap::new(),
         })
     }
@@ -159,5 +162,5 @@ impl JobRegistry {
 
 /// Current unix time in seconds.
 fn now_seconds() -> u64 {
-    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |span| span.as_secs())
+    SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |span| span.as_secs())
 }

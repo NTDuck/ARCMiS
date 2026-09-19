@@ -5,10 +5,15 @@
 //! execution lands when the runtime grows a spawner. Until then no job ever
 //! completes, and the job tool keeps reporting it as running.
 
+use std::collections::BTreeSet;
+use std::sync::Arc;
+use std::sync::Mutex;
+use std::sync::MutexGuard;
+
 /// `task` validates and queues task definitions as registry jobs.
 pub struct Task {
     /// Shared job registry. The task tool records each queued task here.
-    pub jobs: std::sync::Arc<std::sync::Mutex<crate::util::jobs::JobRegistry>>,
+    pub jobs: Arc<Mutex<crate::util::jobs::JobRegistry>>,
 }
 
 impl rig::tool::Tool for Task {
@@ -17,7 +22,7 @@ impl rig::tool::Tool for Task {
     type Args = TaskArgs;
     type Output = rig::tool::ToolOutput;
 
-    fn description(&self) -> std::string::String {
+    fn description(&self) -> String {
         "Validate task definitions and queue them as background jobs.".to_owned()
     }
 
@@ -47,44 +52,40 @@ impl rig::tool::Tool for Task {
         })
     }
 
-    async fn call(
-        &self,
-        _context: &mut rig::tool::ToolContext,
-        args: Self::Args,
-    ) -> core::result::Result<Self::Output, Self::Error> {
+    async fn call(&self, _context: &mut rig::tool::ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
         let summary = queue_tasks(&self.jobs, &args)?;
-        core::result::Result::Ok(rig::tool::ToolOutput::text(summary))
+        Ok(rig::tool::ToolOutput::text(summary))
     }
 }
 
 /// Arguments for `task`.
 #[derive(Debug, serde::Deserialize)]
 pub struct TaskArgs {
-    pub tasks: std::vec::Vec<TaskDefinition>,
+    pub tasks: Vec<TaskDefinition>,
     #[serde(default)]
-    pub agent: core::option::Option<std::string::String>,
+    pub agent: Option<String>,
     #[serde(default)]
-    pub context: core::option::Option<std::string::String>,
+    pub context: Option<String>,
     #[serde(default)]
-    pub schema: core::option::Option<serde_json::Value>,
+    pub schema: Option<serde_json::Value>,
     #[serde(default)]
-    pub isolated: core::option::Option<bool>,
+    pub isolated: Option<bool>,
 }
 
 /// One queued task definition.
 #[derive(Debug, serde::Deserialize)]
 pub struct TaskDefinition {
-    pub id: std::string::String,
+    pub id: String,
     #[serde(default)]
-    pub description: core::option::Option<std::string::String>,
-    pub assignment: std::string::String,
+    pub description: Option<String>,
+    pub assignment: String,
 }
 
 /// Validate the task list, register each entry, and build the summary text.
 fn queue_tasks(
-    jobs: &std::sync::Mutex<crate::util::jobs::JobRegistry>,
+    jobs: &Mutex<crate::util::jobs::JobRegistry>,
     args: &TaskArgs,
-) -> core::result::Result<std::string::String, rig::tool::ToolExecutionError> {
+) -> Result<String, rig::tool::ToolExecutionError> {
     validate(&args.tasks)?;
     let mut registry = lock_registry(jobs)?;
     let ids = args
@@ -93,44 +94,39 @@ fn queue_tasks(
         .map(|task| {
             let label = task.description.as_deref().unwrap_or(task.id.as_str());
             let job_id = registry.register("task", label);
-            std::format!("{} ({job_id})", task.id)
+            format!("{} ({job_id})", task.id)
         })
-        .collect::<std::vec::Vec<_>>();
+        .collect::<Vec<_>>();
     let count = ids.len();
-    core::result::Result::Ok(std::format!("queued {count} task(s)\n{}", ids.join("\n")))
+    Ok(format!("queued {count} task(s)\n{}", ids.join("\n")))
 }
 
 /// Reject empty assignments and duplicate task ids.
-fn validate(tasks: &[TaskDefinition]) -> core::result::Result<(), rig::tool::ToolExecutionError> {
+fn validate(tasks: &[TaskDefinition]) -> Result<(), rig::tool::ToolExecutionError> {
     if tasks.is_empty() {
-        return core::result::Result::Err(rig::tool::ToolExecutionError::invalid_args(
-            "tasks must hold at least one entry",
-        ));
+        return Err(rig::tool::ToolExecutionError::invalid_args("tasks must hold at least one entry"));
     }
-    let mut seen = std::collections::BTreeSet::new();
+    let mut seen = BTreeSet::new();
     for task in tasks {
         if task.id.is_empty() {
-            return core::result::Result::Err(rig::tool::ToolExecutionError::invalid_args("task id must not be empty"));
+            return Err(rig::tool::ToolExecutionError::invalid_args("task id must not be empty"));
         }
         if task.assignment.trim().is_empty() {
-            return core::result::Result::Err(rig::tool::ToolExecutionError::invalid_args(std::format!(
+            return Err(rig::tool::ToolExecutionError::invalid_args(format!(
                 "task \"{}\" needs a non-empty assignment",
                 task.id
             )));
         }
         if !seen.insert(task.id.clone()) {
-            return core::result::Result::Err(rig::tool::ToolExecutionError::invalid_args(std::format!(
-                "duplicate task id \"{}\"",
-                task.id
-            )));
+            return Err(rig::tool::ToolExecutionError::invalid_args(format!("duplicate task id \"{}\"", task.id)));
         }
     }
-    core::result::Result::Ok(())
+    Ok(())
 }
 
 /// Lock the job registry. A poisoned lock returns an execution error.
 fn lock_registry(
-    jobs: &std::sync::Mutex<crate::util::jobs::JobRegistry>,
-) -> core::result::Result<std::sync::MutexGuard<'_, crate::util::jobs::JobRegistry>, rig::tool::ToolExecutionError> {
-    jobs.lock().map_err(|error| rig::tool::ToolExecutionError::other(std::format!("job registry lock failed: {error}")))
+    jobs: &Mutex<crate::util::jobs::JobRegistry>,
+) -> Result<MutexGuard<'_, crate::util::jobs::JobRegistry>, rig::tool::ToolExecutionError> {
+    jobs.lock().map_err(|error| rig::tool::ToolExecutionError::other(format!("job registry lock failed: {error}")))
 }

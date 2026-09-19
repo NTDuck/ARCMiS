@@ -5,21 +5,26 @@
 //! not-found style result text, not an error. There is no LLM reply loop in
 //! this pass. A later pass grows replies and await handling.
 
+use std::collections::BTreeMap;
+use std::sync::Arc;
+use std::sync::Mutex;
+use std::sync::MutexGuard;
+
 /// `irc` lists peers and delivers messages into peer inboxes.
 pub struct Irc {
     /// Peer registry keyed by peer name.
-    pub peers: std::sync::Arc<std::sync::Mutex<std::collections::BTreeMap<std::string::String, Peer>>>,
+    pub peers: Arc<Mutex<BTreeMap<String, Peer>>>,
 }
 
 /// One known peer with its live status and pending messages.
 #[derive(Debug, Clone, Default)]
 pub struct Peer {
     /// Peer name.
-    pub name: std::string::String,
+    pub name: String,
     /// Status string, for example "running", "idle", or "parked".
-    pub status: std::string::String,
+    pub status: String,
     /// Messages delivered to this peer, oldest first.
-    pub inbox: std::vec::Vec<std::string::String>,
+    pub inbox: Vec<String>,
 }
 
 impl rig::tool::Tool for Irc {
@@ -28,7 +33,7 @@ impl rig::tool::Tool for Irc {
     type Args = IrcArgs;
     type Output = rig::tool::ToolOutput;
 
-    fn description(&self) -> std::string::String {
+    fn description(&self) -> String {
         "List peers or deliver one message into a peer inbox.".to_owned()
     }
 
@@ -45,88 +50,73 @@ impl rig::tool::Tool for Irc {
         })
     }
 
-    async fn call(
-        &self,
-        _context: &mut rig::tool::ToolContext,
-        args: Self::Args,
-    ) -> core::result::Result<Self::Output, Self::Error> {
+    async fn call(&self, _context: &mut rig::tool::ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
         let text = match args.op.as_str() {
             "list" => list_peers(&self.peers)?,
             "send" => send_message(&self.peers, &args)?,
             other => {
-                return core::result::Result::Err(rig::tool::ToolExecutionError::invalid_args(std::format!(
+                return Err(rig::tool::ToolExecutionError::invalid_args(format!(
                     "unknown op \"{other}\". Use \"list\" or \"send\"."
                 )))
             },
         };
-        core::result::Result::Ok(rig::tool::ToolOutput::text(text))
+        Ok(rig::tool::ToolOutput::text(text))
     }
 }
 
 /// Arguments for `irc`.
 #[derive(Debug, serde::Deserialize)]
 pub struct IrcArgs {
-    pub op: std::string::String,
+    pub op: String,
     #[serde(default)]
-    pub to: core::option::Option<std::string::String>,
+    pub to: Option<String>,
     #[serde(default)]
-    pub message: core::option::Option<std::string::String>,
+    pub message: Option<String>,
     #[serde(default)]
-    pub await_reply: core::option::Option<bool>,
+    pub await_reply: Option<bool>,
 }
 
 /// Render every peer with its status and inbox size.
-fn list_peers(
-    peers: &std::sync::Mutex<std::collections::BTreeMap<std::string::String, Peer>>,
-) -> core::result::Result<std::string::String, rig::tool::ToolExecutionError> {
+fn list_peers(peers: &Mutex<BTreeMap<String, Peer>>) -> Result<String, rig::tool::ToolExecutionError> {
     let registry = lock_peers(peers)?;
     if registry.is_empty() {
-        return core::result::Result::Ok(std::string::String::from("no peers registered"));
+        return Ok(String::from("no peers registered"));
     }
     let rows = registry
         .values()
-        .map(|peer| std::format!("{} ({}), inbox {}", peer.name, peer.status, peer.inbox.len()))
-        .collect::<std::vec::Vec<_>>();
-    core::result::Result::Ok(rows.join("\n"))
+        .map(|peer| format!("{} ({}), inbox {}", peer.name, peer.status, peer.inbox.len()))
+        .collect::<Vec<_>>();
+    Ok(rows.join("\n"))
 }
 
 /// Append the message to one peer inbox and return the delivery summary.
 fn send_message(
-    peers: &std::sync::Mutex<std::collections::BTreeMap<std::string::String, Peer>>,
+    peers: &Mutex<BTreeMap<String, Peer>>,
     args: &IrcArgs,
-) -> core::result::Result<std::string::String, rig::tool::ToolExecutionError> {
+) -> Result<String, rig::tool::ToolExecutionError> {
     let peer_name = args.to.as_deref().unwrap_or_default();
     if peer_name.is_empty() {
-        return core::result::Result::Err(rig::tool::ToolExecutionError::invalid_args("send needs a \"to\" peer name"));
+        return Err(rig::tool::ToolExecutionError::invalid_args("send needs a \"to\" peer name"));
     }
     if args.message.as_deref().unwrap_or_default().is_empty() {
-        return core::result::Result::Err(rig::tool::ToolExecutionError::invalid_args(
-            "send needs a non-empty \"message\"",
-        ));
+        return Err(rig::tool::ToolExecutionError::invalid_args("send needs a non-empty \"message\""));
     }
     let message_text = args.message.clone().unwrap_or_default();
     let mut registry = lock_peers(peers)?;
     let peer = registry.get_mut(peer_name);
     match peer {
-        core::option::Option::Some(peer) => {
+        Some(peer) => {
             peer.inbox.push(message_text);
             let inbox_len = peer.inbox.len();
-            core::result::Result::Ok(std::format!("delivered to {peer_name}; inbox now holds {inbox_len} message(s)"))
+            Ok(format!("delivered to {peer_name}; inbox now holds {inbox_len} message(s)"))
         },
-        core::option::Option::None => core::result::Result::Ok(std::format!(
-            "notFound: no peer named \"{peer_name}\". Run op \"list\" to see the peers."
-        )),
+        None => Ok(format!("notFound: no peer named \"{peer_name}\". Run op \"list\" to see the peers.")),
     }
 }
 
 /// Lock the peer registry. A poisoned lock returns an execution error.
 fn lock_peers(
-    peers: &std::sync::Mutex<std::collections::BTreeMap<std::string::String, Peer>>,
-) -> core::result::Result<
-    std::sync::MutexGuard<'_, std::collections::BTreeMap<std::string::String, Peer>>,
-    rig::tool::ToolExecutionError,
-> {
-    peers
-        .lock()
-        .map_err(|error| rig::tool::ToolExecutionError::other(std::format!("peer registry lock failed: {error}")))
+    peers: &Mutex<BTreeMap<String, Peer>>,
+) -> Result<MutexGuard<'_, BTreeMap<String, Peer>>, rig::tool::ToolExecutionError> {
+    peers.lock().map_err(|error| rig::tool::ToolExecutionError::other(format!("peer registry lock failed: {error}")))
 }

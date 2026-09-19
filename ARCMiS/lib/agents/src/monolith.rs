@@ -12,11 +12,10 @@
 //!
 //! The agent is thin: one preamble with the working rules, one typed input,
 //! two tools, one typed output. No custom loop code.
-use anyhow::Context as _;
 
 use rig::agent::{Agent, OutputMode};
 use rig::client::AgentClientExt;
-use rig::completion::Prompt;
+use std::collections::BTreeMap;
 use tools::{Bash, Write};
 
 /// Preamble for the monolith agent. Working rules only. The task data
@@ -35,49 +34,53 @@ the code and repeat.\n\
 - When the build and the tests pass, or when you cannot progress \
 further, report with the final report.";
 
-/// Build the monolith agent. `hook` observes every model call and tool
-/// call. All knobs come from the config. The output root is the config's
-/// output dir.
-pub fn build(
-    client: &rig::providers::ollama::Client,
-    config: &crate::util::config::Config,
-    hook: impl rig::agent::AgentHook + 'static,
-) -> Agent {
-    // One snapshot store per build. `write` results carry fresh hashline
-    // anchors minted from it.
-    let snapshots = tools::SnapshotStore::new();
-    let write = Write {
-        root: config.output.dir.clone(),
-        snapshots,
-    };
-    let bash = Bash {
-        root: config.output.dir.clone(),
-    };
-    client
-        .agent(&config.run.model)
-        .name("monolith")
-        .preamble(PREAMBLE)
-        .tool(write)
-        .tool(bash)
-        .temperature(config.run.temperature)
-        .max_tokens(config.run.max_output_tokens)
-        .additional_params(serde_json::json!({
-            "num_ctx": config.run.num_ctx,
-            "think": config.run.think,
-        }))
-        .output_schema::<MonolithResponse>()
-        .output_mode(OutputMode::Tool)
-        .add_hook(hook)
-        .build()
-}
+/// The monolith agent namespace. `Monolith::build` wires the agent,
+/// `Monolith::run` executes one task.
+pub struct Monolith;
 
-/// Run the monolith agent over one task. `max_turns` bounds the model-call
-/// budget. Returns the structured result artifact. The model must deliver
-/// it through the output-tool call.
-pub async fn run(agent: &Agent, task: &MonolithRequest, max_turns: usize) -> anyhow::Result<MonolithResponse> {
-    let prompt = serde_json::to_string(task).context("task render failed")?;
-    let raw = Prompt::prompt(agent, prompt).max_turns(max_turns).await?;
-    Ok(serde_json::from_str(&raw)?)
+impl Monolith {
+    /// Build the monolith agent. `hook` observes every model call and tool
+    /// call. All knobs come from the config. The output root is the config's
+    /// output dir.
+    pub fn build(
+        client: &rig::providers::ollama::Client,
+        config: &crate::util::config::Config,
+        hook: impl rig::agent::AgentHook + 'static,
+    ) -> Agent {
+        // One snapshot store per build. `write` results carry fresh hashline
+        // anchors minted from it.
+        let snapshots = tools::SnapshotStore::new();
+        let write = Write {
+            root: config.output.dir.clone(),
+            snapshots,
+        };
+        let bash = Bash {
+            root: config.output.dir.clone(),
+        };
+        client
+            .agent(&config.run.model)
+            .name("monolith")
+            .preamble(PREAMBLE)
+            .tool(write)
+            .tool(bash)
+            .temperature(config.run.temperature)
+            .max_tokens(config.run.max_output_tokens)
+            .additional_params(serde_json::json!({
+                "num_ctx": config.run.num_ctx,
+                "think": config.run.think,
+            }))
+            .output_schema::<MonolithResponse>()
+            .output_mode(OutputMode::Tool)
+            .add_hook(hook)
+            .build()
+    }
+
+    /// Run the monolith agent over one task. `max_turns` bounds the
+    /// model-call budget. Returns the structured result artifact. The model
+    /// must deliver it through the output-tool call.
+    pub async fn run(agent: &Agent, task: &MonolithRequest, max_turns: usize) -> anyhow::Result<MonolithResponse> {
+        crate::util::task::task(agent, task, max_turns).await
+    }
 }
 
 // Input and output artifacts owned exclusively by this agent. Per the
@@ -86,7 +89,7 @@ pub async fn run(agent: &Agent, task: &MonolithRequest, max_turns: usize) -> any
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct MonolithRequest {
     /// Input codebase: ordered map of relative path to file content.
-    pub sources: std::collections::BTreeMap<String, String>,
+    pub sources: BTreeMap<String, String>,
     /// Source language of the input codebase.
     pub source_language: String,
     /// Target language to translate into.

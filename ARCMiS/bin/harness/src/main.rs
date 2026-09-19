@@ -20,16 +20,16 @@
 
 use agents::util::sources;
 use agents::{Config, MonolithRequest, ValidatorRequest, ValidatorResponse, ValidatorStepOutcome};
-
 use anyhow::{Context, Result};
-use serde::Serialize;
-use time::OffsetDateTime;
-
 use rig::agent::{AgentHook, CompletionCallAction, CompletionCallEvent, HookContext, ToolCall, ToolCallAction};
 use rig::client::ProviderClient;
-
+use serde::Serialize;
+use std::env::args;
+use std::fs::create_dir_all;
+use std::path::PathBuf;
 use std::process::ExitCode;
 use std::time::{Duration, Instant};
+use time::OffsetDateTime;
 
 /// Tool-call args preview length. Longer args are cut and marked.
 const ARG_PREVIEW_CHARS: usize = 200;
@@ -46,22 +46,22 @@ async fn main() -> ExitCode {
     }
 }
 
-/// Sequence one migration run. Every failure propagates as an error; the
+/// Sequence one migration run. Every failure propagates as an error. The
 /// entry point logs it once.
 async fn run() -> Result<ExitCode> {
-    let args = std::env::args().collect::<Vec<String>>();
+    let args = args().collect::<Vec<String>>();
     let config_path = args
         .get(1)
-        .map(std::path::PathBuf::from)
-        .unwrap_or_else(|| std::path::PathBuf::from("assets/configs/GildedRose-Refactoring-Kata/config.yml"));
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("assets/configs/GildedRose-Refactoring-Kata/config.yml"));
 
     let started = Instant::now();
     let config =
         Config::load(&config_path).with_context(|| format!("config load failed for {}", config_path.display()))?;
 
     // The output dir must exist before the agents write into it. The
-    // package structure itself is the monolith's job; no scaffold here.
-    std::fs::create_dir_all(&config.output.dir)
+    // package structure itself is the monolith's job. No scaffold here.
+    create_dir_all(&config.output.dir)
         .with_context(|| format!("output dir create failed at {}", config.output.dir.display()))?;
     tracing::info!(
         model = %config.run.model,
@@ -78,8 +78,8 @@ async fn run() -> Result<ExitCode> {
 
     // Wire and run the monolith. The shared hook logs every turn and tool
     // call to the console.
-    let monolith = agents::build_monolith(&client, &config, RunLog);
-    let monolith_result = agents::run_monolith(&monolith, &task, config.run.max_turns).await?;
+    let monolith = agents::Monolith::build(&client, &config, RunLog);
+    let monolith_result = agents::Monolith::run(&monolith, &task, config.run.max_turns).await?;
     tracing::info!(
         files_written = monolith_result.files_written,
         approach = %monolith_result.approach,
@@ -93,8 +93,8 @@ async fn run() -> Result<ExitCode> {
         test_command: config.source.target.test_command.clone(),
         approach: monolith_result.approach.clone(),
     };
-    let validator = agents::build_validator(&client, &config, RunLog);
-    let validation = agents::run_validator(&validator, &validation_task, config.run.max_turns).await?;
+    let validator = agents::Validator::build(&client, &config, RunLog);
+    let validation = agents::Validator::run(&validator, &validation_task, config.run.max_turns).await?;
     tracing::info!(
         compilation_status = %validation.compilation_status,
         test_pass_rate = ?validation.test_pass_rate,
@@ -114,7 +114,7 @@ async fn run() -> Result<ExitCode> {
 struct Tracing;
 
 impl Tracing {
-    /// Install the subscriber. `RUST_LOG` selects the filter; `info` is the default.
+    /// Install the subscriber. `RUST_LOG` selects the filter. `info` is the default.
     fn init() {
         tracing_subscriber::fmt()
             .with_env_filter(
@@ -133,7 +133,7 @@ impl MonolithTask {
     /// Discover the sources and build the request.
     fn build(config: &Config) -> Result<MonolithRequest> {
         // One quarter of the context window for one file. The first `4` is
-        // the quarter; the second `4` is bytes per token. Tokens average
+        // the quarter. The second `4` is bytes per token. Tokens average
         // 4 bytes of source text, so the byte cap is tokens divided by 4.
         let per_file_cap = config.run.num_ctx / 4 * 4;
         let sources = sources::collect(&config.source.root, per_file_cap)?;
@@ -146,7 +146,7 @@ impl MonolithTask {
     }
 }
 
-/// The run log. Tool calls surface through the rig hook; the agents'
+/// The run log. Tool calls surface through the rig hook. The agents'
 /// structured results land in the tracing log and the result yaml.
 #[derive(Clone, Default)]
 struct RunLog;
@@ -154,7 +154,7 @@ struct RunLog;
 impl AgentHook for RunLog {
     async fn on_completion_call(&self, ctx: &HookContext, _event: CompletionCallEvent<'_>) -> CompletionCallAction {
         tracing::info!(turn = ctx.turn(), "model call");
-        CompletionCallAction::Continue
+        CompletionCallAction::continue_run()
     }
 
     async fn on_tool_call(&self, ctx: &HookContext, event: ToolCall<'_>) -> ToolCallAction {
@@ -164,7 +164,7 @@ impl AgentHook for RunLog {
             args = %truncate_args(event.args),
             "tool call"
         );
-        ToolCallAction::Run
+        ToolCallAction::run()
     }
 }
 
@@ -191,8 +191,7 @@ impl RunResult {
         };
         // Dotdir prefix keeps the result out of the translated codebase listing.
         let result_dir = config.output.dir.join(".ARCMiS").join("result");
-        std::fs::create_dir_all(&result_dir)
-            .with_context(|| format!("result dir create failed at {}", result_dir.display()))?;
+        create_dir_all(&result_dir).with_context(|| format!("result dir create failed at {}", result_dir.display()))?;
         let timestamp = OffsetDateTime::now_utc()
             .format(&time::macros::format_description!("[year][month][day]T[hour][minute][second]Z"))
             .context("run result timestamp format failed")?;

@@ -1,9 +1,8 @@
 //! `edit` applies one hashline patch to one file inside the sandbox root.
 
+use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
 use std::path::PathBuf;
 use std::sync::Arc;
-
-use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
 
 /// `edit` applies hashline patches and consumes snapshot tags for validation.
 pub struct Edit {

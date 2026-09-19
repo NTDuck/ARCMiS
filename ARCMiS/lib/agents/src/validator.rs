@@ -9,10 +9,8 @@
 //! The agent is thin: one preamble, one typed input, one tool, one typed
 //! output. No custom loop code.
 
-use anyhow::Context as _;
 use rig::agent::{Agent, OutputMode};
 use rig::client::AgentClientExt;
-use rig::completion::Prompt;
 use tools::Bash;
 
 /// Preamble for the validator agent. Working rules only. The task data
@@ -28,42 +26,46 @@ Work rules:\n\
 - Record the real outcome of every step. Never guess a pass.\n\
 - When every step has run, report with the final report.";
 
-/// Build the validator agent. The bash tool roots at the codebase
-/// under validation. The model cannot escape that root through the tool.
-/// `hook` observes every model call and tool call. All knobs come from the
-/// config.
-pub fn build(
-    client: &rig::providers::ollama::Client,
-    config: &crate::util::config::Config,
-    hook: impl rig::agent::AgentHook + 'static,
-) -> Agent {
-    let bash = Bash {
-        root: config.output.dir.clone(),
-    };
-    client
-        .agent(&config.run.model)
-        .name("validator")
-        .preamble(PREAMBLE)
-        .tool(bash)
-        .temperature(config.run.temperature)
-        .max_tokens(config.run.max_output_tokens)
-        .additional_params(serde_json::json!({
-            "num_ctx": config.run.num_ctx,
-            "think": config.run.think,
-        }))
-        .output_schema::<ValidatorResponse>()
-        .output_mode(OutputMode::Tool)
-        .add_hook(hook)
-        .build()
-}
+/// The validator agent namespace. `Validator::build` wires the agent,
+/// `Validator::run` executes one task.
+pub struct Validator;
 
-/// Run the validator agent over one task. `max_turns` bounds the
-/// model-call budget. Returns the structured result artifact. The model
-/// must deliver it through the output-tool call.
-pub async fn run(agent: &Agent, task: &ValidatorRequest, max_turns: usize) -> anyhow::Result<ValidatorResponse> {
-    let prompt = serde_json::to_string(task).context("task render failed")?;
-    let raw = Prompt::prompt(agent, prompt).max_turns(max_turns).await?;
-    Ok(serde_json::from_str(&raw)?)
+impl Validator {
+    /// Build the validator agent. The bash tool roots at the codebase
+    /// under validation. The model cannot escape that root through the tool.
+    /// `hook` observes every model call and tool call. All knobs come from the
+    /// config.
+    pub fn build(
+        client: &rig::providers::ollama::Client,
+        config: &crate::util::config::Config,
+        hook: impl rig::agent::AgentHook + 'static,
+    ) -> Agent {
+        let bash = Bash {
+            root: config.output.dir.clone(),
+        };
+        client
+            .agent(&config.run.model)
+            .name("validator")
+            .preamble(PREAMBLE)
+            .tool(bash)
+            .temperature(config.run.temperature)
+            .max_tokens(config.run.max_output_tokens)
+            .additional_params(serde_json::json!({
+                "num_ctx": config.run.num_ctx,
+                "think": config.run.think,
+            }))
+            .output_schema::<ValidatorResponse>()
+            .output_mode(OutputMode::Tool)
+            .add_hook(hook)
+            .build()
+    }
+
+    /// Run the validator agent over one task. `max_turns` bounds the
+    /// model-call budget. Returns the structured result artifact. The model
+    /// must deliver it through the output-tool call.
+    pub async fn run(agent: &Agent, task: &ValidatorRequest, max_turns: usize) -> anyhow::Result<ValidatorResponse> {
+        crate::util::task::task(agent, task, max_turns).await
+    }
 }
 
 // Input and output artifacts owned exclusively by this agent. Per the

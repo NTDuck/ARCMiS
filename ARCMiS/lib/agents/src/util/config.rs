@@ -3,6 +3,9 @@
 //! agent. See .omp/rules/config.md.
 
 use anyhow::Context as _;
+use std::fs::read_to_string;
+use std::path::Path;
+use std::path::PathBuf;
 
 /// Top-level config file shape.
 #[derive(Debug, serde::Deserialize)]
@@ -45,14 +48,14 @@ impl Default for Run {
 /// Output section: where the transformed codebase and logs land.
 #[derive(Debug, serde::Deserialize)]
 pub struct Output {
-    pub dir: std::path::PathBuf,
+    pub dir: PathBuf,
 }
 
 /// Source section: input codebase, target language, and toolchain.
 #[derive(Debug, serde::Deserialize)]
 pub struct Source {
     pub language: String,
-    pub root: std::path::PathBuf,
+    pub root: PathBuf,
     pub target: Target,
 }
 
@@ -65,9 +68,8 @@ pub struct Target {
 
 impl Config {
     /// Load and parse the config file at `path`.
-    pub fn load(path: &std::path::Path) -> anyhow::Result<Self> {
-        let raw =
-            std::fs::read_to_string(path).with_context(|| format!("config load failed for {}", path.display()))?;
+    pub fn load(path: &Path) -> anyhow::Result<Self> {
+        let raw = read_to_string(path).with_context(|| format!("config load failed for {}", path.display()))?;
         serde_yaml::from_str(&raw).with_context(|| format!("config parse failed for {}", path.display()))
     }
 }

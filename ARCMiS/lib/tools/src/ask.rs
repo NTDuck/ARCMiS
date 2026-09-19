@@ -4,6 +4,8 @@
 //! returns a rendered text form. The harness collects the answers and feeds
 //! them back through its own channel.
 
+use std::collections::BTreeSet;
+
 /// `ask` validates and renders a question set for the harness.
 pub struct Ask;
 
@@ -13,7 +15,7 @@ impl rig::tool::Tool for Ask {
     type Args = AskArgs;
     type Output = rig::tool::ToolOutput;
 
-    fn description(&self) -> std::string::String {
+    fn description(&self) -> String {
         "Validate a question set and render it as a text form for the harness.".to_owned()
     }
 
@@ -51,94 +53,85 @@ impl rig::tool::Tool for Ask {
         })
     }
 
-    async fn call(
-        &self,
-        _context: &mut rig::tool::ToolContext,
-        args: Self::Args,
-    ) -> core::result::Result<Self::Output, Self::Error> {
+    async fn call(&self, _context: &mut rig::tool::ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
         validate(&args.questions)?;
-        core::result::Result::Ok(rig::tool::ToolOutput::text(render(&args.questions)))
+        Ok(rig::tool::ToolOutput::text(render(&args.questions)))
     }
 }
 
 /// Arguments for `ask`.
 #[derive(Debug, serde::Deserialize)]
 pub struct AskArgs {
-    pub questions: std::vec::Vec<AskQuestion>,
+    pub questions: Vec<AskQuestion>,
 }
 
 /// One question with its choices.
 #[derive(Debug, serde::Deserialize)]
 pub struct AskQuestion {
-    pub id: std::string::String,
-    pub question: std::string::String,
-    pub options: std::vec::Vec<AskOption>,
+    pub id: String,
+    pub question: String,
+    pub options: Vec<AskOption>,
     #[serde(default, rename = "multi")]
-    pub multi: core::option::Option<bool>,
+    pub multi: Option<bool>,
     #[serde(default)]
-    pub recommended: core::option::Option<std::string::String>,
+    pub recommended: Option<String>,
 }
 
 /// One answer choice.
 #[derive(Debug, serde::Deserialize)]
 pub struct AskOption {
-    pub label: std::string::String,
+    pub label: String,
 }
 
 /// Reject empty ids, empty questions, missing options, and duplicate ids.
-fn validate(questions: &[AskQuestion]) -> core::result::Result<(), rig::tool::ToolExecutionError> {
+fn validate(questions: &[AskQuestion]) -> Result<(), rig::tool::ToolExecutionError> {
     if questions.is_empty() {
-        return core::result::Result::Err(rig::tool::ToolExecutionError::invalid_args(
-            "questions must hold at least one entry",
-        ));
+        return Err(rig::tool::ToolExecutionError::invalid_args("questions must hold at least one entry"));
     }
-    let mut seen = std::collections::BTreeSet::new();
+    let mut seen = BTreeSet::new();
     for question in questions {
         if question.id.is_empty() {
-            return core::result::Result::Err(rig::tool::ToolExecutionError::invalid_args(
-                "question id must not be empty",
-            ));
+            return Err(rig::tool::ToolExecutionError::invalid_args("question id must not be empty"));
         }
         if question.question.trim().is_empty() {
-            return core::result::Result::Err(rig::tool::ToolExecutionError::invalid_args(std::format!(
+            return Err(rig::tool::ToolExecutionError::invalid_args(format!(
                 "question \"{}\" needs non-empty text",
                 question.id
             )));
         }
         if question.options.is_empty() {
-            return core::result::Result::Err(rig::tool::ToolExecutionError::invalid_args(std::format!(
+            return Err(rig::tool::ToolExecutionError::invalid_args(format!(
                 "question \"{}\" needs at least one option",
                 question.id
             )));
         }
         if question.options.iter().any(|option| option.label.trim().is_empty()) {
-            return core::result::Result::Err(rig::tool::ToolExecutionError::invalid_args(std::format!(
+            return Err(rig::tool::ToolExecutionError::invalid_args(format!(
                 "question \"{}\" has an option with an empty label",
                 question.id
             )));
         }
         if !seen.insert(question.id.clone()) {
-            return core::result::Result::Err(rig::tool::ToolExecutionError::invalid_args(std::format!(
+            return Err(rig::tool::ToolExecutionError::invalid_args(format!(
                 "duplicate question id \"{}\"",
                 question.id
             )));
         }
     }
-    core::result::Result::Ok(())
+    Ok(())
 }
 
 /// Render the question set as a numbered text form.
-fn render(questions: &[AskQuestion]) -> std::string::String {
-    let mut lines = std::vec![std::string::String::from(
-        "Answer these questions through the harness. This tool collects no answers itself."
-    ),];
+fn render(questions: &[AskQuestion]) -> String {
+    let mut lines =
+        vec![String::from("Answer these questions through the harness. This tool collects no answers itself.")];
     for question in questions {
-        lines.push(std::string::String::new());
-        lines.push(std::format!("? {} ({})", question.question, question.id));
+        lines.push(String::new());
+        lines.push(format!("? {} ({})", question.question, question.id));
         if question.multi.unwrap_or(false) {
-            lines.push(std::string::String::from("  choose one or more:"));
+            lines.push(String::from("  choose one or more:"));
         } else {
-            lines.push(std::string::String::from("  choose one:"));
+            lines.push(String::from("  choose one:"));
         }
         for option in &question.options {
             let mark = if option.label == question.recommended.as_deref().unwrap_or_default() {
@@ -146,10 +139,10 @@ fn render(questions: &[AskQuestion]) -> std::string::String {
             } else {
                 ""
             };
-            lines.push(std::format!("  - {}{mark}", option.label));
+            lines.push(format!("  - {}{mark}", option.label));
         }
         if question.recommended.is_some() {
-            lines.push(std::string::String::from("  * marks the recommended answer"));
+            lines.push(String::from("  * marks the recommended answer"));
         }
     }
     lines.join("\n")

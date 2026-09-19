@@ -18,7 +18,7 @@ impl Catalog {
     }
 
     /// Add a tool to the catalog.
-    pub fn add(&mut self, name: impl Into<std::string::String>) {
+    pub fn add(&mut self, name: impl Into<String>) {
         let name = name.into();
         self.tools.insert(
             name.clone(),

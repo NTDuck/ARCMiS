@@ -12,7 +12,6 @@ description = "Agentic Repository-level Code Migration for SLMs"
 
 [workspace.dependencies]
 anyhow = "1.0.104"
-bon = "3.10.1"
 cucumber = "0.21.1"
 rig = "0.42.0"
 serde = { version = "1.0.229", features = ["derive"] }

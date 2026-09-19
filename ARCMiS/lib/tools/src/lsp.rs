@@ -3,14 +3,20 @@
 //! This pass validates arguments and routes each action to the backend. Real
 //! language server wiring lands later. The default backend reports that no
 //! server is configured.
+
+use std::fmt;
+use std::future::{ready, Future};
+use std::pin::Pin;
+use std::sync::Arc;
+
 /// `lsp` sends one request to a language server.
 pub struct Lsp {
     /// Language server backend. The orchestrator wires a real implementation.
-    pub backend: std::sync::Arc<dyn LspBackend + core::marker::Send + core::marker::Sync>,
+    pub backend: Arc<dyn LspBackend + Send + Sync>,
 }
 
-impl core::fmt::Debug for Lsp {
-    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+impl fmt::Debug for Lsp {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.debug_struct("Lsp").finish_non_exhaustive()
     }
 }
@@ -21,7 +27,7 @@ impl rig::tool::Tool for Lsp {
     type Args = LspArgs;
     type Output = rig::tool::ToolOutput;
 
-    fn description(&self) -> std::string::String {
+    fn description(&self) -> String {
         "Send one request to a language server and return the server response.".to_owned()
     }
 
@@ -51,11 +57,7 @@ impl rig::tool::Tool for Lsp {
         })
     }
 
-    async fn call(
-        &self,
-        _context: &mut rig::tool::ToolContext,
-        args: Self::Args,
-    ) -> core::result::Result<Self::Output, Self::Error> {
+    async fn call(&self, _context: &mut rig::tool::ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
         let action = args.action;
         let timeout = clamp_timeout(args.timeout, 20, 5, 60);
         validate(action, &args)?;
@@ -71,17 +73,17 @@ impl rig::tool::Tool for Lsp {
         };
         let result = dispatch(self.backend.as_ref(), action, &request).await;
         let action_name = serde_json::to_value(action).unwrap_or(serde_json::Value::Null);
-        core::result::Result::Ok(rig::tool::ToolOutput::json(serde_json::json!({
+        Ok(rig::tool::ToolOutput::json(serde_json::json!({
             "action": action_name,
             "result": result,
         })))
     }
 }
 
-impl core::default::Default for Lsp {
+impl Default for Lsp {
     fn default() -> Self {
         Self {
-            backend: std::sync::Arc::new(NullLspBackend),
+            backend: Arc::new(NullLspBackend),
         }
     }
 }
@@ -92,21 +94,21 @@ pub struct LspArgs {
     /// Language server action to run.
     pub action: LspAction,
     /// File path the action targets.
-    pub file: core::option::Option<std::string::String>,
+    pub file: Option<String>,
     /// Zero based line number for position actions.
-    pub line: core::option::Option<u32>,
+    pub line: Option<u32>,
     /// Symbol name for symbol scoped actions.
-    pub symbol: core::option::Option<std::string::String>,
+    pub symbol: Option<String>,
     /// Raw server request text for the request action.
-    pub query: core::option::Option<std::string::String>,
+    pub query: Option<String>,
     /// New symbol name for rename actions.
-    pub new_name: core::option::Option<std::string::String>,
+    pub new_name: Option<String>,
     /// Apply workspace edits instead of returning them.
-    pub apply: core::option::Option<bool>,
+    pub apply: Option<bool>,
     /// Request timeout in seconds.
-    pub timeout: core::option::Option<u64>,
+    pub timeout: Option<u64>,
     /// Extra fields for the request action.
-    pub payload: core::option::Option<serde_json::Value>,
+    pub payload: Option<serde_json::Value>,
 }
 
 /// One `lsp` action.
@@ -132,36 +134,35 @@ pub enum LspAction {
 /// Normalized request values passed to the backend.
 #[derive(Debug, Clone)]
 pub struct LspRequest {
-    pub file: core::option::Option<std::string::String>,
-    pub line: core::option::Option<u32>,
-    pub symbol: core::option::Option<std::string::String>,
-    pub query: core::option::Option<std::string::String>,
-    pub new_name: core::option::Option<std::string::String>,
+    pub file: Option<String>,
+    pub line: Option<u32>,
+    pub symbol: Option<String>,
+    pub query: Option<String>,
+    pub new_name: Option<String>,
     pub apply: bool,
-    pub payload: core::option::Option<serde_json::Value>,
+    pub payload: Option<serde_json::Value>,
     pub timeout: u64,
 }
 
 /// Boxed future returned by every backend method.
-pub type LspFuture<'a> =
-    std::pin::Pin<std::boxed::Box<dyn core::future::Future<Output = std::string::String> + core::marker::Send + 'a>>;
+pub type LspFuture<'a> = Pin<Box<dyn Future<Output = String> + Send + 'a>>;
 
 /// Pluggable language server boundary. One method per `lsp` action.
-pub trait LspBackend: core::marker::Send + core::marker::Sync {
-    fn diagnostics(&self, request: &LspRequest) -> LspFuture<'_>;
-    fn definition(&self, request: &LspRequest) -> LspFuture<'_>;
-    fn references(&self, request: &LspRequest) -> LspFuture<'_>;
-    fn hover(&self, request: &LspRequest) -> LspFuture<'_>;
-    fn symbols(&self, request: &LspRequest) -> LspFuture<'_>;
-    fn rename(&self, request: &LspRequest) -> LspFuture<'_>;
-    fn rename_file(&self, request: &LspRequest) -> LspFuture<'_>;
-    fn code_actions(&self, request: &LspRequest) -> LspFuture<'_>;
-    fn type_definition(&self, request: &LspRequest) -> LspFuture<'_>;
-    fn implementation(&self, request: &LspRequest) -> LspFuture<'_>;
-    fn status(&self, request: &LspRequest) -> LspFuture<'_>;
-    fn reload(&self, request: &LspRequest) -> LspFuture<'_>;
-    fn capabilities(&self, request: &LspRequest) -> LspFuture<'_>;
-    fn request(&self, request: &LspRequest) -> LspFuture<'_>;
+pub trait LspBackend: Send + Sync {
+    fn diagnostics<'a>(&self, request: &'a LspRequest) -> LspFuture<'a>;
+    fn definition<'a>(&self, request: &'a LspRequest) -> LspFuture<'a>;
+    fn references<'a>(&self, request: &'a LspRequest) -> LspFuture<'a>;
+    fn hover<'a>(&self, request: &'a LspRequest) -> LspFuture<'a>;
+    fn symbols<'a>(&self, request: &'a LspRequest) -> LspFuture<'a>;
+    fn rename<'a>(&self, request: &'a LspRequest) -> LspFuture<'a>;
+    fn rename_file<'a>(&self, request: &'a LspRequest) -> LspFuture<'a>;
+    fn code_actions<'a>(&self, request: &'a LspRequest) -> LspFuture<'a>;
+    fn type_definition<'a>(&self, request: &'a LspRequest) -> LspFuture<'a>;
+    fn implementation<'a>(&self, request: &'a LspRequest) -> LspFuture<'a>;
+    fn status<'a>(&self, request: &'a LspRequest) -> LspFuture<'a>;
+    fn reload<'a>(&self, request: &'a LspRequest) -> LspFuture<'a>;
+    fn capabilities<'a>(&self, request: &'a LspRequest) -> LspFuture<'a>;
+    fn request<'a>(&self, request: &'a LspRequest) -> LspFuture<'a>;
 }
 
 /// Fallback backend for the dispatch shell. It reports that no server exists.
@@ -169,76 +170,82 @@ pub trait LspBackend: core::marker::Send + core::marker::Sync {
 pub struct NullLspBackend;
 
 impl LspBackend for NullLspBackend {
-    fn diagnostics(&self, request: &LspRequest) -> LspFuture<'_> {
-        std::boxed::Box::pin(core::future::ready(unconfigured(request)))
+    fn diagnostics<'a>(&self, request: &'a LspRequest) -> LspFuture<'a> {
+        unconfigured_result(request)
     }
 
-    fn definition(&self, request: &LspRequest) -> LspFuture<'_> {
-        std::boxed::Box::pin(core::future::ready(unconfigured(request)))
+    fn definition<'a>(&self, request: &'a LspRequest) -> LspFuture<'a> {
+        unconfigured_result(request)
     }
 
-    fn references(&self, request: &LspRequest) -> LspFuture<'_> {
-        std::boxed::Box::pin(core::future::ready(unconfigured(request)))
+    fn references<'a>(&self, request: &'a LspRequest) -> LspFuture<'a> {
+        unconfigured_result(request)
     }
 
-    fn hover(&self, request: &LspRequest) -> LspFuture<'_> {
-        std::boxed::Box::pin(core::future::ready(unconfigured(request)))
+    fn hover<'a>(&self, request: &'a LspRequest) -> LspFuture<'a> {
+        unconfigured_result(request)
     }
 
-    fn symbols(&self, request: &LspRequest) -> LspFuture<'_> {
-        std::boxed::Box::pin(core::future::ready(unconfigured(request)))
+    fn symbols<'a>(&self, request: &'a LspRequest) -> LspFuture<'a> {
+        unconfigured_result(request)
     }
 
-    fn rename(&self, request: &LspRequest) -> LspFuture<'_> {
-        std::boxed::Box::pin(core::future::ready(unconfigured(request)))
+    fn rename<'a>(&self, request: &'a LspRequest) -> LspFuture<'a> {
+        unconfigured_result(request)
     }
 
-    fn rename_file(&self, request: &LspRequest) -> LspFuture<'_> {
-        std::boxed::Box::pin(core::future::ready(unconfigured(request)))
+    fn rename_file<'a>(&self, request: &'a LspRequest) -> LspFuture<'a> {
+        unconfigured_result(request)
     }
 
-    fn code_actions(&self, request: &LspRequest) -> LspFuture<'_> {
-        std::boxed::Box::pin(core::future::ready(unconfigured(request)))
+    fn code_actions<'a>(&self, request: &'a LspRequest) -> LspFuture<'a> {
+        unconfigured_result(request)
     }
 
-    fn type_definition(&self, request: &LspRequest) -> LspFuture<'_> {
-        std::boxed::Box::pin(core::future::ready(unconfigured(request)))
+    fn type_definition<'a>(&self, request: &'a LspRequest) -> LspFuture<'a> {
+        unconfigured_result(request)
     }
 
-    fn implementation(&self, request: &LspRequest) -> LspFuture<'_> {
-        std::boxed::Box::pin(core::future::ready(unconfigured(request)))
+    fn implementation<'a>(&self, request: &'a LspRequest) -> LspFuture<'a> {
+        unconfigured_result(request)
     }
 
-    fn status(&self, request: &LspRequest) -> LspFuture<'_> {
-        std::boxed::Box::pin(core::future::ready(unconfigured(request)))
+    fn status<'a>(&self, request: &'a LspRequest) -> LspFuture<'a> {
+        unconfigured_result(request)
     }
 
-    fn reload(&self, request: &LspRequest) -> LspFuture<'_> {
-        std::boxed::Box::pin(core::future::ready(unconfigured(request)))
+    fn reload<'a>(&self, request: &'a LspRequest) -> LspFuture<'a> {
+        unconfigured_result(request)
     }
 
-    fn capabilities(&self, request: &LspRequest) -> LspFuture<'_> {
-        std::boxed::Box::pin(core::future::ready(unconfigured(request)))
+    fn capabilities<'a>(&self, request: &'a LspRequest) -> LspFuture<'a> {
+        unconfigured_result(request)
     }
 
-    fn request(&self, request: &LspRequest) -> LspFuture<'_> {
-        std::boxed::Box::pin(core::future::ready(unconfigured(request)))
+    fn request<'a>(&self, request: &'a LspRequest) -> LspFuture<'a> {
+        unconfigured_result(request)
     }
 }
 
 /// Build the fallback text for a tool without a real backend.
-fn unconfigured(request: &LspRequest) -> std::string::String {
+/// One unconfigured backend result: the model sees the notice text.
+fn unconfigured_result<'a>(request: &'a LspRequest) -> LspFuture<'a> {
+    let text = unconfigured(request);
+    Box::pin(ready(text))
+}
+
+fn unconfigured(request: &LspRequest) -> String {
     let file = request.file.as_deref().unwrap_or("<no file>");
-    std::format!("no language server configured for {file}")
+    format!("no language server configured for {file}")
 }
 
 /// Clamp an optional timeout to its default and bounds.
-fn clamp_timeout(value: core::option::Option<u64>, default: u64, minimum: u64, maximum: u64) -> u64 {
+fn clamp_timeout(value: Option<u64>, default: u64, minimum: u64, maximum: u64) -> u64 {
     value.unwrap_or(default).clamp(minimum, maximum)
 }
 
 /// Reject actions whose required arguments are missing.
-fn validate(action: LspAction, args: &LspArgs) -> core::result::Result<(), rig::tool::ToolExecutionError> {
+fn validate(action: LspAction, args: &LspArgs) -> Result<(), rig::tool::ToolExecutionError> {
     match action {
         LspAction::Rename | LspAction::RenameFile => {
             require(args.new_name.is_some(), "new_name is required for a rename action")
@@ -252,21 +259,21 @@ fn validate(action: LspAction, args: &LspArgs) -> core::result::Result<(), rig::
         | LspAction::CodeActions
         | LspAction::TypeDefinition
         | LspAction::Implementation => require(args.file.is_some(), "file is required for the requested action"),
-        LspAction::Status | LspAction::Reload | LspAction::Capabilities => core::result::Result::Ok(()),
+        LspAction::Status | LspAction::Reload | LspAction::Capabilities => Ok(()),
     }
 }
 
 /// Fail with an invalid args error when a requirement is not met.
-fn require(met: bool, message: &str) -> core::result::Result<(), rig::tool::ToolExecutionError> {
+fn require(met: bool, message: &str) -> Result<(), rig::tool::ToolExecutionError> {
     if met {
-        core::result::Result::Ok(())
+        Ok(())
     } else {
-        core::result::Result::Err(rig::tool::ToolExecutionError::invalid_args(message))
+        Err(rig::tool::ToolExecutionError::invalid_args(message))
     }
 }
 
 /// Route one action to its backend method.
-async fn dispatch(backend: &dyn LspBackend, action: LspAction, request: &LspRequest) -> std::string::String {
+async fn dispatch(backend: &dyn LspBackend, action: LspAction, request: &LspRequest) -> String {
     match action {
         LspAction::Diagnostics => backend.diagnostics(request).await,
         LspAction::Definition => backend.definition(request).await,
