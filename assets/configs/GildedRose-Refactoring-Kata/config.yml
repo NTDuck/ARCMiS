@@ -2,18 +2,19 @@
 
 run:
   # Model that drives the agent (ollama model tag).
-  model: granite4.1:3b-bf16
+  model: qwen3.8:27b-mtp-q4_K_M
   # Turn budget for the agent tool loop.
   max_turns: 14
-  # Model context window. The 2B model defaults to 2048 tokens. Retry history grows past 8k, so this run pins 16k (model supports up to 131072).
+  # Model context window. The 27B model serves up to 128k. 16k keeps the KV
+  # cache and the per-file byte caps inside the benchmark budget.
   num_ctx: 16384
-  # Max output tokens per model call (ollama num_predict). The 2B model
-  # writes long files in one turn and needs headroom.
-  max_output_tokens: 8192
+  # Max output tokens per model call (ollama num_predict). Headroom for one
+  # translated file per turn.
+  max_output_tokens: 4096
   # Whole-run retries when a model turn truncates or errors.
   max_retries: 1
-  # Thinking mode off: the 2B model runs away in think blocks on long
-  # prompts and never emits a tool call. Three runs verified with think off.
+  # Thinking mode off: think blocks on long prompts delay the first tool
+  # call. Benchmark parity with the other methods.
   think: false
   # Sampling temperature. Low value for deterministic tool use.
   temperature: 0.2
