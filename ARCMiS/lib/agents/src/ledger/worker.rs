@@ -4,9 +4,9 @@
 
 use crate::util::config::Config;
 use crate::util::noop_hook::NoopHook;
+use crate::util::provider::Provider;
 use rig::agent::Agent;
 use rig::client::AgentClientExt;
-use rig::providers::ollama::Client;
 use tools::{Bash, Write};
 
 /// Preamble for the ledger worker. Working rules only. The task data
@@ -35,8 +35,12 @@ impl Worker {
     /// that the parent build created, rooted at the config's output dir.
     /// The worker runs under the shared no-op hook: the outer hook observes
     /// the manager.
-    pub fn build(client: &Client, config: &Config, write: Write, bash: Bash) -> Agent {
-        client
+    pub fn build<C>(client: &C, config: &Config, provider: &Provider, write: Write, bash: Bash) -> Agent
+    where
+        C: AgentClientExt,
+        C::CompletionModel: 'static,
+    {
+        let mut builder = client
             .agent(&config.run.model)
             .name("ledger_worker")
             .preamble(WORKER_PREAMBLE)
@@ -44,11 +48,10 @@ impl Worker {
             .tool(bash)
             .temperature(config.run.temperature)
             .max_tokens(config.run.max_output_tokens)
-            .additional_params(serde_json::json!({
-                "num_ctx": config.run.num_ctx,
-                "think": config.run.think,
-            }))
-            .add_hook(NoopHook)
-            .build()
+            .add_hook(NoopHook);
+        if let Some(params) = provider.extra_params(&config.run) {
+            builder = builder.additional_params(params);
+        }
+        builder.build()
     }
 }

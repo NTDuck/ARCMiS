@@ -5,7 +5,7 @@
 //! directory layout follows ADR 0020: `manifest.json`, `result/`,
 //! `traces/turns.jsonl`, and the produced workspace.
 
-use agents::{Config, ValidatorResponse};
+use agents::Config;
 use anyhow::{Context, Result};
 use serde::Serialize;
 use std::path::Path;
@@ -164,20 +164,15 @@ fn failed_count(text: &str) -> u32 {
     count_marker(text, " failed")
 }
 
-/// Write the per-problem record after the run. `validation` carries the
-/// aggregate the agents reported. The toolchain rerun decides success.
-pub fn write_per_problem(dir: &Path, config: &Config, validation: &ValidatorResponse) -> Result<()> {
+/// Write the per-problem record after the run. The toolchain rerun
+/// decides success, never the agent's self-report.
+pub fn write_per_problem(dir: &Path, config: &Config) -> Result<()> {
     let workspace = &config.output.dir;
     let toolchain = evaluate_workspace(workspace, &config.source.target.test_command)?;
-    let stage = if validation.compilation_status.is_empty() {
-        "translate"
-    } else {
-        "evaluate"
-    };
-    let record = ProblemRecord {
-        stage,
-        ..toolchain
-    };
+    // The stage records which pipeline phase last touched the workspace:
+    // the monolith validator always reaches evaluation, the recode and
+    // ledger agents finish with their own typed report.
+    let record = toolchain;
     let result_dir = dir.join("result");
     std::fs::create_dir_all(&result_dir)?;
     let path = result_dir.join("per_problem.json");

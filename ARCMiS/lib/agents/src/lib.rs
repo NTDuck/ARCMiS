@@ -5,6 +5,7 @@ pub mod util {
     //! agent. The agents live in the crate root.
     pub mod config;
     pub mod noop_hook;
+    pub mod provider;
     pub mod registry;
     pub mod sources;
     pub mod task;

@@ -21,7 +21,7 @@ impl RunResult {
     /// `{output_dir}/.ARCMiS/result/{timestamp}.yml`.
     pub fn write(config: &Config, validation: &ValidatorResponse, elapsed: Duration) -> Result<()> {
         let record = RunRecord {
-            compilation_status: validation.compilation_status.clone(),
+            compiled: validation.compiled,
             test_pass_rate: fmt_pass_rate(validation.test_pass_rate),
             elapsed: format!("{elapsed:?}"),
             steps: validation
@@ -45,7 +45,7 @@ impl RunResult {
             .with_context(|| format!("run result write failed at {}", result_path.display()))?;
         tracing::info!(
             result = %result_path.display(),
-            compilation_status = %validation.compilation_status,
+            compiled = validation.compiled,
             test_pass_rate = ?validation.test_pass_rate,
             elapsed = ?elapsed,
             "run result written"
@@ -65,10 +65,10 @@ pub fn finish(
 ) -> Result<std::process::ExitCode> {
     RunResult::write(config, validation, elapsed)?;
     if let Some(dir) = experiment {
-        crate::experiment::write_per_problem(dir, config, validation)?;
+        crate::experiment::write_per_problem(dir, config)?;
         crate::experiment::copy_result(dir, config)?;
     }
-    if validation.compilation_status == "pass" {
+    if validation.compiled {
         Ok(std::process::ExitCode::SUCCESS)
     } else {
         Ok(std::process::ExitCode::FAILURE)
@@ -78,7 +78,7 @@ pub fn finish(
 /// The yaml document for one run.
 #[derive(Serialize)]
 struct RunRecord {
-    compilation_status: String,
+    compiled: bool,
     test_pass_rate: String,
     elapsed: String,
     steps: Vec<RunStepRecord>,

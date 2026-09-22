@@ -21,8 +21,9 @@ pub use manager::{LedgerManager, LedgerResponse};
 
 use crate::monolith::MonolithRequest;
 use crate::util::config::Config;
+use crate::util::provider::Provider;
 use rig::agent::{Agent, AgentHook};
-use rig::providers::ollama::Client;
+use rig::client::AgentClientExt;
 use tools::{Bash, Write};
 
 /// The ledger agent namespace. `Ledger::build` wires the manager and the
@@ -34,7 +35,11 @@ impl Ledger {
     /// and tool call. All knobs come from the config. The output root is
     /// the config's output dir. The worker shares the same tool state and
     /// runs under the private no-op hook.
-    pub fn build(client: &Client, config: &Config, hook: impl AgentHook + 'static) -> Agent {
+    pub fn build<C>(client: &C, config: &Config, provider: &Provider, hook: impl AgentHook + 'static) -> Agent
+    where
+        C: AgentClientExt,
+        C::CompletionModel: 'static,
+    {
         // One snapshot store per build. `write` results carry fresh hashline
         // anchors minted from it.
         let snapshots = tools::SnapshotStore::new();
@@ -47,8 +52,8 @@ impl Ledger {
         };
         // The worker. Fresh context per delegated task: the manager spawns
         // it through the worker tool on every call.
-        let worker = worker::Worker::build(client, config, write, bash);
-        LedgerManager::build(client, config, worker.into_tool(), hook)
+        let worker = worker::Worker::build(client, config, provider, write, bash);
+        LedgerManager::build(client, config, provider, worker.into_tool(), hook)
     }
 
     /// Run the ledger manager over one task. `max_turns` bounds the

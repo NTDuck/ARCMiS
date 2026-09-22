@@ -25,11 +25,11 @@
 mod experiment;
 mod result;
 mod run_log;
+use agents::util::provider::{Clients, Provider};
 use agents::util::sources;
 use agents::{Config, MonolithRequest, ValidatorRequest, ValidatorResponse};
 use anyhow::{Context, Result};
-use rig::client::ProviderClient;
-use rig::providers::ollama::Client;
+use futures::FutureExt;
 use run_log::Tracing;
 use std::env::args;
 use std::fs::create_dir_all;
@@ -53,21 +53,61 @@ async fn main() -> ExitCode {
     }
 }
 
+/// The harness command line. Positional config path and experiment dir
+/// keep the existing contract; flags select the run knobs. Hand-rolled
+/// parsing keeps the binary dependency-free, matching the repo pattern.
+#[derive(Debug, Default)]
+struct Args {
+    config_path: Option<PathBuf>,
+    experiment_dir: Option<PathBuf>,
+    method: Option<String>,
+    model: Option<String>,
+    provider: Option<String>,
+    api_key: Option<String>,
+    base_url: Option<String>,
+    offload: bool,
+}
+
+/// Parse `--flag value` pairs and the two positionals.
+fn parse_args() -> Args {
+    let mut parsed = Args::default();
+    let mut argv = args().skip(1);
+    while let Some(arg) = argv.next() {
+        match arg.as_str() {
+            "--method" => parsed.method = argv.next(),
+            "--model" => parsed.model = argv.next(),
+            "--provider" => parsed.provider = argv.next(),
+            "--api-key" => parsed.api_key = argv.next(),
+            "--base-url" => parsed.base_url = argv.next(),
+            "--offload" => parsed.offload = true,
+            other if parsed.config_path.is_none() => parsed.config_path = Some(PathBuf::from(other)),
+            other if parsed.experiment_dir.is_none() => parsed.experiment_dir = Some(PathBuf::from(other)),
+            other => {
+                tracing::warn!(arg = other, "unrecognized argument ignored");
+            },
+        }
+    }
+    parsed
+}
+
 /// Sequence one migration run. Every failure propagates as an error. The
 /// entry point logs it once.
 async fn run() -> Result<ExitCode> {
-    let args = args().collect::<Vec<String>>();
+    let args = parse_args();
     let config_path = args
-        .get(1)
-        .map(PathBuf::from)
+        .config_path
+        .clone()
         .unwrap_or_else(|| PathBuf::from("assets/configs/GildedRose-Refactoring-Kata/config.yml"));
-    // Optional second argument: the experiment directory. When present,
+    // Optional second positional: the experiment directory. When present,
     // the run writes manifest, result, and trace into it.
-    let experiment_dir = args.get(2).map(PathBuf::from);
+    let experiment_dir = args.experiment_dir.clone();
 
     let started = Instant::now();
-    let config =
+    let mut config =
         Config::load(&config_path).with_context(|| format!("config load failed for {}", config_path.display()))?;
+    if let Some(model) = &args.model {
+        config.run.model = model.clone();
+    }
     let log = match &experiment_dir {
         Some(dir) => {
             let trace = dir.join("traces").join("turns.jsonl");
@@ -92,39 +132,66 @@ async fn run() -> Result<ExitCode> {
         "migration run started"
     );
 
-    // One ollama client, constructed in run, shared by both agents.
-    let client = Client::from_env().context("ollama client construction failed")?;
+    let provider =
+        Provider::from_cli(args.provider, args.api_key, args.base_url).context("provider resolution failed")?;
+    let client = provider.client().context("client construction failed")?;
 
     let task = MonolithTask::build(&config)?;
 
-    // The method comes from the config directory name. Unknown names run
-    // the monolith sequence.
-    let method = config_path
-        .parent()
-        .and_then(Path::parent)
-        .and_then(|dir| dir.file_name())
-        .and_then(|name| name.to_str())
-        .unwrap_or_default()
-        .to_owned();
-    match method.as_str() {
-        "ledger-method" => run_ledger(&client, &config, &task, &log, started, experiment_dir.as_deref()).await,
-        "ReCodeAgent-method" => run_recode(&client, &config, &task, &log, started, experiment_dir.as_deref()).await,
-        _ => run_monolith(&client, &config, &task, &log, started, experiment_dir.as_deref()).await,
-    }
+    // The method comes from --method, or from the config directory name
+    // when the flag is absent. Unknown names run the monolith sequence.
+    let method = args.method.clone().unwrap_or_else(|| {
+        config_path
+            .parent()
+            .and_then(Path::parent)
+            .and_then(|dir| dir.file_name())
+            .and_then(|name| name.to_str())
+            .unwrap_or_default()
+            .to_owned()
+    });
+    // Monomorphic dispatch: each provider variant gets its own concrete
+    // client; there is no type erasure between them.
+    let method_ref = method.as_str();
+    let run = match (method_ref, &client) {
+        ("ledger-method", Clients::Ollama(client)) | ("ledger", Clients::Ollama(client)) => {
+            run_ledger(client, &config, &provider, &task, &log, started, experiment_dir.as_deref()).boxed()
+        },
+        ("ReCodeAgent-method", Clients::Ollama(client)) | ("recode", Clients::Ollama(client)) => {
+            run_recode(client, &config, &provider, &task, &log, started, experiment_dir.as_deref()).boxed()
+        },
+        (_, Clients::Ollama(client)) => {
+            run_monolith(client, &config, &provider, &task, &log, started, experiment_dir.as_deref()).boxed()
+        },
+        ("ledger-method", Clients::Netmind(client)) | ("ledger", Clients::Netmind(client)) => {
+            run_ledger(client, &config, &provider, &task, &log, started, experiment_dir.as_deref()).boxed()
+        },
+        ("ReCodeAgent-method", Clients::Netmind(client)) | ("recode", Clients::Netmind(client)) => {
+            run_recode(client, &config, &provider, &task, &log, started, experiment_dir.as_deref()).boxed()
+        },
+        (_, Clients::Netmind(client)) => {
+            run_monolith(client, &config, &provider, &task, &log, started, experiment_dir.as_deref()).boxed()
+        },
+    };
+    run.await
 }
 
 /// Wire and run the monolith, then validate its output with the validator
 /// agent. The original two-agent sequence.
-async fn run_monolith(
-    client: &Client,
+async fn run_monolith<C>(
+    client: &C,
     config: &Config,
+    provider: &Provider,
     task: &MonolithRequest,
     log: &run_log::RunLog,
     started: Instant,
     experiment_dir: Option<&std::path::Path>,
-) -> Result<ExitCode> {
+) -> Result<ExitCode>
+where
+    C: rig::client::AgentClientExt,
+    C::CompletionModel: 'static,
+{
     // The shared hook logs every turn and tool call to the console.
-    let monolith = agents::Monolith::build(client, config, log.clone());
+    let monolith = agents::Monolith::build(client, config, provider, log.clone());
     let monolith_result = agents::Monolith::run(&monolith, task, config.run.max_turns).await?;
     tracing::info!(
         files_written = monolith_result.files_written,
@@ -139,10 +206,10 @@ async fn run_monolith(
         test_command: config.source.target.test_command.clone(),
         approach: monolith_result.approach.clone(),
     };
-    let validator = agents::Validator::build(client, config, log.clone());
+    let validator = agents::Validator::build(client, config, provider, log.clone());
     let validation = agents::Validator::run(&validator, &validation_task, config.run.max_turns).await?;
     tracing::info!(
-        compilation_status = %validation.compilation_status,
+        compiled = validation.compiled,
         test_pass_rate = ?validation.test_pass_rate,
         "validator finished"
     );
@@ -152,24 +219,29 @@ async fn run_monolith(
 
 /// Wire and run the ledger method. The manager reports its own validation,
 /// so no second agent runs. The result lands in the same yaml shape.
-async fn run_ledger(
-    client: &Client,
+async fn run_ledger<C>(
+    client: &C,
     config: &Config,
+    provider: &Provider,
     task: &MonolithRequest,
     log: &run_log::RunLog,
     started: Instant,
     experiment_dir: Option<&std::path::Path>,
-) -> Result<ExitCode> {
-    let ledger = agents::Ledger::build(client, config, log.clone());
+) -> Result<ExitCode>
+where
+    C: rig::client::AgentClientExt,
+    C::CompletionModel: 'static,
+{
+    let ledger = agents::Ledger::build(client, config, provider, log.clone());
     let result = agents::Ledger::run(&ledger, task, config.run.max_turns).await?;
     tracing::info!(
-        compilation_status = %result.compilation_status,
+        compiled = result.compiled,
         test_pass_rate = ?result.test_pass_rate,
         approach = %result.approach,
         "ledger finished"
     );
     let validation = ValidatorResponse {
-        compilation_status: result.compilation_status,
+        compiled: result.compiled,
         test_pass_rate: result.test_pass_rate,
         steps: Vec::new(),
     };
@@ -181,17 +253,23 @@ async fn run_ledger(
 /// deterministic pipeline from the paper's Algorithm 1. The final reporter
 /// reports its own validation, so no second agent runs. The result lands
 /// in the same yaml shape.
-async fn run_recode(
-    client: &Client,
+async fn run_recode<C>(
+    client: &C,
     config: &Config,
+    provider: &Provider,
     task: &MonolithRequest,
     log: &run_log::RunLog,
     started: Instant,
     experiment_dir: Option<&std::path::Path>,
-) -> Result<ExitCode> {
-    let result = agents::Recode::run(client, config, task, log.clone(), config.run.max_turns, MAX_ITER).await?;
+) -> Result<ExitCode>
+where
+    C: rig::client::AgentClientExt,
+    C::CompletionModel: 'static,
+{
+    let result =
+        agents::Recode::run(client, config, provider, task, log.clone(), config.run.max_turns, MAX_ITER).await?;
     tracing::info!(
-        compilation_status = %result.compilation_status,
+        compiled = result.compiled,
         test_pass_rate = ?result.test_pass_rate,
         repos_translated = result.repos_translated,
         files_written = result.files_written,
@@ -199,7 +277,7 @@ async fn run_recode(
         "recode finished"
     );
     let validation = ValidatorResponse {
-        compilation_status: result.compilation_status,
+        compiled: result.compiled,
         test_pass_rate: result.test_pass_rate,
         steps: Vec::new(),
     };

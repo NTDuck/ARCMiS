@@ -18,8 +18,9 @@
 
 use crate::monolith::MonolithRequest;
 use crate::util::config::Config;
+use crate::util::provider::Provider;
 use rig::agent::AgentHook;
-use rig::providers::ollama::Client;
+use rig::client::AgentClientExt;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use tools::{Bash, Write};
@@ -41,14 +42,19 @@ impl Recode {
     /// loop agents, the translator and the validator. `max_turns` bounds
     /// each agent's model-call budget. `max_iter` bounds the fix
     /// rounds.
-    pub async fn run(
-        client: &Client,
+    pub async fn run<C>(
+        client: &C,
         config: &Config,
+        provider: &Provider,
         task: &MonolithRequest,
         hook: impl AgentHook + Clone + 'static,
         max_turns: usize,
         max_iter: usize,
-    ) -> anyhow::Result<RecodeResponse> {
+    ) -> anyhow::Result<RecodeResponse>
+    where
+        C: AgentClientExt,
+        C::CompletionModel: 'static,
+    {
         // Shared tool state, built once. Each phase agent gets its own
         // tool instances over the same store and the same output root.
         let snapshots = tools::SnapshotStore::new();
@@ -57,6 +63,7 @@ impl Recode {
         let analyzer = analyzer::Analyzer::build(
             client,
             config,
+            provider,
             Write {
                 root: config.output.dir.clone(),
                 snapshots: snapshots.clone(),
@@ -75,6 +82,7 @@ impl Recode {
         let planner = planner::Planner::build(
             client,
             config,
+            provider,
             Write {
                 root: config.output.dir.clone(),
                 snapshots: snapshots.clone(),
@@ -111,6 +119,7 @@ impl Recode {
             let translator = translator::Translator::build(
                 client,
                 config,
+                provider,
                 Write {
                     root: config.output.dir.clone(),
                     snapshots: snapshots.clone(),
@@ -126,6 +135,7 @@ impl Recode {
             let validator = validator::Validator::build(
                 client,
                 config,
+                provider,
                 Write {
                     root: config.output.dir.clone(),
                     snapshots: snapshots.clone(),
@@ -173,7 +183,7 @@ impl Recode {
 
         // Phase 5: emit the final typed response from the last
         // validation report.
-        let reporter = reporter::Reporter::build(client, config);
+        let reporter = reporter::Reporter::build(client, config, provider);
         let response: RecodeResponse = crate::util::task::task(&reporter, &validation_report, max_turns).await?;
         Ok(response)
     }
@@ -185,9 +195,9 @@ impl Recode {
 // input artifact is the shared [`MonolithRequest`].
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct RecodeResponse {
-    /// Build outcome of the translated codebase: `pass` when the build
-    /// succeeds, `fail` otherwise.
-    pub compilation_status: String,
+    /// Build outcome of the translated codebase: true when the build
+    /// succeeds.
+    pub compiled: bool,
     /// Fraction of translated tests that pass. `None` when the target has
     /// no test suite.
     pub test_pass_rate: Option<f64>,

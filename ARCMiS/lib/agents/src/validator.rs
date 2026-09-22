@@ -10,9 +10,9 @@
 //! output. No custom loop code.
 
 use crate::util::config::Config;
+use crate::util::provider::Provider;
 use rig::agent::{Agent, AgentHook, OutputMode};
 use rig::client::AgentClientExt;
-use rig::providers::ollama::Client;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use tools::Bash;
@@ -39,25 +39,28 @@ impl Validator {
     /// under validation. The model cannot escape that root through the tool.
     /// `hook` observes every model call and tool call. All knobs come from the
     /// config.
-    pub fn build(client: &Client, config: &Config, hook: impl AgentHook + 'static) -> Agent {
+    pub fn build<C>(client: &C, config: &Config, provider: &Provider, hook: impl AgentHook + 'static) -> Agent
+    where
+        C: AgentClientExt,
+        C::CompletionModel: 'static,
+    {
         let bash = Bash {
             root: config.output.dir.clone(),
         };
-        client
+        let mut builder = client
             .agent(&config.run.model)
             .name("validator")
             .preamble(PREAMBLE)
             .tool(bash)
             .temperature(config.run.temperature)
             .max_tokens(config.run.max_output_tokens)
-            .additional_params(serde_json::json!({
-                "num_ctx": config.run.num_ctx,
-                "think": config.run.think,
-            }))
             .output_schema::<ValidatorResponse>()
             .output_mode(OutputMode::Tool)
-            .add_hook(hook)
-            .build()
+            .add_hook(hook);
+        if let Some(params) = provider.extra_params(&config.run) {
+            builder = builder.additional_params(params);
+        }
+        builder.build()
     }
 
     /// Run the validator agent over one task. `max_turns` bounds the
@@ -100,7 +103,7 @@ pub struct ValidatorStepOutcome {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct ValidatorResponse {
     /// True when every toolchain step passed.
-    pub compilation_status: String,
+    pub compiled: bool,
     /// Test pass rate as a fraction of reported tests, `None` when no test
     /// step reported counts.
     pub test_pass_rate: Option<f64>,

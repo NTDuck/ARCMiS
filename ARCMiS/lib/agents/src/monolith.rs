@@ -14,9 +14,9 @@
 //! two tools, one typed output. No custom loop code.
 
 use crate::util::config::Config;
+use crate::util::provider::Provider;
 use rig::agent::{Agent, AgentHook, OutputMode};
 use rig::client::AgentClientExt;
-use rig::providers::ollama::Client;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -45,8 +45,13 @@ pub struct Monolith;
 impl Monolith {
     /// Build the monolith agent. `hook` observes every model call and tool
     /// call. All knobs come from the config. The output root is the config's
-    /// output dir.
-    pub fn build(client: &Client, config: &Config, hook: impl AgentHook + 'static) -> Agent {
+    /// output dir. Generic over the provider client: ollama and the
+    /// netmind gateway build the same agent shape.
+    pub fn build<C>(client: &C, config: &Config, provider: &Provider, hook: impl AgentHook + 'static) -> Agent
+    where
+        C: AgentClientExt,
+        C::CompletionModel: 'static,
+    {
         // One snapshot store per build. `write` results carry fresh hashline
         // anchors minted from it.
         let snapshots = tools::SnapshotStore::new();
@@ -57,7 +62,7 @@ impl Monolith {
         let bash = Bash {
             root: config.output.dir.clone(),
         };
-        client
+        let mut builder = client
             .agent(&config.run.model)
             .name("monolith")
             .preamble(PREAMBLE)
@@ -65,14 +70,13 @@ impl Monolith {
             .tool(bash)
             .temperature(config.run.temperature)
             .max_tokens(config.run.max_output_tokens)
-            .additional_params(serde_json::json!({
-                "num_ctx": config.run.num_ctx,
-                "think": config.run.think,
-            }))
             .output_schema::<MonolithResponse>()
             .output_mode(OutputMode::Tool)
-            .add_hook(hook)
-            .build()
+            .add_hook(hook);
+        if let Some(params) = provider.extra_params(&config.run) {
+            builder = builder.additional_params(params);
+        }
+        builder.build()
     }
 
     /// Run the monolith agent over one task. `max_turns` bounds the

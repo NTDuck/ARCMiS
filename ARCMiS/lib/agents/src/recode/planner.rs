@@ -3,9 +3,9 @@
 
 use crate::util::config::Config;
 use crate::util::noop_hook::NoopHook;
+use crate::util::provider::Provider;
 use rig::agent::{Agent, OutputMode};
 use rig::client::AgentClientExt;
-use rig::providers::ollama::Client;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use tools::{Bash, Write};
@@ -44,8 +44,12 @@ impl Planner {
     /// Build the planner agent. The agent writes the plan and the
     /// skeleton files with the write and bash tools and returns a
     /// structured plan. It runs under the no-op hook.
-    pub fn build(client: &Client, config: &Config, write: Write, bash: Bash) -> Agent {
-        client
+    pub fn build<C>(client: &C, config: &Config, provider: &Provider, write: Write, bash: Bash) -> Agent
+    where
+        C: AgentClientExt,
+        C::CompletionModel: 'static,
+    {
+        let mut builder = client
             .agent(&config.run.model)
             .name("recode_planner")
             .preamble(PREAMBLE)
@@ -53,14 +57,13 @@ impl Planner {
             .tool(bash)
             .temperature(config.run.temperature)
             .max_tokens(config.run.max_output_tokens)
-            .additional_params(serde_json::json!({
-                "num_ctx": config.run.num_ctx,
-                "think": config.run.think,
-            }))
             .output_schema::<PlanningOutput>()
             .output_mode(OutputMode::Tool)
-            .add_hook(NoopHook)
-            .build()
+            .add_hook(NoopHook);
+        if let Some(params) = provider.extra_params(&config.run) {
+            builder = builder.additional_params(params);
+        }
+        builder.build()
     }
 }
 

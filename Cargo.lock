@@ -2846,6 +2846,7 @@ dependencies = [
  "ARCMiS-tools",
  "anyhow",
  "cucumber",
+ "futures",
  "rig",
  "serde",
  "serde_json",

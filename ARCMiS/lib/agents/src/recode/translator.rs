@@ -2,9 +2,9 @@
 //! fixes failures from the validation report.
 
 use crate::util::config::Config;
+use crate::util::provider::Provider;
 use rig::agent::{Agent, AgentHook, OutputMode};
 use rig::client::AgentClientExt;
-use rig::providers::ollama::Client;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use tools::{Bash, Write};
@@ -38,8 +38,19 @@ impl Translator {
     /// Build the translator agent. The agent executes the plan with the
     /// write and bash tools and closes the phase with a structured ack.
     /// `hook` observes every model call and tool call.
-    pub fn build(client: &Client, config: &Config, write: Write, bash: Bash, hook: impl AgentHook + 'static) -> Agent {
-        client
+    pub fn build<C>(
+        client: &C,
+        config: &Config,
+        provider: &Provider,
+        write: Write,
+        bash: Bash,
+        hook: impl AgentHook + 'static,
+    ) -> Agent
+    where
+        C: AgentClientExt,
+        C::CompletionModel: 'static,
+    {
+        let mut builder = client
             .agent(&config.run.model)
             .name("recode_translator")
             .preamble(PREAMBLE)
@@ -47,14 +58,13 @@ impl Translator {
             .tool(bash)
             .temperature(config.run.temperature)
             .max_tokens(config.run.max_output_tokens)
-            .additional_params(serde_json::json!({
-                "num_ctx": config.run.num_ctx,
-                "think": config.run.think,
-            }))
             .output_schema::<TranslatorReport>()
             .output_mode(OutputMode::Prompted)
-            .add_hook(hook)
-            .build()
+            .add_hook(hook);
+        if let Some(params) = provider.extra_params(&config.run) {
+            builder = builder.additional_params(params);
+        }
+        builder.build()
     }
 }
 
