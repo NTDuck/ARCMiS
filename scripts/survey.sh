@@ -38,7 +38,9 @@ TIMEOUT=1800
 echo "survey start $(date -Is)" >> "$LOG"
 
 for model in "${MODELS[@]}"; do
-  safe_model="${model//\//_}"
+  # Cargo rejects ':' in path segments, so the model tag cannot name the
+  # run directory. Sanitize every non-alphanumeric run.
+  safe_model="${model//[^a-zA-Z0-9._-]/_}"
   for project in "${PROJECTS[@]}"; do
     for method in "${METHODS[@]}"; do
       for rep in $(seq 1 "$REPS"); do
@@ -60,7 +62,7 @@ for model in "${MODELS[@]}"; do
         echo "=== $project $method $safe_model rep$rep start $(date -Is)" >> "$LOG"
         start_ns=$(date +%s%N)
         OLLAMA_API_BASE_URL="${OLLAMA_API_BASE_URL:-http://localhost:11434}" \
-          timeout "$TIMEOUT" target/debug/harness "$cfg" "$out" --method "$method" --offload \
+          timeout "$TIMEOUT" target/release/harness "$cfg" "$out" --method "$method" --offload \
           > "$out/stdout.log" 2> "$out/stderr.log"
         rc=$?
         end_ns=$(date +%s%N)
