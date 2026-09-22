@@ -27,6 +27,7 @@ Numbered, immutable Architecture Decision Records. Format and policy: [`.omp/rul
 | [0018](0018-multi-method-agents.md) | Multi-method agents: monolith, ledger, recode | accepted |
 | [0019](0019-folder-per-method.md) | One folder per method | accepted |
 | [0020](0020-meta-harness-experiment-contract.md) | Meta-Harness experiment contract | accepted |
+| [0021](0021-survey-sweep-methods-models.md) | Survey sweep across methods and models | accepted |
 
 ## References
 
