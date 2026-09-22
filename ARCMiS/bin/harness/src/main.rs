@@ -115,6 +115,17 @@ async fn run() -> Result<ExitCode> {
     if let Some(model) = &args.model {
         config.run.model = model.clone();
     }
+    // The method comes from --method, or from the config directory name
+    // when the flag is absent. Unknown names run the monolith sequence.
+    let method = args.method.clone().unwrap_or_else(|| {
+        config_path
+            .parent()
+            .and_then(Path::parent)
+            .and_then(|dir| dir.file_name())
+            .and_then(|name| name.to_str())
+            .unwrap_or_default()
+            .to_owned()
+    });
     let log = match &experiment_dir {
         Some(dir) => {
             let trace = dir.join("traces").join("turns.jsonl");
@@ -124,7 +135,7 @@ async fn run() -> Result<ExitCode> {
         None => run_log::RunLog::default(),
     };
     if let Some(dir) = &experiment_dir {
-        experiment::write_manifest(dir, &config, &config_path)?;
+        experiment::write_manifest(dir, &config, &config_path, &method)?;
     }
 
     // The output dir must exist before the agents write into it. The
@@ -157,17 +168,6 @@ async fn run() -> Result<ExitCode> {
 
     let task = MonolithTask::build(&config)?;
 
-    // The method comes from --method, or from the config directory name
-    // when the flag is absent. Unknown names run the monolith sequence.
-    let method = args.method.clone().unwrap_or_else(|| {
-        config_path
-            .parent()
-            .and_then(Path::parent)
-            .and_then(|dir| dir.file_name())
-            .and_then(|name| name.to_str())
-            .unwrap_or_default()
-            .to_owned()
-    });
     // Monomorphic dispatch: each provider variant gets its own concrete
     // client; there is no type erasure between them.
     let method_ref = method.as_str();

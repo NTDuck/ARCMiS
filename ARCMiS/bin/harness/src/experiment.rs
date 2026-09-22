@@ -72,17 +72,13 @@ fn timestamp() -> String {
 
 /// Write the manifest before the run starts. The manifest declares what
 /// the candidate runs, never what it scored.
-pub fn write_manifest(dir: &Path, config: &Config, config_path: &Path) -> Result<()> {
+pub fn write_manifest(dir: &Path, config: &Config, config_path: &Path, method: &str) -> Result<()> {
     std::fs::create_dir_all(dir).with_context(|| format!("experiment dir create failed at {}", dir.display()))?;
     let manifest = Manifest {
         candidate_id: candidate_id(dir),
-        // Same derivation as the run dispatch in main.rs: the config
-        // dir name selects the method, unknown names run the monolith.
-        method: match config_path.parent().and_then(Path::parent).and_then(|p| p.file_name()).and_then(|n| n.to_str()) {
-            Some("ledger-method") => "ledger".to_owned(),
-            Some("ReCodeAgent-method") => "recode".to_owned(),
-            _ => "monolith".to_owned(),
-        },
+        // The --method flag selects the pipeline; the harness logs the
+        // resolved name here so the survey artifacts stay self-describing.
+        method: method.to_owned(),
         model: config.run.model.clone(),
         budgets: Budgets {
             max_turns: config.run.max_turns,

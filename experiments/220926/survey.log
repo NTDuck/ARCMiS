@@ -1,0 +1,639 @@
+survey start 2026-09-22T18:39:54+07:00
+=== fft monolith openbmb_minicpm5-2b:q8_0 rep1 start 2026-09-22T18:39:54+07:00
+{"project":"fft","method":"monolith","model":"openbmb_minicpm5-2b:q8_0","rep":1,"rc":1,"wall_s":186}
+=== fft monolith openbmb_minicpm5-2b:q8_0 rep1 rc=1 wall=186s 2026-09-22T18:43:01+07:00
+=== fft monolith openbmb_minicpm5-2b:q8_0 rep2 start 2026-09-22T18:43:01+07:00
+{"project":"fft","method":"monolith","model":"openbmb_minicpm5-2b:q8_0","rep":2,"rc":1,"wall_s":27}
+=== fft monolith openbmb_minicpm5-2b:q8_0 rep2 rc=1 wall=27s 2026-09-22T18:43:28+07:00
+=== fft monolith openbmb_minicpm5-2b:q8_0 rep3 start 2026-09-22T18:43:28+07:00
+{"project":"fft","method":"monolith","model":"openbmb_minicpm5-2b:q8_0","rep":3,"rc":1,"wall_s":6}
+=== fft monolith openbmb_minicpm5-2b:q8_0 rep3 rc=1 wall=6s 2026-09-22T18:43:35+07:00
+=== fft monolith openbmb_minicpm5-2b:q8_0 rep4 start 2026-09-22T18:43:35+07:00
+{"project":"fft","method":"monolith","model":"openbmb_minicpm5-2b:q8_0","rep":4,"rc":1,"wall_s":30}
+=== fft monolith openbmb_minicpm5-2b:q8_0 rep4 rc=1 wall=30s 2026-09-22T18:44:05+07:00
+=== fft monolith openbmb_minicpm5-2b:q8_0 rep5 start 2026-09-22T18:44:05+07:00
+{"project":"fft","method":"monolith","model":"openbmb_minicpm5-2b:q8_0","rep":5,"rc":1,"wall_s":28}
+=== fft monolith openbmb_minicpm5-2b:q8_0 rep5 rc=1 wall=28s 2026-09-22T18:44:34+07:00
+=== fft ledger openbmb_minicpm5-2b:q8_0 rep1 start 2026-09-22T18:44:34+07:00
+{"project":"fft","method":"ledger","model":"openbmb_minicpm5-2b:q8_0","rep":1,"rc":1,"wall_s":15}
+=== fft ledger openbmb_minicpm5-2b:q8_0 rep1 rc=1 wall=15s 2026-09-22T18:44:50+07:00
+=== fft ledger openbmb_minicpm5-2b:q8_0 rep2 start 2026-09-22T18:44:50+07:00
+{"project":"fft","method":"ledger","model":"openbmb_minicpm5-2b:q8_0","rep":2,"rc":1,"wall_s":27}
+=== fft ledger openbmb_minicpm5-2b:q8_0 rep2 rc=1 wall=27s 2026-09-22T18:45:17+07:00
+=== fft ledger openbmb_minicpm5-2b:q8_0 rep3 start 2026-09-22T18:45:17+07:00
+{"project":"fft","method":"ledger","model":"openbmb_minicpm5-2b:q8_0","rep":3,"rc":1,"wall_s":60}
+=== fft ledger openbmb_minicpm5-2b:q8_0 rep3 rc=1 wall=60s 2026-09-22T18:46:17+07:00
+=== fft ledger openbmb_minicpm5-2b:q8_0 rep4 start 2026-09-22T18:46:17+07:00
+{"project":"fft","method":"ledger","model":"openbmb_minicpm5-2b:q8_0","rep":4,"rc":1,"wall_s":69}
+=== fft ledger openbmb_minicpm5-2b:q8_0 rep4 rc=1 wall=69s 2026-09-22T18:47:27+07:00
+=== fft ledger openbmb_minicpm5-2b:q8_0 rep5 start 2026-09-22T18:47:27+07:00
+{"project":"fft","method":"ledger","model":"openbmb_minicpm5-2b:q8_0","rep":5,"rc":1,"wall_s":100}
+=== fft ledger openbmb_minicpm5-2b:q8_0 rep5 rc=1 wall=100s 2026-09-22T18:49:07+07:00
+=== fft recode openbmb_minicpm5-2b:q8_0 rep1 start 2026-09-22T18:49:07+07:00
+{"project":"fft","method":"recode","model":"openbmb_minicpm5-2b:q8_0","rep":1,"rc":1,"wall_s":364}
+=== fft recode openbmb_minicpm5-2b:q8_0 rep1 rc=1 wall=364s 2026-09-22T18:55:12+07:00
+=== fft recode openbmb_minicpm5-2b:q8_0 rep2 start 2026-09-22T18:55:12+07:00
+{"project":"fft","method":"recode","model":"openbmb_minicpm5-2b:q8_0","rep":2,"rc":1,"wall_s":100}
+=== fft recode openbmb_minicpm5-2b:q8_0 rep2 rc=1 wall=100s 2026-09-22T18:56:52+07:00
+=== fft recode openbmb_minicpm5-2b:q8_0 rep3 start 2026-09-22T18:56:52+07:00
+{"project":"fft","method":"recode","model":"openbmb_minicpm5-2b:q8_0","rep":3,"rc":1,"wall_s":206}
+=== fft recode openbmb_minicpm5-2b:q8_0 rep3 rc=1 wall=206s 2026-09-22T19:00:19+07:00
+=== fft recode openbmb_minicpm5-2b:q8_0 rep4 start 2026-09-22T19:00:19+07:00
+{"project":"fft","method":"recode","model":"openbmb_minicpm5-2b:q8_0","rep":4,"rc":1,"wall_s":503}
+=== fft recode openbmb_minicpm5-2b:q8_0 rep4 rc=1 wall=503s 2026-09-22T19:08:43+07:00
+=== fft recode openbmb_minicpm5-2b:q8_0 rep5 start 2026-09-22T19:08:43+07:00
+{"project":"fft","method":"recode","model":"openbmb_minicpm5-2b:q8_0","rep":5,"rc":1,"wall_s":60}
+=== fft recode openbmb_minicpm5-2b:q8_0 rep5 rc=1 wall=60s 2026-09-22T19:09:43+07:00
+=== totp monolith openbmb_minicpm5-2b:q8_0 rep1 start 2026-09-22T19:09:43+07:00
+{"project":"totp","method":"monolith","model":"openbmb_minicpm5-2b:q8_0","rep":1,"rc":1,"wall_s":57}
+=== totp monolith openbmb_minicpm5-2b:q8_0 rep1 rc=1 wall=57s 2026-09-22T19:10:40+07:00
+=== totp monolith openbmb_minicpm5-2b:q8_0 rep2 start 2026-09-22T19:10:40+07:00
+{"project":"totp","method":"monolith","model":"openbmb_minicpm5-2b:q8_0","rep":2,"rc":1,"wall_s":214}
+=== totp monolith openbmb_minicpm5-2b:q8_0 rep2 rc=1 wall=214s 2026-09-22T19:14:14+07:00
+=== totp monolith openbmb_minicpm5-2b:q8_0 rep3 start 2026-09-22T19:14:14+07:00
+{"project":"totp","method":"monolith","model":"openbmb_minicpm5-2b:q8_0","rep":3,"rc":1,"wall_s":47}
+=== totp monolith openbmb_minicpm5-2b:q8_0 rep3 rc=1 wall=47s 2026-09-22T19:15:01+07:00
+=== totp monolith openbmb_minicpm5-2b:q8_0 rep4 start 2026-09-22T19:15:01+07:00
+{"project":"totp","method":"monolith","model":"openbmb_minicpm5-2b:q8_0","rep":4,"rc":1,"wall_s":8}
+=== totp monolith openbmb_minicpm5-2b:q8_0 rep4 rc=1 wall=8s 2026-09-22T19:15:10+07:00
+=== totp monolith openbmb_minicpm5-2b:q8_0 rep5 start 2026-09-22T19:15:10+07:00
+{"project":"totp","method":"monolith","model":"openbmb_minicpm5-2b:q8_0","rep":5,"rc":1,"wall_s":30}
+=== totp monolith openbmb_minicpm5-2b:q8_0 rep5 rc=1 wall=30s 2026-09-22T19:15:40+07:00
+=== totp ledger openbmb_minicpm5-2b:q8_0 rep1 start 2026-09-22T19:15:40+07:00
+{"project":"totp","method":"ledger","model":"openbmb_minicpm5-2b:q8_0","rep":1,"rc":1,"wall_s":260}
+=== totp ledger openbmb_minicpm5-2b:q8_0 rep1 rc=1 wall=260s 2026-09-22T19:20:01+07:00
+=== totp ledger openbmb_minicpm5-2b:q8_0 rep2 start 2026-09-22T19:20:01+07:00
+{"project":"totp","method":"ledger","model":"openbmb_minicpm5-2b:q8_0","rep":2,"rc":1,"wall_s":51}
+=== totp ledger openbmb_minicpm5-2b:q8_0 rep2 rc=1 wall=51s 2026-09-22T19:20:52+07:00
+=== totp ledger openbmb_minicpm5-2b:q8_0 rep3 start 2026-09-22T19:20:52+07:00
+{"project":"totp","method":"ledger","model":"openbmb_minicpm5-2b:q8_0","rep":3,"rc":1,"wall_s":89}
+=== totp ledger openbmb_minicpm5-2b:q8_0 rep3 rc=1 wall=89s 2026-09-22T19:22:21+07:00
+=== totp ledger openbmb_minicpm5-2b:q8_0 rep4 start 2026-09-22T19:22:21+07:00
+{"project":"totp","method":"ledger","model":"openbmb_minicpm5-2b:q8_0","rep":4,"rc":1,"wall_s":127}
+=== totp ledger openbmb_minicpm5-2b:q8_0 rep4 rc=1 wall=127s 2026-09-22T19:24:29+07:00
+=== totp ledger openbmb_minicpm5-2b:q8_0 rep5 start 2026-09-22T19:24:29+07:00
+{"project":"totp","method":"ledger","model":"openbmb_minicpm5-2b:q8_0","rep":5,"rc":1,"wall_s":57}
+=== totp ledger openbmb_minicpm5-2b:q8_0 rep5 rc=1 wall=57s 2026-09-22T19:25:26+07:00
+=== totp recode openbmb_minicpm5-2b:q8_0 rep1 start 2026-09-22T19:25:26+07:00
+{"project":"totp","method":"recode","model":"openbmb_minicpm5-2b:q8_0","rep":1,"rc":1,"wall_s":199}
+=== totp recode openbmb_minicpm5-2b:q8_0 rep1 rc=1 wall=199s 2026-09-22T19:28:45+07:00
+=== totp recode openbmb_minicpm5-2b:q8_0 rep2 start 2026-09-22T19:28:45+07:00
+{"project":"totp","method":"recode","model":"openbmb_minicpm5-2b:q8_0","rep":2,"rc":1,"wall_s":78}
+=== totp recode openbmb_minicpm5-2b:q8_0 rep2 rc=1 wall=78s 2026-09-22T19:30:04+07:00
+=== totp recode openbmb_minicpm5-2b:q8_0 rep3 start 2026-09-22T19:30:04+07:00
+{"project":"totp","method":"recode","model":"openbmb_minicpm5-2b:q8_0","rep":3,"rc":1,"wall_s":109}
+=== totp recode openbmb_minicpm5-2b:q8_0 rep3 rc=1 wall=109s 2026-09-22T19:31:53+07:00
+=== totp recode openbmb_minicpm5-2b:q8_0 rep4 start 2026-09-22T19:31:53+07:00
+{"project":"totp","method":"recode","model":"openbmb_minicpm5-2b:q8_0","rep":4,"rc":1,"wall_s":129}
+=== totp recode openbmb_minicpm5-2b:q8_0 rep4 rc=1 wall=129s 2026-09-22T19:34:03+07:00
+=== totp recode openbmb_minicpm5-2b:q8_0 rep5 start 2026-09-22T19:34:03+07:00
+{"project":"totp","method":"recode","model":"openbmb_minicpm5-2b:q8_0","rep":5,"rc":1,"wall_s":362}
+=== totp recode openbmb_minicpm5-2b:q8_0 rep5 rc=1 wall=362s 2026-09-22T19:40:05+07:00
+=== cjson monolith openbmb_minicpm5-2b:q8_0 rep1 start 2026-09-22T19:40:05+07:00
+{"project":"cjson","method":"monolith","model":"openbmb_minicpm5-2b:q8_0","rep":1,"rc":1,"wall_s":4}
+=== cjson monolith openbmb_minicpm5-2b:q8_0 rep1 rc=1 wall=4s 2026-09-22T19:40:10+07:00
+=== cjson monolith openbmb_minicpm5-2b:q8_0 rep2 start 2026-09-22T19:40:10+07:00
+{"project":"cjson","method":"monolith","model":"openbmb_minicpm5-2b:q8_0","rep":2,"rc":1,"wall_s":5}
+=== cjson monolith openbmb_minicpm5-2b:q8_0 rep2 rc=1 wall=5s 2026-09-22T19:40:15+07:00
+=== cjson monolith openbmb_minicpm5-2b:q8_0 rep3 start 2026-09-22T19:40:15+07:00
+{"project":"cjson","method":"monolith","model":"openbmb_minicpm5-2b:q8_0","rep":3,"rc":1,"wall_s":5}
+=== cjson monolith openbmb_minicpm5-2b:q8_0 rep3 rc=1 wall=5s 2026-09-22T19:40:20+07:00
+=== cjson monolith openbmb_minicpm5-2b:q8_0 rep4 start 2026-09-22T19:40:20+07:00
+{"project":"cjson","method":"monolith","model":"openbmb_minicpm5-2b:q8_0","rep":4,"rc":1,"wall_s":5}
+=== cjson monolith openbmb_minicpm5-2b:q8_0 rep4 rc=1 wall=5s 2026-09-22T19:40:25+07:00
+=== cjson monolith openbmb_minicpm5-2b:q8_0 rep5 start 2026-09-22T19:40:25+07:00
+{"project":"cjson","method":"monolith","model":"openbmb_minicpm5-2b:q8_0","rep":5,"rc":1,"wall_s":5}
+=== cjson monolith openbmb_minicpm5-2b:q8_0 rep5 rc=1 wall=5s 2026-09-22T19:40:30+07:00
+=== cjson ledger openbmb_minicpm5-2b:q8_0 rep1 start 2026-09-22T19:40:30+07:00
+{"project":"cjson","method":"ledger","model":"openbmb_minicpm5-2b:q8_0","rep":1,"rc":1,"wall_s":4}
+=== cjson ledger openbmb_minicpm5-2b:q8_0 rep1 rc=1 wall=4s 2026-09-22T19:40:35+07:00
+=== cjson ledger openbmb_minicpm5-2b:q8_0 rep2 start 2026-09-22T19:40:35+07:00
+{"project":"cjson","method":"ledger","model":"openbmb_minicpm5-2b:q8_0","rep":2,"rc":1,"wall_s":5}
+=== cjson ledger openbmb_minicpm5-2b:q8_0 rep2 rc=1 wall=5s 2026-09-22T19:40:40+07:00
+=== cjson ledger openbmb_minicpm5-2b:q8_0 rep3 start 2026-09-22T19:40:40+07:00
+{"project":"cjson","method":"ledger","model":"openbmb_minicpm5-2b:q8_0","rep":3,"rc":1,"wall_s":4}
+=== cjson ledger openbmb_minicpm5-2b:q8_0 rep3 rc=1 wall=4s 2026-09-22T19:40:45+07:00
+=== cjson ledger openbmb_minicpm5-2b:q8_0 rep4 start 2026-09-22T19:40:45+07:00
+{"project":"cjson","method":"ledger","model":"openbmb_minicpm5-2b:q8_0","rep":4,"rc":1,"wall_s":4}
+=== cjson ledger openbmb_minicpm5-2b:q8_0 rep4 rc=1 wall=4s 2026-09-22T19:40:50+07:00
+=== cjson ledger openbmb_minicpm5-2b:q8_0 rep5 start 2026-09-22T19:40:50+07:00
+{"project":"cjson","method":"ledger","model":"openbmb_minicpm5-2b:q8_0","rep":5,"rc":1,"wall_s":5}
+=== cjson ledger openbmb_minicpm5-2b:q8_0 rep5 rc=1 wall=5s 2026-09-22T19:40:55+07:00
+=== cjson recode openbmb_minicpm5-2b:q8_0 rep1 start 2026-09-22T19:40:55+07:00
+{"project":"cjson","method":"recode","model":"openbmb_minicpm5-2b:q8_0","rep":1,"rc":1,"wall_s":4}
+=== cjson recode openbmb_minicpm5-2b:q8_0 rep1 rc=1 wall=4s 2026-09-22T19:41:00+07:00
+=== cjson recode openbmb_minicpm5-2b:q8_0 rep2 start 2026-09-22T19:41:00+07:00
+{"project":"cjson","method":"recode","model":"openbmb_minicpm5-2b:q8_0","rep":2,"rc":1,"wall_s":5}
+=== cjson recode openbmb_minicpm5-2b:q8_0 rep2 rc=1 wall=5s 2026-09-22T19:41:05+07:00
+=== cjson recode openbmb_minicpm5-2b:q8_0 rep3 start 2026-09-22T19:41:05+07:00
+{"project":"cjson","method":"recode","model":"openbmb_minicpm5-2b:q8_0","rep":3,"rc":1,"wall_s":4}
+=== cjson recode openbmb_minicpm5-2b:q8_0 rep3 rc=1 wall=4s 2026-09-22T19:41:10+07:00
+=== cjson recode openbmb_minicpm5-2b:q8_0 rep4 start 2026-09-22T19:41:10+07:00
+{"project":"cjson","method":"recode","model":"openbmb_minicpm5-2b:q8_0","rep":4,"rc":1,"wall_s":4}
+=== cjson recode openbmb_minicpm5-2b:q8_0 rep4 rc=1 wall=4s 2026-09-22T19:41:15+07:00
+=== cjson recode openbmb_minicpm5-2b:q8_0 rep5 start 2026-09-22T19:41:15+07:00
+{"project":"cjson","method":"recode","model":"openbmb_minicpm5-2b:q8_0","rep":5,"rc":1,"wall_s":4}
+=== cjson recode openbmb_minicpm5-2b:q8_0 rep5 rc=1 wall=4s 2026-09-22T19:41:20+07:00
+=== expr monolith openbmb_minicpm5-2b:q8_0 rep1 start 2026-09-22T19:41:20+07:00
+{"project":"expr","method":"monolith","model":"openbmb_minicpm5-2b:q8_0","rep":1,"rc":1,"wall_s":31}
+=== expr monolith openbmb_minicpm5-2b:q8_0 rep1 rc=1 wall=31s 2026-09-22T19:41:52+07:00
+=== expr monolith openbmb_minicpm5-2b:q8_0 rep2 start 2026-09-22T19:41:52+07:00
+{"project":"expr","method":"monolith","model":"openbmb_minicpm5-2b:q8_0","rep":2,"rc":1,"wall_s":31}
+=== expr monolith openbmb_minicpm5-2b:q8_0 rep2 rc=1 wall=31s 2026-09-22T19:42:24+07:00
+=== expr monolith openbmb_minicpm5-2b:q8_0 rep3 start 2026-09-22T19:42:24+07:00
+{"project":"expr","method":"monolith","model":"openbmb_minicpm5-2b:q8_0","rep":3,"rc":1,"wall_s":12}
+=== expr monolith openbmb_minicpm5-2b:q8_0 rep3 rc=1 wall=12s 2026-09-22T19:42:36+07:00
+=== expr monolith openbmb_minicpm5-2b:q8_0 rep4 start 2026-09-22T19:42:36+07:00
+{"project":"expr","method":"monolith","model":"openbmb_minicpm5-2b:q8_0","rep":4,"rc":1,"wall_s":15}
+=== expr monolith openbmb_minicpm5-2b:q8_0 rep4 rc=1 wall=15s 2026-09-22T19:42:51+07:00
+=== expr monolith openbmb_minicpm5-2b:q8_0 rep5 start 2026-09-22T19:42:51+07:00
+{"project":"expr","method":"monolith","model":"openbmb_minicpm5-2b:q8_0","rep":5,"rc":1,"wall_s":31}
+=== expr monolith openbmb_minicpm5-2b:q8_0 rep5 rc=1 wall=31s 2026-09-22T19:43:23+07:00
+=== expr ledger openbmb_minicpm5-2b:q8_0 rep1 start 2026-09-22T19:43:23+07:00
+{"project":"expr","method":"ledger","model":"openbmb_minicpm5-2b:q8_0","rep":1,"rc":1,"wall_s":122}
+=== expr ledger openbmb_minicpm5-2b:q8_0 rep1 rc=1 wall=122s 2026-09-22T19:45:25+07:00
+=== expr ledger openbmb_minicpm5-2b:q8_0 rep2 start 2026-09-22T19:45:25+07:00
+{"project":"expr","method":"ledger","model":"openbmb_minicpm5-2b:q8_0","rep":2,"rc":1,"wall_s":125}
+=== expr ledger openbmb_minicpm5-2b:q8_0 rep2 rc=1 wall=125s 2026-09-22T19:47:31+07:00
+=== expr ledger openbmb_minicpm5-2b:q8_0 rep3 start 2026-09-22T19:47:31+07:00
+{"project":"expr","method":"ledger","model":"openbmb_minicpm5-2b:q8_0","rep":3,"rc":1,"wall_s":122}
+=== expr ledger openbmb_minicpm5-2b:q8_0 rep3 rc=1 wall=122s 2026-09-22T19:49:33+07:00
+=== expr ledger openbmb_minicpm5-2b:q8_0 rep4 start 2026-09-22T19:49:33+07:00
+{"project":"expr","method":"ledger","model":"openbmb_minicpm5-2b:q8_0","rep":4,"rc":1,"wall_s":141}
+=== expr ledger openbmb_minicpm5-2b:q8_0 rep4 rc=1 wall=141s 2026-09-22T19:51:55+07:00
+=== expr ledger openbmb_minicpm5-2b:q8_0 rep5 start 2026-09-22T19:51:55+07:00
+{"project":"expr","method":"ledger","model":"openbmb_minicpm5-2b:q8_0","rep":5,"rc":1,"wall_s":336}
+=== expr ledger openbmb_minicpm5-2b:q8_0 rep5 rc=1 wall=336s 2026-09-22T19:57:32+07:00
+=== expr recode openbmb_minicpm5-2b:q8_0 rep1 start 2026-09-22T19:57:32+07:00
+{"project":"expr","method":"recode","model":"openbmb_minicpm5-2b:q8_0","rep":1,"rc":1,"wall_s":33}
+=== expr recode openbmb_minicpm5-2b:q8_0 rep1 rc=1 wall=33s 2026-09-22T19:58:05+07:00
+=== expr recode openbmb_minicpm5-2b:q8_0 rep2 start 2026-09-22T19:58:05+07:00
+{"project":"expr","method":"recode","model":"openbmb_minicpm5-2b:q8_0","rep":2,"rc":1,"wall_s":29}
+=== expr recode openbmb_minicpm5-2b:q8_0 rep2 rc=1 wall=29s 2026-09-22T19:58:34+07:00
+=== expr recode openbmb_minicpm5-2b:q8_0 rep3 start 2026-09-22T19:58:34+07:00
+{"project":"expr","method":"recode","model":"openbmb_minicpm5-2b:q8_0","rep":3,"rc":1,"wall_s":87}
+=== expr recode openbmb_minicpm5-2b:q8_0 rep3 rc=1 wall=87s 2026-09-22T20:00:01+07:00
+=== expr recode openbmb_minicpm5-2b:q8_0 rep4 start 2026-09-22T20:00:01+07:00
+{"project":"expr","method":"recode","model":"openbmb_minicpm5-2b:q8_0","rep":4,"rc":1,"wall_s":58}
+=== expr recode openbmb_minicpm5-2b:q8_0 rep4 rc=1 wall=58s 2026-09-22T20:01:00+07:00
+=== expr recode openbmb_minicpm5-2b:q8_0 rep5 start 2026-09-22T20:01:00+07:00
+{"project":"expr","method":"recode","model":"openbmb_minicpm5-2b:q8_0","rep":5,"rc":1,"wall_s":92}
+=== expr recode openbmb_minicpm5-2b:q8_0 rep5 rc=1 wall=92s 2026-09-22T20:02:32+07:00
+=== fft monolith qwen3.8:27b-mtp-q4_K_M rep1 start 2026-09-22T20:02:32+07:00
+{"project":"fft","method":"monolith","model":"qwen3.8:27b-mtp-q4_K_M","rep":1,"rc":1,"wall_s":60}
+=== fft monolith qwen3.8:27b-mtp-q4_K_M rep1 rc=1 wall=60s 2026-09-22T20:03:32+07:00
+=== fft monolith qwen3.8:27b-mtp-q4_K_M rep2 start 2026-09-22T20:03:32+07:00
+{"project":"fft","method":"monolith","model":"qwen3.8:27b-mtp-q4_K_M","rep":2,"rc":1,"wall_s":75}
+=== fft monolith qwen3.8:27b-mtp-q4_K_M rep2 rc=1 wall=75s 2026-09-22T20:04:48+07:00
+=== fft monolith qwen3.8:27b-mtp-q4_K_M rep3 start 2026-09-22T20:04:48+07:00
+{"project":"fft","method":"monolith","model":"qwen3.8:27b-mtp-q4_K_M","rep":3,"rc":1,"wall_s":98}
+=== fft monolith qwen3.8:27b-mtp-q4_K_M rep3 rc=1 wall=98s 2026-09-22T20:06:26+07:00
+=== fft monolith qwen3.8:27b-mtp-q4_K_M rep4 start 2026-09-22T20:06:26+07:00
+{"project":"fft","method":"monolith","model":"qwen3.8:27b-mtp-q4_K_M","rep":4,"rc":1,"wall_s":66}
+=== fft monolith qwen3.8:27b-mtp-q4_K_M rep4 rc=1 wall=66s 2026-09-22T20:07:32+07:00
+=== fft monolith qwen3.8:27b-mtp-q4_K_M rep5 start 2026-09-22T20:07:32+07:00
+{"project":"fft","method":"monolith","model":"qwen3.8:27b-mtp-q4_K_M","rep":5,"rc":1,"wall_s":61}
+=== fft monolith qwen3.8:27b-mtp-q4_K_M rep5 rc=1 wall=61s 2026-09-22T20:08:34+07:00
+=== fft ledger qwen3.8:27b-mtp-q4_K_M rep1 start 2026-09-22T20:08:34+07:00
+survey start 2026-09-22T20:17:18+07:00
+=== fft monolith openbmb_minicpm5-2b_q8_0 rep1 start 2026-09-22T20:17:18+07:00
+{"project":"fft","method":"monolith","model":"openbmb_minicpm5-2b_q8_0","rep":1,"rc":1,"wall_s":119}
+=== fft monolith openbmb_minicpm5-2b_q8_0 rep1 rc=1 wall=119s 2026-09-22T20:19:17+07:00
+=== fft monolith openbmb_minicpm5-2b_q8_0 rep2 start 2026-09-22T20:19:17+07:00
+{"project":"fft","method":"monolith","model":"openbmb_minicpm5-2b_q8_0","rep":2,"rc":1,"wall_s":103}
+=== fft monolith openbmb_minicpm5-2b_q8_0 rep2 rc=1 wall=103s 2026-09-22T20:21:01+07:00
+=== fft monolith openbmb_minicpm5-2b_q8_0 rep3 start 2026-09-22T20:21:01+07:00
+{"project":"fft","method":"monolith","model":"openbmb_minicpm5-2b_q8_0","rep":3,"rc":1,"wall_s":29}
+=== fft monolith openbmb_minicpm5-2b_q8_0 rep3 rc=1 wall=29s 2026-09-22T20:21:31+07:00
+=== fft monolith openbmb_minicpm5-2b_q8_0 rep4 start 2026-09-22T20:21:31+07:00
+{"project":"fft","method":"monolith","model":"openbmb_minicpm5-2b_q8_0","rep":4,"rc":1,"wall_s":26}
+=== fft monolith openbmb_minicpm5-2b_q8_0 rep4 rc=1 wall=26s 2026-09-22T20:21:57+07:00
+=== fft monolith openbmb_minicpm5-2b_q8_0 rep5 start 2026-09-22T20:21:57+07:00
+{"project":"fft","method":"monolith","model":"openbmb_minicpm5-2b_q8_0","rep":5,"rc":1,"wall_s":28}
+=== fft monolith openbmb_minicpm5-2b_q8_0 rep5 rc=1 wall=28s 2026-09-22T20:22:26+07:00
+=== fft ledger openbmb_minicpm5-2b_q8_0 rep1 start 2026-09-22T20:22:26+07:00
+{"project":"fft","method":"ledger","model":"openbmb_minicpm5-2b_q8_0","rep":1,"rc":1,"wall_s":59}
+=== fft ledger openbmb_minicpm5-2b_q8_0 rep1 rc=1 wall=59s 2026-09-22T20:23:26+07:00
+=== fft ledger openbmb_minicpm5-2b_q8_0 rep2 start 2026-09-22T20:23:26+07:00
+{"project":"fft","method":"ledger","model":"openbmb_minicpm5-2b_q8_0","rep":2,"rc":1,"wall_s":225}
+=== fft ledger openbmb_minicpm5-2b_q8_0 rep2 rc=1 wall=225s 2026-09-22T20:27:11+07:00
+=== fft ledger openbmb_minicpm5-2b_q8_0 rep3 start 2026-09-22T20:27:11+07:00
+{"project":"fft","method":"ledger","model":"openbmb_minicpm5-2b_q8_0","rep":3,"rc":1,"wall_s":120}
+=== fft ledger openbmb_minicpm5-2b_q8_0 rep3 rc=1 wall=120s 2026-09-22T20:29:12+07:00
+=== fft ledger openbmb_minicpm5-2b_q8_0 rep4 start 2026-09-22T20:29:12+07:00
+{"project":"fft","method":"ledger","model":"openbmb_minicpm5-2b_q8_0","rep":4,"rc":1,"wall_s":184}
+=== fft ledger openbmb_minicpm5-2b_q8_0 rep4 rc=1 wall=184s 2026-09-22T20:32:17+07:00
+=== fft ledger openbmb_minicpm5-2b_q8_0 rep5 start 2026-09-22T20:32:17+07:00
+{"project":"fft","method":"ledger","model":"openbmb_minicpm5-2b_q8_0","rep":5,"rc":1,"wall_s":43}
+=== fft ledger openbmb_minicpm5-2b_q8_0 rep5 rc=1 wall=43s 2026-09-22T20:33:00+07:00
+skip fft recode openbmb_minicpm5-2b_q8_0 rep1 (done)
+skip fft recode openbmb_minicpm5-2b_q8_0 rep2 (done)
+skip fft recode openbmb_minicpm5-2b_q8_0 rep3 (done)
+skip fft recode openbmb_minicpm5-2b_q8_0 rep4 (done)
+skip fft recode openbmb_minicpm5-2b_q8_0 rep5 (done)
+skip totp monolith openbmb_minicpm5-2b_q8_0 rep1 (done)
+skip totp monolith openbmb_minicpm5-2b_q8_0 rep2 (done)
+skip totp monolith openbmb_minicpm5-2b_q8_0 rep3 (done)
+skip totp monolith openbmb_minicpm5-2b_q8_0 rep4 (done)
+skip totp monolith openbmb_minicpm5-2b_q8_0 rep5 (done)
+skip totp ledger openbmb_minicpm5-2b_q8_0 rep1 (done)
+skip totp ledger openbmb_minicpm5-2b_q8_0 rep2 (done)
+skip totp ledger openbmb_minicpm5-2b_q8_0 rep3 (done)
+skip totp ledger openbmb_minicpm5-2b_q8_0 rep4 (done)
+skip totp ledger openbmb_minicpm5-2b_q8_0 rep5 (done)
+skip totp recode openbmb_minicpm5-2b_q8_0 rep1 (done)
+skip totp recode openbmb_minicpm5-2b_q8_0 rep2 (done)
+skip totp recode openbmb_minicpm5-2b_q8_0 rep3 (done)
+skip totp recode openbmb_minicpm5-2b_q8_0 rep4 (done)
+skip totp recode openbmb_minicpm5-2b_q8_0 rep5 (done)
+skip cjson monolith openbmb_minicpm5-2b_q8_0 rep1 (done)
+skip cjson monolith openbmb_minicpm5-2b_q8_0 rep2 (done)
+skip cjson monolith openbmb_minicpm5-2b_q8_0 rep3 (done)
+skip cjson monolith openbmb_minicpm5-2b_q8_0 rep4 (done)
+skip cjson monolith openbmb_minicpm5-2b_q8_0 rep5 (done)
+skip cjson ledger openbmb_minicpm5-2b_q8_0 rep1 (done)
+skip cjson ledger openbmb_minicpm5-2b_q8_0 rep2 (done)
+skip cjson ledger openbmb_minicpm5-2b_q8_0 rep3 (done)
+skip cjson ledger openbmb_minicpm5-2b_q8_0 rep4 (done)
+skip cjson ledger openbmb_minicpm5-2b_q8_0 rep5 (done)
+skip cjson recode openbmb_minicpm5-2b_q8_0 rep1 (done)
+skip cjson recode openbmb_minicpm5-2b_q8_0 rep2 (done)
+skip cjson recode openbmb_minicpm5-2b_q8_0 rep3 (done)
+skip cjson recode openbmb_minicpm5-2b_q8_0 rep4 (done)
+skip cjson recode openbmb_minicpm5-2b_q8_0 rep5 (done)
+skip expr monolith openbmb_minicpm5-2b_q8_0 rep1 (done)
+skip expr monolith openbmb_minicpm5-2b_q8_0 rep2 (done)
+skip expr monolith openbmb_minicpm5-2b_q8_0 rep3 (done)
+skip expr monolith openbmb_minicpm5-2b_q8_0 rep4 (done)
+skip expr monolith openbmb_minicpm5-2b_q8_0 rep5 (done)
+skip expr ledger openbmb_minicpm5-2b_q8_0 rep1 (done)
+skip expr ledger openbmb_minicpm5-2b_q8_0 rep2 (done)
+skip expr ledger openbmb_minicpm5-2b_q8_0 rep3 (done)
+skip expr ledger openbmb_minicpm5-2b_q8_0 rep4 (done)
+skip expr ledger openbmb_minicpm5-2b_q8_0 rep5 (done)
+skip expr recode openbmb_minicpm5-2b_q8_0 rep1 (done)
+skip expr recode openbmb_minicpm5-2b_q8_0 rep2 (done)
+skip expr recode openbmb_minicpm5-2b_q8_0 rep3 (done)
+skip expr recode openbmb_minicpm5-2b_q8_0 rep4 (done)
+skip expr recode openbmb_minicpm5-2b_q8_0 rep5 (done)
+=== fft monolith qwen3.8_27b-mtp-q4_K_M rep1 start 2026-09-22T20:33:00+07:00
+{"project":"fft","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":1,"rc":1,"wall_s":86}
+=== fft monolith qwen3.8_27b-mtp-q4_K_M rep1 rc=1 wall=86s 2026-09-22T20:34:26+07:00
+=== fft monolith qwen3.8_27b-mtp-q4_K_M rep2 start 2026-09-22T20:34:26+07:00
+{"project":"fft","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":2,"rc":0,"wall_s":72}
+=== fft monolith qwen3.8_27b-mtp-q4_K_M rep2 rc=0 wall=72s 2026-09-22T20:35:38+07:00
+=== fft monolith qwen3.8_27b-mtp-q4_K_M rep3 start 2026-09-22T20:35:38+07:00
+{"project":"fft","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":3,"rc":1,"wall_s":63}
+=== fft monolith qwen3.8_27b-mtp-q4_K_M rep3 rc=1 wall=63s 2026-09-22T20:36:42+07:00
+=== fft monolith qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-22T20:36:42+07:00
+{"project":"fft","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":4,"rc":0,"wall_s":72}
+=== fft monolith qwen3.8_27b-mtp-q4_K_M rep4 rc=0 wall=72s 2026-09-22T20:37:55+07:00
+=== fft monolith qwen3.8_27b-mtp-q4_K_M rep5 start 2026-09-22T20:37:55+07:00
+{"project":"fft","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":5,"rc":1,"wall_s":71}
+=== fft monolith qwen3.8_27b-mtp-q4_K_M rep5 rc=1 wall=71s 2026-09-22T20:39:06+07:00
+=== fft ledger qwen3.8_27b-mtp-q4_K_M rep1 start 2026-09-22T20:39:06+07:00
+{"project":"fft","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":1,"rc":1,"wall_s":77}
+=== fft ledger qwen3.8_27b-mtp-q4_K_M rep1 rc=1 wall=77s 2026-09-22T20:40:24+07:00
+=== fft ledger qwen3.8_27b-mtp-q4_K_M rep2 start 2026-09-22T20:40:24+07:00
+{"project":"fft","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":2,"rc":1,"wall_s":261}
+=== fft ledger qwen3.8_27b-mtp-q4_K_M rep2 rc=1 wall=261s 2026-09-22T20:44:45+07:00
+=== fft ledger qwen3.8_27b-mtp-q4_K_M rep3 start 2026-09-22T20:44:45+07:00
+{"project":"fft","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":3,"rc":1,"wall_s":556}
+=== fft ledger qwen3.8_27b-mtp-q4_K_M rep3 rc=1 wall=556s 2026-09-22T20:54:02+07:00
+=== fft ledger qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-22T20:54:02+07:00
+{"project":"fft","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":4,"rc":1,"wall_s":81}
+=== fft ledger qwen3.8_27b-mtp-q4_K_M rep4 rc=1 wall=81s 2026-09-22T20:55:23+07:00
+=== fft ledger qwen3.8_27b-mtp-q4_K_M rep5 start 2026-09-22T20:55:23+07:00
+{"project":"fft","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":5,"rc":1,"wall_s":426}
+=== fft ledger qwen3.8_27b-mtp-q4_K_M rep5 rc=1 wall=426s 2026-09-22T21:02:29+07:00
+=== fft recode qwen3.8_27b-mtp-q4_K_M rep1 start 2026-09-22T21:02:29+07:00
+{"project":"fft","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":1,"rc":1,"wall_s":247}
+=== fft recode qwen3.8_27b-mtp-q4_K_M rep1 rc=1 wall=247s 2026-09-22T21:06:37+07:00
+=== fft recode qwen3.8_27b-mtp-q4_K_M rep2 start 2026-09-22T21:06:37+07:00
+{"project":"fft","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":2,"rc":1,"wall_s":209}
+=== fft recode qwen3.8_27b-mtp-q4_K_M rep2 rc=1 wall=209s 2026-09-22T21:10:06+07:00
+=== fft recode qwen3.8_27b-mtp-q4_K_M rep3 start 2026-09-22T21:10:06+07:00
+{"project":"fft","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":3,"rc":1,"wall_s":93}
+=== fft recode qwen3.8_27b-mtp-q4_K_M rep3 rc=1 wall=93s 2026-09-22T21:11:40+07:00
+=== fft recode qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-22T21:11:40+07:00
+{"project":"fft","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":4,"rc":1,"wall_s":111}
+=== fft recode qwen3.8_27b-mtp-q4_K_M rep4 rc=1 wall=111s 2026-09-22T21:13:32+07:00
+=== fft recode qwen3.8_27b-mtp-q4_K_M rep5 start 2026-09-22T21:13:32+07:00
+{"project":"fft","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":5,"rc":1,"wall_s":237}
+=== fft recode qwen3.8_27b-mtp-q4_K_M rep5 rc=1 wall=237s 2026-09-22T21:17:29+07:00
+=== totp monolith qwen3.8_27b-mtp-q4_K_M rep1 start 2026-09-22T21:17:29+07:00
+{"project":"totp","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":1,"rc":1,"wall_s":101}
+=== totp monolith qwen3.8_27b-mtp-q4_K_M rep1 rc=1 wall=101s 2026-09-22T21:19:10+07:00
+=== totp monolith qwen3.8_27b-mtp-q4_K_M rep2 start 2026-09-22T21:19:10+07:00
+{"project":"totp","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":2,"rc":1,"wall_s":104}
+=== totp monolith qwen3.8_27b-mtp-q4_K_M rep2 rc=1 wall=104s 2026-09-22T21:20:54+07:00
+=== totp monolith qwen3.8_27b-mtp-q4_K_M rep3 start 2026-09-22T21:20:54+07:00
+{"project":"totp","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":3,"rc":1,"wall_s":102}
+=== totp monolith qwen3.8_27b-mtp-q4_K_M rep3 rc=1 wall=102s 2026-09-22T21:22:37+07:00
+=== totp monolith qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-22T21:22:37+07:00
+{"project":"totp","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":4,"rc":1,"wall_s":89}
+=== totp monolith qwen3.8_27b-mtp-q4_K_M rep4 rc=1 wall=89s 2026-09-22T21:24:06+07:00
+=== totp monolith qwen3.8_27b-mtp-q4_K_M rep5 start 2026-09-22T21:24:06+07:00
+{"project":"totp","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":5,"rc":1,"wall_s":101}
+=== totp monolith qwen3.8_27b-mtp-q4_K_M rep5 rc=1 wall=101s 2026-09-22T21:25:47+07:00
+=== totp ledger qwen3.8_27b-mtp-q4_K_M rep1 start 2026-09-22T21:25:47+07:00
+{"project":"totp","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":1,"rc":1,"wall_s":81}
+=== totp ledger qwen3.8_27b-mtp-q4_K_M rep1 rc=1 wall=81s 2026-09-22T21:27:09+07:00
+=== totp ledger qwen3.8_27b-mtp-q4_K_M rep2 start 2026-09-22T21:27:09+07:00
+{"project":"totp","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":2,"rc":1,"wall_s":114}
+=== totp ledger qwen3.8_27b-mtp-q4_K_M rep2 rc=1 wall=114s 2026-09-22T21:29:03+07:00
+=== totp ledger qwen3.8_27b-mtp-q4_K_M rep3 start 2026-09-22T21:29:03+07:00
+{"project":"totp","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":3,"rc":1,"wall_s":77}
+=== totp ledger qwen3.8_27b-mtp-q4_K_M rep3 rc=1 wall=77s 2026-09-22T21:30:21+07:00
+=== totp ledger qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-22T21:30:21+07:00
+{"project":"totp","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":4,"rc":1,"wall_s":99}
+=== totp ledger qwen3.8_27b-mtp-q4_K_M rep4 rc=1 wall=99s 2026-09-22T21:32:00+07:00
+=== totp ledger qwen3.8_27b-mtp-q4_K_M rep5 start 2026-09-22T21:32:00+07:00
+{"project":"totp","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":5,"rc":1,"wall_s":82}
+=== totp ledger qwen3.8_27b-mtp-q4_K_M rep5 rc=1 wall=82s 2026-09-22T21:33:23+07:00
+=== totp recode qwen3.8_27b-mtp-q4_K_M rep1 start 2026-09-22T21:33:23+07:00
+{"project":"totp","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":1,"rc":1,"wall_s":103}
+=== totp recode qwen3.8_27b-mtp-q4_K_M rep1 rc=1 wall=103s 2026-09-22T21:35:06+07:00
+=== totp recode qwen3.8_27b-mtp-q4_K_M rep2 start 2026-09-22T21:35:06+07:00
+{"project":"totp","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":2,"rc":1,"wall_s":191}
+=== totp recode qwen3.8_27b-mtp-q4_K_M rep2 rc=1 wall=191s 2026-09-22T21:38:17+07:00
+=== totp recode qwen3.8_27b-mtp-q4_K_M rep3 start 2026-09-22T21:38:17+07:00
+{"project":"totp","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":3,"rc":1,"wall_s":74}
+=== totp recode qwen3.8_27b-mtp-q4_K_M rep3 rc=1 wall=74s 2026-09-22T21:39:32+07:00
+=== totp recode qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-22T21:39:32+07:00
+{"project":"totp","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":4,"rc":1,"wall_s":54}
+=== totp recode qwen3.8_27b-mtp-q4_K_M rep4 rc=1 wall=54s 2026-09-22T21:40:26+07:00
+=== totp recode qwen3.8_27b-mtp-q4_K_M rep5 start 2026-09-22T21:40:26+07:00
+{"project":"totp","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":5,"rc":1,"wall_s":139}
+=== totp recode qwen3.8_27b-mtp-q4_K_M rep5 rc=1 wall=139s 2026-09-22T21:42:46+07:00
+=== cjson monolith qwen3.8_27b-mtp-q4_K_M rep1 start 2026-09-22T21:42:46+07:00
+{"project":"cjson","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":1,"rc":1,"wall_s":102}
+=== cjson monolith qwen3.8_27b-mtp-q4_K_M rep1 rc=1 wall=102s 2026-09-22T21:44:29+07:00
+=== cjson monolith qwen3.8_27b-mtp-q4_K_M rep2 start 2026-09-22T21:44:29+07:00
+{"project":"cjson","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":2,"rc":1,"wall_s":107}
+=== cjson monolith qwen3.8_27b-mtp-q4_K_M rep2 rc=1 wall=107s 2026-09-22T21:46:16+07:00
+=== cjson monolith qwen3.8_27b-mtp-q4_K_M rep3 start 2026-09-22T21:46:16+07:00
+{"project":"cjson","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":3,"rc":1,"wall_s":112}
+=== cjson monolith qwen3.8_27b-mtp-q4_K_M rep3 rc=1 wall=112s 2026-09-22T21:48:08+07:00
+=== cjson monolith qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-22T21:48:08+07:00
+{"project":"cjson","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":4,"rc":1,"wall_s":87}
+=== cjson monolith qwen3.8_27b-mtp-q4_K_M rep4 rc=1 wall=87s 2026-09-22T21:49:36+07:00
+=== cjson monolith qwen3.8_27b-mtp-q4_K_M rep5 start 2026-09-22T21:49:36+07:00
+{"project":"cjson","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":5,"rc":1,"wall_s":100}
+=== cjson monolith qwen3.8_27b-mtp-q4_K_M rep5 rc=1 wall=100s 2026-09-22T21:51:16+07:00
+=== cjson ledger qwen3.8_27b-mtp-q4_K_M rep1 start 2026-09-22T21:51:16+07:00
+{"project":"cjson","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":1,"rc":1,"wall_s":112}
+=== cjson ledger qwen3.8_27b-mtp-q4_K_M rep1 rc=1 wall=112s 2026-09-22T21:53:09+07:00
+=== cjson ledger qwen3.8_27b-mtp-q4_K_M rep2 start 2026-09-22T21:53:09+07:00
+{"project":"cjson","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":2,"rc":1,"wall_s":129}
+=== cjson ledger qwen3.8_27b-mtp-q4_K_M rep2 rc=1 wall=129s 2026-09-22T21:55:19+07:00
+=== cjson ledger qwen3.8_27b-mtp-q4_K_M rep3 start 2026-09-22T21:55:19+07:00
+{"project":"cjson","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":3,"rc":1,"wall_s":152}
+=== cjson ledger qwen3.8_27b-mtp-q4_K_M rep3 rc=1 wall=152s 2026-09-22T21:57:52+07:00
+=== cjson ledger qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-22T21:57:52+07:00
+{"project":"cjson","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":4,"rc":1,"wall_s":124}
+=== cjson ledger qwen3.8_27b-mtp-q4_K_M rep4 rc=1 wall=124s 2026-09-22T21:59:56+07:00
+=== cjson ledger qwen3.8_27b-mtp-q4_K_M rep5 start 2026-09-22T21:59:56+07:00
+{"project":"cjson","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":5,"rc":1,"wall_s":132}
+=== cjson ledger qwen3.8_27b-mtp-q4_K_M rep5 rc=1 wall=132s 2026-09-22T22:02:09+07:00
+=== cjson recode qwen3.8_27b-mtp-q4_K_M rep1 start 2026-09-22T22:02:09+07:00
+{"project":"cjson","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":1,"rc":1,"wall_s":54}
+=== cjson recode qwen3.8_27b-mtp-q4_K_M rep1 rc=1 wall=54s 2026-09-22T22:03:04+07:00
+=== cjson recode qwen3.8_27b-mtp-q4_K_M rep2 start 2026-09-22T22:03:04+07:00
+{"project":"cjson","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":2,"rc":1,"wall_s":53}
+=== cjson recode qwen3.8_27b-mtp-q4_K_M rep2 rc=1 wall=53s 2026-09-22T22:03:57+07:00
+=== cjson recode qwen3.8_27b-mtp-q4_K_M rep3 start 2026-09-22T22:03:57+07:00
+{"project":"cjson","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":3,"rc":1,"wall_s":47}
+=== cjson recode qwen3.8_27b-mtp-q4_K_M rep3 rc=1 wall=47s 2026-09-22T22:04:44+07:00
+=== cjson recode qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-22T22:04:44+07:00
+{"project":"cjson","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":4,"rc":1,"wall_s":46}
+=== cjson recode qwen3.8_27b-mtp-q4_K_M rep4 rc=1 wall=46s 2026-09-22T22:05:30+07:00
+=== cjson recode qwen3.8_27b-mtp-q4_K_M rep5 start 2026-09-22T22:05:31+07:00
+{"project":"cjson","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":5,"rc":1,"wall_s":55}
+=== cjson recode qwen3.8_27b-mtp-q4_K_M rep5 rc=1 wall=55s 2026-09-22T22:06:26+07:00
+=== expr monolith qwen3.8_27b-mtp-q4_K_M rep1 start 2026-09-22T22:06:26+07:00
+{"project":"expr","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":1,"rc":1,"wall_s":59}
+=== expr monolith qwen3.8_27b-mtp-q4_K_M rep1 rc=1 wall=59s 2026-09-22T22:07:26+07:00
+=== expr monolith qwen3.8_27b-mtp-q4_K_M rep2 start 2026-09-22T22:07:26+07:00
+{"project":"expr","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":2,"rc":1,"wall_s":58}
+=== expr monolith qwen3.8_27b-mtp-q4_K_M rep2 rc=1 wall=58s 2026-09-22T22:08:25+07:00
+=== expr monolith qwen3.8_27b-mtp-q4_K_M rep3 start 2026-09-22T22:08:25+07:00
+{"project":"expr","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":3,"rc":1,"wall_s":64}
+=== expr monolith qwen3.8_27b-mtp-q4_K_M rep3 rc=1 wall=64s 2026-09-22T22:09:29+07:00
+=== expr monolith qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-22T22:09:29+07:00
+{"project":"expr","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":4,"rc":1,"wall_s":57}
+=== expr monolith qwen3.8_27b-mtp-q4_K_M rep4 rc=1 wall=57s 2026-09-22T22:10:26+07:00
+=== expr monolith qwen3.8_27b-mtp-q4_K_M rep5 start 2026-09-22T22:10:26+07:00
+{"project":"expr","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":5,"rc":1,"wall_s":144}
+=== expr monolith qwen3.8_27b-mtp-q4_K_M rep5 rc=1 wall=144s 2026-09-22T22:12:51+07:00
+=== expr ledger qwen3.8_27b-mtp-q4_K_M rep1 start 2026-09-22T22:12:51+07:00
+{"project":"expr","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":1,"rc":1,"wall_s":96}
+=== expr ledger qwen3.8_27b-mtp-q4_K_M rep1 rc=1 wall=96s 2026-09-22T22:14:27+07:00
+=== expr ledger qwen3.8_27b-mtp-q4_K_M rep2 start 2026-09-22T22:14:27+07:00
+{"project":"expr","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":2,"rc":1,"wall_s":220}
+=== expr ledger qwen3.8_27b-mtp-q4_K_M rep2 rc=1 wall=220s 2026-09-22T22:18:08+07:00
+=== expr ledger qwen3.8_27b-mtp-q4_K_M rep3 start 2026-09-22T22:18:08+07:00
+{"project":"expr","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":3,"rc":1,"wall_s":95}
+=== expr ledger qwen3.8_27b-mtp-q4_K_M rep3 rc=1 wall=95s 2026-09-22T22:19:43+07:00
+=== expr ledger qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-22T22:19:43+07:00
+{"project":"expr","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":4,"rc":1,"wall_s":100}
+=== expr ledger qwen3.8_27b-mtp-q4_K_M rep4 rc=1 wall=100s 2026-09-22T22:21:23+07:00
+=== expr ledger qwen3.8_27b-mtp-q4_K_M rep5 start 2026-09-22T22:21:23+07:00
+{"project":"expr","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":5,"rc":1,"wall_s":312}
+=== expr ledger qwen3.8_27b-mtp-q4_K_M rep5 rc=1 wall=312s 2026-09-22T22:26:36+07:00
+=== expr recode qwen3.8_27b-mtp-q4_K_M rep1 start 2026-09-22T22:26:36+07:00
+{"project":"expr","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":1,"rc":1,"wall_s":159}
+=== expr recode qwen3.8_27b-mtp-q4_K_M rep1 rc=1 wall=159s 2026-09-22T22:29:15+07:00
+=== expr recode qwen3.8_27b-mtp-q4_K_M rep2 start 2026-09-22T22:29:15+07:00
+{"project":"expr","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":2,"rc":1,"wall_s":159}
+=== expr recode qwen3.8_27b-mtp-q4_K_M rep2 rc=1 wall=159s 2026-09-22T22:31:54+07:00
+=== expr recode qwen3.8_27b-mtp-q4_K_M rep3 start 2026-09-22T22:31:54+07:00
+{"project":"expr","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":3,"rc":1,"wall_s":75}
+=== expr recode qwen3.8_27b-mtp-q4_K_M rep3 rc=1 wall=75s 2026-09-22T22:33:10+07:00
+=== expr recode qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-22T22:33:10+07:00
+{"project":"expr","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":4,"rc":1,"wall_s":58}
+=== expr recode qwen3.8_27b-mtp-q4_K_M rep4 rc=1 wall=58s 2026-09-22T22:34:09+07:00
+=== expr recode qwen3.8_27b-mtp-q4_K_M rep5 start 2026-09-22T22:34:09+07:00
+{"project":"expr","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":5,"rc":1,"wall_s":183}
+=== expr recode qwen3.8_27b-mtp-q4_K_M rep5 rc=1 wall=183s 2026-09-22T22:37:13+07:00
+=== fft monolith smtek_Swift-Qwen3.8-27B_dflash2 rep1 start 2026-09-22T22:37:13+07:00
+{"project":"fft","method":"monolith","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":1,"rc":0,"wall_s":82}
+=== fft monolith smtek_Swift-Qwen3.8-27B_dflash2 rep1 rc=0 wall=82s 2026-09-22T22:38:35+07:00
+=== fft monolith smtek_Swift-Qwen3.8-27B_dflash2 rep2 start 2026-09-22T22:38:35+07:00
+{"project":"fft","method":"monolith","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":2,"rc":1,"wall_s":87}
+=== fft monolith smtek_Swift-Qwen3.8-27B_dflash2 rep2 rc=1 wall=87s 2026-09-22T22:40:02+07:00
+=== fft monolith smtek_Swift-Qwen3.8-27B_dflash2 rep3 start 2026-09-22T22:40:02+07:00
+{"project":"fft","method":"monolith","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":3,"rc":0,"wall_s":88}
+=== fft monolith smtek_Swift-Qwen3.8-27B_dflash2 rep3 rc=0 wall=88s 2026-09-22T22:41:31+07:00
+=== fft monolith smtek_Swift-Qwen3.8-27B_dflash2 rep4 start 2026-09-22T22:41:31+07:00
+{"project":"fft","method":"monolith","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":4,"rc":0,"wall_s":79}
+=== fft monolith smtek_Swift-Qwen3.8-27B_dflash2 rep4 rc=0 wall=79s 2026-09-22T22:42:50+07:00
+=== fft monolith smtek_Swift-Qwen3.8-27B_dflash2 rep5 start 2026-09-22T22:42:50+07:00
+{"project":"fft","method":"monolith","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":5,"rc":1,"wall_s":88}
+=== fft monolith smtek_Swift-Qwen3.8-27B_dflash2 rep5 rc=1 wall=88s 2026-09-22T22:44:19+07:00
+=== fft ledger smtek_Swift-Qwen3.8-27B_dflash2 rep1 start 2026-09-22T22:44:19+07:00
+{"project":"fft","method":"ledger","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":1,"rc":1,"wall_s":92}
+=== fft ledger smtek_Swift-Qwen3.8-27B_dflash2 rep1 rc=1 wall=92s 2026-09-22T22:45:51+07:00
+=== fft ledger smtek_Swift-Qwen3.8-27B_dflash2 rep2 start 2026-09-22T22:45:51+07:00
+{"project":"fft","method":"ledger","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":2,"rc":1,"wall_s":212}
+=== fft ledger smtek_Swift-Qwen3.8-27B_dflash2 rep2 rc=1 wall=212s 2026-09-22T22:49:24+07:00
+=== fft ledger smtek_Swift-Qwen3.8-27B_dflash2 rep3 start 2026-09-22T22:49:24+07:00
+{"project":"fft","method":"ledger","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":3,"rc":1,"wall_s":96}
+=== fft ledger smtek_Swift-Qwen3.8-27B_dflash2 rep3 rc=1 wall=96s 2026-09-22T22:51:01+07:00
+=== fft ledger smtek_Swift-Qwen3.8-27B_dflash2 rep4 start 2026-09-22T22:51:01+07:00
+{"project":"fft","method":"ledger","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":4,"rc":1,"wall_s":91}
+=== fft ledger smtek_Swift-Qwen3.8-27B_dflash2 rep4 rc=1 wall=91s 2026-09-22T22:52:33+07:00
+=== fft ledger smtek_Swift-Qwen3.8-27B_dflash2 rep5 start 2026-09-22T22:52:33+07:00
+{"project":"fft","method":"ledger","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":5,"rc":1,"wall_s":78}
+=== fft ledger smtek_Swift-Qwen3.8-27B_dflash2 rep5 rc=1 wall=78s 2026-09-22T22:53:52+07:00
+=== fft recode smtek_Swift-Qwen3.8-27B_dflash2 rep1 start 2026-09-22T22:53:52+07:00
+{"project":"fft","method":"recode","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":1,"rc":1,"wall_s":180}
+=== fft recode smtek_Swift-Qwen3.8-27B_dflash2 rep1 rc=1 wall=180s 2026-09-22T22:56:52+07:00
+=== fft recode smtek_Swift-Qwen3.8-27B_dflash2 rep2 start 2026-09-22T22:56:52+07:00
+{"project":"fft","method":"recode","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":2,"rc":1,"wall_s":282}
+=== fft recode smtek_Swift-Qwen3.8-27B_dflash2 rep2 rc=1 wall=282s 2026-09-22T23:01:34+07:00
+=== fft recode smtek_Swift-Qwen3.8-27B_dflash2 rep3 start 2026-09-22T23:01:34+07:00
+{"project":"fft","method":"recode","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":3,"rc":1,"wall_s":282}
+=== fft recode smtek_Swift-Qwen3.8-27B_dflash2 rep3 rc=1 wall=282s 2026-09-22T23:06:16+07:00
+=== fft recode smtek_Swift-Qwen3.8-27B_dflash2 rep4 start 2026-09-22T23:06:16+07:00
+{"project":"fft","method":"recode","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":4,"rc":1,"wall_s":191}
+=== fft recode smtek_Swift-Qwen3.8-27B_dflash2 rep4 rc=1 wall=191s 2026-09-22T23:09:27+07:00
+=== fft recode smtek_Swift-Qwen3.8-27B_dflash2 rep5 start 2026-09-22T23:09:27+07:00
+{"project":"fft","method":"recode","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":5,"rc":1,"wall_s":89}
+=== fft recode smtek_Swift-Qwen3.8-27B_dflash2 rep5 rc=1 wall=89s 2026-09-22T23:10:57+07:00
+=== totp monolith smtek_Swift-Qwen3.8-27B_dflash2 rep1 start 2026-09-22T23:10:57+07:00
+{"project":"totp","method":"monolith","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":1,"rc":1,"wall_s":124}
+=== totp monolith smtek_Swift-Qwen3.8-27B_dflash2 rep1 rc=1 wall=124s 2026-09-22T23:13:02+07:00
+=== totp monolith smtek_Swift-Qwen3.8-27B_dflash2 rep2 start 2026-09-22T23:13:02+07:00
+{"project":"totp","method":"monolith","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":2,"rc":1,"wall_s":120}
+=== totp monolith smtek_Swift-Qwen3.8-27B_dflash2 rep2 rc=1 wall=120s 2026-09-22T23:15:03+07:00
+=== totp monolith smtek_Swift-Qwen3.8-27B_dflash2 rep3 start 2026-09-22T23:15:03+07:00
+{"project":"totp","method":"monolith","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":3,"rc":1,"wall_s":90}
+=== totp monolith smtek_Swift-Qwen3.8-27B_dflash2 rep3 rc=1 wall=90s 2026-09-22T23:16:33+07:00
+=== totp monolith smtek_Swift-Qwen3.8-27B_dflash2 rep4 start 2026-09-22T23:16:33+07:00
+{"project":"totp","method":"monolith","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":4,"rc":1,"wall_s":114}
+=== totp monolith smtek_Swift-Qwen3.8-27B_dflash2 rep4 rc=1 wall=114s 2026-09-22T23:18:27+07:00
+=== totp monolith smtek_Swift-Qwen3.8-27B_dflash2 rep5 start 2026-09-22T23:18:27+07:00
+{"project":"totp","method":"monolith","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":5,"rc":1,"wall_s":90}
+=== totp monolith smtek_Swift-Qwen3.8-27B_dflash2 rep5 rc=1 wall=90s 2026-09-22T23:19:58+07:00
+=== totp ledger smtek_Swift-Qwen3.8-27B_dflash2 rep1 start 2026-09-22T23:19:58+07:00
+{"project":"totp","method":"ledger","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":1,"rc":1,"wall_s":92}
+=== totp ledger smtek_Swift-Qwen3.8-27B_dflash2 rep1 rc=1 wall=92s 2026-09-22T23:21:30+07:00
+=== totp ledger smtek_Swift-Qwen3.8-27B_dflash2 rep2 start 2026-09-22T23:21:30+07:00
+{"project":"totp","method":"ledger","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":2,"rc":1,"wall_s":93}
+=== totp ledger smtek_Swift-Qwen3.8-27B_dflash2 rep2 rc=1 wall=93s 2026-09-22T23:23:03+07:00
+=== totp ledger smtek_Swift-Qwen3.8-27B_dflash2 rep3 start 2026-09-22T23:23:03+07:00
+{"project":"totp","method":"ledger","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":3,"rc":1,"wall_s":96}
+=== totp ledger smtek_Swift-Qwen3.8-27B_dflash2 rep3 rc=1 wall=96s 2026-09-22T23:24:40+07:00
+=== totp ledger smtek_Swift-Qwen3.8-27B_dflash2 rep4 start 2026-09-22T23:24:40+07:00
+{"project":"totp","method":"ledger","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":4,"rc":1,"wall_s":79}
+=== totp ledger smtek_Swift-Qwen3.8-27B_dflash2 rep4 rc=1 wall=79s 2026-09-22T23:26:00+07:00
+=== totp ledger smtek_Swift-Qwen3.8-27B_dflash2 rep5 start 2026-09-22T23:26:00+07:00
+{"project":"totp","method":"ledger","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":5,"rc":1,"wall_s":97}
+=== totp ledger smtek_Swift-Qwen3.8-27B_dflash2 rep5 rc=1 wall=97s 2026-09-22T23:27:37+07:00
+=== totp recode smtek_Swift-Qwen3.8-27B_dflash2 rep1 start 2026-09-22T23:27:37+07:00
+{"project":"totp","method":"recode","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":1,"rc":1,"wall_s":211}
+=== totp recode smtek_Swift-Qwen3.8-27B_dflash2 rep1 rc=1 wall=211s 2026-09-22T23:31:08+07:00
+=== totp recode smtek_Swift-Qwen3.8-27B_dflash2 rep2 start 2026-09-22T23:31:08+07:00
+{"project":"totp","method":"recode","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":2,"rc":1,"wall_s":94}
+=== totp recode smtek_Swift-Qwen3.8-27B_dflash2 rep2 rc=1 wall=94s 2026-09-22T23:32:43+07:00
+=== totp recode smtek_Swift-Qwen3.8-27B_dflash2 rep3 start 2026-09-22T23:32:43+07:00
+{"project":"totp","method":"recode","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":3,"rc":1,"wall_s":118}
+=== totp recode smtek_Swift-Qwen3.8-27B_dflash2 rep3 rc=1 wall=118s 2026-09-22T23:34:41+07:00
+=== totp recode smtek_Swift-Qwen3.8-27B_dflash2 rep4 start 2026-09-22T23:34:41+07:00
+{"project":"totp","method":"recode","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":4,"rc":1,"wall_s":93}
+=== totp recode smtek_Swift-Qwen3.8-27B_dflash2 rep4 rc=1 wall=93s 2026-09-22T23:36:15+07:00
+=== totp recode smtek_Swift-Qwen3.8-27B_dflash2 rep5 start 2026-09-22T23:36:15+07:00
+{"project":"totp","method":"recode","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":5,"rc":1,"wall_s":311}
+=== totp recode smtek_Swift-Qwen3.8-27B_dflash2 rep5 rc=1 wall=311s 2026-09-22T23:41:26+07:00
+=== cjson monolith smtek_Swift-Qwen3.8-27B_dflash2 rep1 start 2026-09-22T23:41:26+07:00
+{"project":"cjson","method":"monolith","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":1,"rc":1,"wall_s":24}
+=== cjson monolith smtek_Swift-Qwen3.8-27B_dflash2 rep1 rc=1 wall=24s 2026-09-22T23:41:50+07:00
+=== cjson monolith smtek_Swift-Qwen3.8-27B_dflash2 rep2 start 2026-09-22T23:41:50+07:00
+{"project":"cjson","method":"monolith","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":2,"rc":1,"wall_s":22}
+=== cjson monolith smtek_Swift-Qwen3.8-27B_dflash2 rep2 rc=1 wall=22s 2026-09-22T23:42:12+07:00
+=== cjson monolith smtek_Swift-Qwen3.8-27B_dflash2 rep3 start 2026-09-22T23:42:12+07:00
+{"project":"cjson","method":"monolith","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":3,"rc":1,"wall_s":23}
+=== cjson monolith smtek_Swift-Qwen3.8-27B_dflash2 rep3 rc=1 wall=23s 2026-09-22T23:42:36+07:00
+=== cjson monolith smtek_Swift-Qwen3.8-27B_dflash2 rep4 start 2026-09-22T23:42:36+07:00
+{"project":"cjson","method":"monolith","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":4,"rc":1,"wall_s":21}
+=== cjson monolith smtek_Swift-Qwen3.8-27B_dflash2 rep4 rc=1 wall=21s 2026-09-22T23:42:57+07:00
+=== cjson monolith smtek_Swift-Qwen3.8-27B_dflash2 rep5 start 2026-09-22T23:42:57+07:00
+{"project":"cjson","method":"monolith","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":5,"rc":1,"wall_s":21}
+=== cjson monolith smtek_Swift-Qwen3.8-27B_dflash2 rep5 rc=1 wall=21s 2026-09-22T23:43:19+07:00
+=== cjson ledger smtek_Swift-Qwen3.8-27B_dflash2 rep1 start 2026-09-22T23:43:19+07:00
+{"project":"cjson","method":"ledger","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":1,"rc":1,"wall_s":22}
+=== cjson ledger smtek_Swift-Qwen3.8-27B_dflash2 rep1 rc=1 wall=22s 2026-09-22T23:43:41+07:00
+=== cjson ledger smtek_Swift-Qwen3.8-27B_dflash2 rep2 start 2026-09-22T23:43:41+07:00
+{"project":"cjson","method":"ledger","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":2,"rc":1,"wall_s":21}
+=== cjson ledger smtek_Swift-Qwen3.8-27B_dflash2 rep2 rc=1 wall=21s 2026-09-22T23:44:03+07:00
+=== cjson ledger smtek_Swift-Qwen3.8-27B_dflash2 rep3 start 2026-09-22T23:44:03+07:00
+{"project":"cjson","method":"ledger","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":3,"rc":1,"wall_s":21}
+=== cjson ledger smtek_Swift-Qwen3.8-27B_dflash2 rep3 rc=1 wall=21s 2026-09-22T23:44:25+07:00
+=== cjson ledger smtek_Swift-Qwen3.8-27B_dflash2 rep4 start 2026-09-22T23:44:25+07:00
+{"project":"cjson","method":"ledger","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":4,"rc":1,"wall_s":22}
+=== cjson ledger smtek_Swift-Qwen3.8-27B_dflash2 rep4 rc=1 wall=22s 2026-09-22T23:44:47+07:00
+=== cjson ledger smtek_Swift-Qwen3.8-27B_dflash2 rep5 start 2026-09-22T23:44:47+07:00
+{"project":"cjson","method":"ledger","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":5,"rc":1,"wall_s":21}
+=== cjson ledger smtek_Swift-Qwen3.8-27B_dflash2 rep5 rc=1 wall=21s 2026-09-22T23:45:09+07:00
+=== cjson recode smtek_Swift-Qwen3.8-27B_dflash2 rep1 start 2026-09-22T23:45:09+07:00
+{"project":"cjson","method":"recode","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":1,"rc":1,"wall_s":21}
+=== cjson recode smtek_Swift-Qwen3.8-27B_dflash2 rep1 rc=1 wall=21s 2026-09-22T23:45:31+07:00
+=== cjson recode smtek_Swift-Qwen3.8-27B_dflash2 rep2 start 2026-09-22T23:45:31+07:00
+{"project":"cjson","method":"recode","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":2,"rc":1,"wall_s":21}
+=== cjson recode smtek_Swift-Qwen3.8-27B_dflash2 rep2 rc=1 wall=21s 2026-09-22T23:45:52+07:00
+=== cjson recode smtek_Swift-Qwen3.8-27B_dflash2 rep3 start 2026-09-22T23:45:52+07:00
+{"project":"cjson","method":"recode","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":3,"rc":1,"wall_s":21}
+=== cjson recode smtek_Swift-Qwen3.8-27B_dflash2 rep3 rc=1 wall=21s 2026-09-22T23:46:14+07:00
+=== cjson recode smtek_Swift-Qwen3.8-27B_dflash2 rep4 start 2026-09-22T23:46:14+07:00
+{"project":"cjson","method":"recode","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":4,"rc":1,"wall_s":21}
+=== cjson recode smtek_Swift-Qwen3.8-27B_dflash2 rep4 rc=1 wall=21s 2026-09-22T23:46:36+07:00
+=== cjson recode smtek_Swift-Qwen3.8-27B_dflash2 rep5 start 2026-09-22T23:46:36+07:00
+{"project":"cjson","method":"recode","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":5,"rc":1,"wall_s":22}
+=== cjson recode smtek_Swift-Qwen3.8-27B_dflash2 rep5 rc=1 wall=22s 2026-09-22T23:46:59+07:00
+=== expr monolith smtek_Swift-Qwen3.8-27B_dflash2 rep1 start 2026-09-22T23:46:59+07:00
+{"project":"expr","method":"monolith","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":1,"rc":1,"wall_s":35}
+=== expr monolith smtek_Swift-Qwen3.8-27B_dflash2 rep1 rc=1 wall=35s 2026-09-22T23:47:34+07:00
+=== expr monolith smtek_Swift-Qwen3.8-27B_dflash2 rep2 start 2026-09-22T23:47:34+07:00
+{"project":"expr","method":"monolith","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":2,"rc":1,"wall_s":90}
+=== expr monolith smtek_Swift-Qwen3.8-27B_dflash2 rep2 rc=1 wall=90s 2026-09-22T23:49:05+07:00
+=== expr monolith smtek_Swift-Qwen3.8-27B_dflash2 rep3 start 2026-09-22T23:49:05+07:00
+{"project":"expr","method":"monolith","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":3,"rc":1,"wall_s":53}
+=== expr monolith smtek_Swift-Qwen3.8-27B_dflash2 rep3 rc=1 wall=53s 2026-09-22T23:49:59+07:00
+=== expr monolith smtek_Swift-Qwen3.8-27B_dflash2 rep4 start 2026-09-22T23:49:59+07:00
+{"project":"expr","method":"monolith","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":4,"rc":1,"wall_s":66}
+=== expr monolith smtek_Swift-Qwen3.8-27B_dflash2 rep4 rc=1 wall=66s 2026-09-22T23:51:06+07:00
+=== expr monolith smtek_Swift-Qwen3.8-27B_dflash2 rep5 start 2026-09-22T23:51:06+07:00
+{"project":"expr","method":"monolith","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":5,"rc":1,"wall_s":55}
+=== expr monolith smtek_Swift-Qwen3.8-27B_dflash2 rep5 rc=1 wall=55s 2026-09-22T23:52:01+07:00
+=== expr ledger smtek_Swift-Qwen3.8-27B_dflash2 rep1 start 2026-09-22T23:52:01+07:00
+{"project":"expr","method":"ledger","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":1,"rc":1,"wall_s":107}
+=== expr ledger smtek_Swift-Qwen3.8-27B_dflash2 rep1 rc=1 wall=107s 2026-09-22T23:53:48+07:00
+=== expr ledger smtek_Swift-Qwen3.8-27B_dflash2 rep2 start 2026-09-22T23:53:48+07:00
+{"project":"expr","method":"ledger","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":2,"rc":1,"wall_s":88}
+=== expr ledger smtek_Swift-Qwen3.8-27B_dflash2 rep2 rc=1 wall=88s 2026-09-22T23:55:17+07:00
+=== expr ledger smtek_Swift-Qwen3.8-27B_dflash2 rep3 start 2026-09-22T23:55:17+07:00
+{"project":"expr","method":"ledger","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":3,"rc":1,"wall_s":127}
+=== expr ledger smtek_Swift-Qwen3.8-27B_dflash2 rep3 rc=1 wall=127s 2026-09-22T23:57:25+07:00
+=== expr ledger smtek_Swift-Qwen3.8-27B_dflash2 rep4 start 2026-09-22T23:57:25+07:00
+{"project":"expr","method":"ledger","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":4,"rc":1,"wall_s":102}
+=== expr ledger smtek_Swift-Qwen3.8-27B_dflash2 rep4 rc=1 wall=102s 2026-09-22T23:59:07+07:00
+=== expr ledger smtek_Swift-Qwen3.8-27B_dflash2 rep5 start 2026-09-22T23:59:07+07:00
+{"project":"expr","method":"ledger","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":5,"rc":1,"wall_s":101}
+=== expr ledger smtek_Swift-Qwen3.8-27B_dflash2 rep5 rc=1 wall=101s 2026-09-23T00:00:49+07:00
+=== expr recode smtek_Swift-Qwen3.8-27B_dflash2 rep1 start 2026-09-23T00:00:49+07:00
+{"project":"expr","method":"recode","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":1,"rc":1,"wall_s":60}
+=== expr recode smtek_Swift-Qwen3.8-27B_dflash2 rep1 rc=1 wall=60s 2026-09-23T00:01:49+07:00
+=== expr recode smtek_Swift-Qwen3.8-27B_dflash2 rep2 start 2026-09-23T00:01:49+07:00
+{"project":"expr","method":"recode","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":2,"rc":1,"wall_s":75}
+=== expr recode smtek_Swift-Qwen3.8-27B_dflash2 rep2 rc=1 wall=75s 2026-09-23T00:03:04+07:00
+=== expr recode smtek_Swift-Qwen3.8-27B_dflash2 rep3 start 2026-09-23T00:03:04+07:00
+{"project":"expr","method":"recode","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":3,"rc":1,"wall_s":70}
+=== expr recode smtek_Swift-Qwen3.8-27B_dflash2 rep3 rc=1 wall=70s 2026-09-23T00:04:15+07:00
+=== expr recode smtek_Swift-Qwen3.8-27B_dflash2 rep4 start 2026-09-23T00:04:15+07:00
+{"project":"expr","method":"recode","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":4,"rc":1,"wall_s":60}
+=== expr recode smtek_Swift-Qwen3.8-27B_dflash2 rep4 rc=1 wall=60s 2026-09-23T00:05:15+07:00
+=== expr recode smtek_Swift-Qwen3.8-27B_dflash2 rep5 start 2026-09-23T00:05:15+07:00
+{"project":"expr","method":"recode","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":5,"rc":1,"wall_s":132}
+=== expr recode smtek_Swift-Qwen3.8-27B_dflash2 rep5 rc=1 wall=132s 2026-09-23T00:07:28+07:00
+survey end 2026-09-23T00:07:28+07:00

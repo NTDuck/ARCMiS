@@ -1,0 +1,525 @@
+# Survey 220926 aggregate over 180 attempts
+cells:
+-
+  project: "cjson"
+  method: "ledger"
+  model: "openbmb/minicpm5-2b:q8_0"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 4.8
+  failure_classes:
+    other: 5
+-
+  project: "cjson"
+  method: "ledger"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 1
+  test_pass_rate_mean: 0
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 101.6
+  failure_classes:
+    max_turns: 4
+-
+  project: "cjson"
+  method: "ledger"
+  model: "smtek/Swift-Qwen3.8-27B:dflash2"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 22.2
+  failure_classes:
+    other: 5
+-
+  project: "cjson"
+  method: "monolith"
+  model: "openbmb/minicpm5-2b:q8_0"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 4.8
+  failure_classes:
+    other: 5
+-
+  project: "cjson"
+  method: "monolith"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 101.6
+  failure_classes:
+    model_output: 3
+    other: 2
+-
+  project: "cjson"
+  method: "monolith"
+  model: "smtek/Swift-Qwen3.8-27B:dflash2"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 22.2
+  failure_classes:
+    other: 5
+-
+  project: "cjson"
+  method: "recode"
+  model: "openbmb/minicpm5-2b:q8_0"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 4.8
+  failure_classes:
+    other: 5
+-
+  project: "cjson"
+  method: "recode"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 101.6
+  failure_classes:
+    model_output: 5
+-
+  project: "cjson"
+  method: "recode"
+  model: "smtek/Swift-Qwen3.8-27B:dflash2"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 22.2
+  failure_classes:
+    other: 5
+-
+  project: "expr"
+  method: "ledger"
+  model: "openbmb/minicpm5-2b:q8_0"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 24
+  failure_classes:
+    max_turns: 5
+-
+  project: "expr"
+  method: "ledger"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 76.4
+  failure_classes:
+    max_turns: 5
+-
+  project: "expr"
+  method: "ledger"
+  model: "smtek/Swift-Qwen3.8-27B:dflash2"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 1
+  test_pass_rate_mean: 0
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 59.8
+  failure_classes:
+    max_turns: 4
+    tests_failed: 1
+-
+  project: "expr"
+  method: "monolith"
+  model: "openbmb/minicpm5-2b:q8_0"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 24
+  failure_classes:
+    max_turns: 2
+    model_output: 3
+-
+  project: "expr"
+  method: "monolith"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 76.4
+  failure_classes:
+    model_output: 3
+    other: 2
+-
+  project: "expr"
+  method: "monolith"
+  model: "smtek/Swift-Qwen3.8-27B:dflash2"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 59.8
+  failure_classes:
+    model_output: 5
+-
+  project: "expr"
+  method: "recode"
+  model: "openbmb/minicpm5-2b:q8_0"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 24
+  failure_classes:
+    max_turns: 2
+    model_output: 3
+-
+  project: "expr"
+  method: "recode"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 76.4
+  failure_classes:
+    model_output: 1
+    other: 4
+-
+  project: "expr"
+  method: "recode"
+  model: "smtek/Swift-Qwen3.8-27B:dflash2"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 59.8
+  failure_classes:
+    model_output: 2
+    other: 3
+-
+  project: "fft"
+  method: "ledger"
+  model: "openbmb/minicpm5-2b:q8_0"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 55.4
+  failure_classes:
+    max_turns: 5
+-
+  project: "fft"
+  method: "ledger"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 72
+  failure_classes:
+    max_turns: 5
+-
+  project: "fft"
+  method: "ledger"
+  model: "smtek/Swift-Qwen3.8-27B:dflash2"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 84.8
+  failure_classes:
+    max_turns: 5
+-
+  project: "fft"
+  method: "monolith"
+  model: "openbmb/minicpm5-2b:q8_0"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 55.4
+  failure_classes:
+    max_turns: 2
+    model_output: 3
+-
+  project: "fft"
+  method: "monolith"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 2
+  compile_rate: 0.4
+  scored: 2
+  test_pass_rate_mean: 0
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 72
+  failure_classes:
+    max_turns: 3
+-
+  project: "fft"
+  method: "monolith"
+  model: "smtek/Swift-Qwen3.8-27B:dflash2"
+  reps: 5
+  compiled: 3
+  compile_rate: 0.6
+  scored: 3
+  test_pass_rate_mean: 0
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 84.8
+  failure_classes:
+    max_turns: 2
+-
+  project: "fft"
+  method: "recode"
+  model: "openbmb/minicpm5-2b:q8_0"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 55.4
+  failure_classes:
+    max_turns: 3
+    model_output: 2
+-
+  project: "fft"
+  method: "recode"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 72
+  failure_classes:
+    max_turns: 1
+    model_output: 2
+    other: 2
+-
+  project: "fft"
+  method: "recode"
+  model: "smtek/Swift-Qwen3.8-27B:dflash2"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 84.8
+  failure_classes:
+    max_turns: 1
+    model_output: 4
+-
+  project: "totp"
+  method: "ledger"
+  model: "openbmb/minicpm5-2b:q8_0"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 71.2
+  failure_classes:
+    max_turns: 5
+-
+  project: "totp"
+  method: "ledger"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 1
+  test_pass_rate_mean: 0
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 99.4
+  failure_classes:
+    max_turns: 3
+    other: 1
+-
+  project: "totp"
+  method: "ledger"
+  model: "smtek/Swift-Qwen3.8-27B:dflash2"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 107.6
+  failure_classes:
+    max_turns: 5
+-
+  project: "totp"
+  method: "monolith"
+  model: "openbmb/minicpm5-2b:q8_0"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 71.2
+  failure_classes:
+    max_turns: 3
+    model_output: 2
+-
+  project: "totp"
+  method: "monolith"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 99.4
+  failure_classes:
+    max_turns: 3
+    model_output: 1
+    other: 1
+-
+  project: "totp"
+  method: "monolith"
+  model: "smtek/Swift-Qwen3.8-27B:dflash2"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 107.6
+  failure_classes:
+    max_turns: 3
+    model_output: 2
+-
+  project: "totp"
+  method: "recode"
+  model: "openbmb/minicpm5-2b:q8_0"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 71.2
+  failure_classes:
+    max_turns: 4
+    model_output: 1
+-
+  project: "totp"
+  method: "recode"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 99.4
+  failure_classes:
+    model_output: 2
+    other: 3
+-
+  project: "totp"
+  method: "recode"
+  model: "smtek/Swift-Qwen3.8-27B:dflash2"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  test_pass_rate_mean: nan
+  tests_passed_mean: 0
+  tests_failed_mean: 0
+  wall_s_mean: 107.6
+  failure_classes:
+    model_output: 5
