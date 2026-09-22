@@ -23,6 +23,7 @@
 //! Exit code: success iff the validator reports `pass`.
 
 mod experiment;
+mod offload;
 mod result;
 mod run_log;
 use agents::util::provider::{Clients, Provider};
@@ -66,6 +67,12 @@ struct Args {
     api_key: Option<String>,
     base_url: Option<String>,
     offload: bool,
+}
+
+/// True when the provider is the local ollama daemon. Offload applies
+/// only there: a remote gateway holds no local VRAM.
+fn is_ollama(name: Option<&str>) -> bool {
+    name.unwrap_or("ollama") == "ollama"
 }
 
 /// Parse `--flag value` pairs and the two positionals.
@@ -134,6 +141,18 @@ async fn run() -> Result<ExitCode> {
 
     let provider =
         Provider::from_cli(args.provider, args.api_key, args.base_url).context("provider resolution failed")?;
+
+    // Offload before the run: leftovers from a crashed earlier run free
+    // their VRAM. The model about to run may stay: ollama can preload it.
+    if args.offload {
+        if let Provider::Ollama {
+            base_url,
+        } = &provider
+        {
+            offload::unload_all(base_url.as_deref(), Some(&config.run.model)).await.context("model offload failed")?;
+        }
+    }
+
     let client = provider.client().context("client construction failed")?;
 
     let task = MonolithTask::build(&config)?;
@@ -172,7 +191,21 @@ async fn run() -> Result<ExitCode> {
             run_monolith(client, &config, &provider, &task, &log, started, experiment_dir.as_deref()).boxed()
         },
     };
-    run.await
+    // Offload after the run, on success and failure alike: the model is
+    // resident either way, and the survey switches models between runs.
+    // Failure here never changes the run's own exit code.
+    let result = run.await;
+    if args.offload {
+        if let Provider::Ollama {
+            base_url,
+        } = &provider
+        {
+            if let Err(error) = offload::unload_all(base_url.as_deref(), None).await {
+                tracing::warn!(error = %error, "post-run model offload failed");
+            }
+        }
+    }
+    result
 }
 
 /// Wire and run the monolith, then validate its output with the validator
