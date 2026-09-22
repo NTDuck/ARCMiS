@@ -19,35 +19,37 @@ no fabricated numbers, every run persisted. The grid chosen:
   `qwen3.8:27b-mtp-q4_K_M`, `smtek/Swift-Qwen3.8-27B:dflash2`),
   5 repetitions per cell = 180 sequential runs.
 
-`SparkLLM/Spark-X2.5-4B` was planned but excluded: its `spark2_5`
-GGUF architecture fails to load in the local ollama daemon.
+The plan included `SparkLLM/Spark-X2.5-4B`, but we excluded it: its
+`spark2_5` GGUF architecture fails to load in the local ollama
+daemon.
 
 ## Decisions
 
-- **Sweep driver as a shell script** (`scripts/survey.sh`), not Rust:
-  the harness binary already handles one run; the driver only walks
+- **Sweep driver as a shell script** (`scripts/survey.sh`), not Rust. The harness binary already handles one run. The
+  driver only walks
   the grid, times each cell, and appends to a log. A second runner in
   Rust would duplicate the harness CLI.
-- **Sanitized model directory names** (`/` and `:` to `_`): colons in
+- **Sanitized model directory names** (`/` and `:` to `_`). Colons in
   model tags break cargo manifests placed in paths below the run dir
-  ("path segment contains separator" build failure), and every
-  produced workspace is built by the evaluator inside that path.
+  ("path segment contains separator" build failure). The evaluator
+  builds every produced workspace inside that path.
 - **Method as `--method` CLI flag** on the harness, with the config
   directory name as fallback: one config tree per project, method
-  selected per run, manifest records the resolved name so artifacts
-  stay self-describing.
-- **Model offload between every run** (`--offload`): the 27B pair is
-  17-19 GB each; leaving one resident while loading the next fills
+  selected per run. The manifest records the resolved name so
+  artifacts stay self-describing.
+- **Model offload between every run** (`--offload`). The 27B pair is
+  17-19 GB each. Leaving one resident while loading the next fills
   the 3090. Offload unloads everything and polls `/api/ps` until
   empty before and after each run.
-- **Toolchain as the only scorer**: agent self-reports are recorded
-  but never trusted; success requires the evaluator's rerun of
-  `cargo build` and `cargo test` in the produced workspace.
+- **Toolchain as the only scorer**. The harness records agent
+  self-reports but never trusts them. Success requires the
+  evaluator's rerun of `cargo build` and `cargo test` in the produced
+  workspace.
 - **Run artifacts under `experiments/220926/runs/`** (227 MB), kept
   out of git: per-run `manifest.json`, `config.yml`, `stdout.log`,
   `traces/turns.jsonl`, workspace, result yaml, per-problem JSON.
-  Aggregates (`results/aggregated.yml`, `results/per-run.yml`) and
-  the sweep log are committed.
+  We commit the aggregates (`results/aggregated.yml`,
+  `results/per-run.yml`) and the sweep log.
 
 ## Outcome
 
