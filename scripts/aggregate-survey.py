@@ -48,13 +48,36 @@ def parse_elapsed(text: str) -> float:
 
 
 def wall_from_log(run_dir: Path) -> float:
-    """Read the wall seconds the sweep driver logged for this cell."""
-    key = f"\"{run_dir.parent.name}\",\"rep\":{run_dir.name.replace('rep', '')},"
+    """Read the wall seconds the sweep driver logged for this cell. The
+    driver keys its lines by project, sanitized model tag, and rep."""
     log = REPO / "experiments" / "220926" / "survey.log"
     if not log.is_file():
         return math.nan
+    model_dir = run_dir.parent.name
+    rep_num = run_dir.name.replace("rep", "")
+    project = run_dir.parent.parent.parent.name
+    # The log line carries the raw model tag while the dir carries the
+    # sanitized one; match either form.
+    raw_model = ""
+    manifest = run_dir / "manifest.json"
+    if manifest.is_file():
+        try:
+            raw_model = json.loads(manifest.read_text()).get("model", "")
+        except json.JSONDecodeError:
+            pass
+    # The log line carries a model tag in three forms across sweeps: the
+    # sanitized dir name, the raw model tag, and the first sweep's
+    # slash-less form (slash sanitized, colon kept). Match by comparing
+    # all non-alphanumeric characters flattened.
+    flat_dir = re.sub(r"[^a-zA-Z0-9]", "", model_dir)
+    flat_raw = re.sub(r"[^a-zA-Z0-9]", "", raw_model)
     for line in log.read_text().splitlines():
-        if run_dir.parent.parent.name in line and key in line:
+        if f'"{project}"' not in line or f'"rep":{rep_num},' not in line:
+            continue
+        m = re.search(r'"model":"([^"]+)"', line)
+        logged = m.group(1) if m else ""
+        flat_logged = re.sub(r"[^a-zA-Z0-9]", "", logged)
+        if flat_logged in (flat_dir, flat_raw) or model_dir in logged or (raw_model and raw_model in logged):
             m = re.search(r'"wall_s":(\d+)', line)
             if m:
                 return int(m.group(1))
