@@ -3,6 +3,7 @@
 //! list after each round from the shared workspace files, and decides when
 //! to stop. The paper's v2 scaffold (arXiv:2608.26480 section 3.1).
 
+use crate::ledger::worker::Worker;
 use crate::util::config::Config;
 use crate::util::provider::Provider;
 use rig::agent::{Agent, AgentHook, OutputMode};
@@ -10,13 +11,14 @@ use rig::client::AgentClientExt;
 use rig::tool::DynamicTool;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 /// Preamble for the ledger manager. The v2 control flow: write the plan
 /// and the seed task list, brainstorm through one worker, then run the
 /// manage loop. Between rounds the manager re-reads the workspace files
 /// (plan.md, tasks.json, notes.md) and re-curates the task list: merge
 /// duplicates, drop done items, add only genuinely new sub-tasks. The
-/// manager never writes files itself; the worker tool is its only lever
+/// manager never writes files itself. The worker tool is its only lever
 /// on the workspace.
 const MANAGER_PREAMBLE: &str = "\
 You manage the translation of the codebase in the task. The workspace \
@@ -44,8 +46,9 @@ pub struct LedgerManager;
 impl LedgerManager {
     /// Build the ledger manager. `worker_tool` is the worker agent exposed
     /// as a dynamic tool: the manager's only lever on the workspace. `hook`
-    /// observes every manager model call and tool call. All knobs come from
-    /// the config.
+    /// observes every manager model call and tool call. The worker tool
+    /// carries its own budget. The manager's budget applies at run time
+    /// through `Ledger::run`.
     pub fn build<C>(
         client: &C,
         config: &Config,
@@ -71,6 +74,49 @@ impl LedgerManager {
             builder = builder.additional_params(params);
         }
         builder.build()
+    }
+
+    /// Expose the worker agent as the manager's worker tool. The callback
+    /// routes through `Worker::run`, so each delegation gets a fresh turn
+    /// budget and its own retry attempts, and a failed delegation surfaces
+    /// its real error text to the manager instead of a bare kind string.
+    pub fn worker_tool(agent: Agent, worker_turns: usize, retries: u32) -> DynamicTool {
+        let agent = std::sync::Arc::new(agent);
+        DynamicTool::new(
+            "ledger_worker",
+            "Delegate one translation task to a worker agent. The worker works in the \
+             shared workspace and reports what it did.",
+            serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "prompt": {"type": "string", "description": "The single task for the worker"}
+                },
+                "required": ["prompt"]
+            }),
+            move |_context, args| {
+                let agent = Arc::clone(&agent);
+                Box::pin(async move {
+                    #[derive(serde::Deserialize)]
+                    struct WorkerArgs {
+                        prompt: String,
+                    }
+                    let parsed: WorkerArgs = serde_json::from_value(args).map_err(|error| {
+                        rig::tool::ToolExecutionError::invalid_args(format!(
+                            "failed to parse worker tool arguments: {error}"
+                        ))
+                    })?;
+                    Worker::run(&agent, &parsed.prompt, worker_turns, retries)
+                        .await
+                        .map(rig::tool::ToolOutput::text)
+                        .map_err(|error| {
+                            // anyhow::Error does not implement StdError. Carry
+                            // the formatted chain as an other-kind tool error.
+                            let message = format!("{error:#}");
+                            rig::tool::ToolExecutionError::other(message)
+                        })
+                })
+            },
+        )
     }
 }
 

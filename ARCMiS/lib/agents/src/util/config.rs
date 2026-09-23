@@ -14,6 +14,9 @@ pub struct Config {
     pub run: Run,
     pub output: Output,
     pub source: Source,
+    /// Ledger method budgets. Ignored by the other methods.
+    #[serde(default)]
+    pub ledger: LedgerBudgets,
 }
 
 /// Run section: model identity and agent budget.
@@ -25,8 +28,8 @@ pub struct Run {
     pub num_ctx: u64,
     pub max_output_tokens: u64,
     pub max_retries: u32,
-    /// Disable model thinking mode. Small models degenerate into runaway
-    /// think blocks on long prompts. Off keeps turns short and deterministic.
+    /// Enable model thinking mode. Thinking improves long-horizon tool
+    /// use on the supported models; disable only for a specific reason.
     pub think: bool,
     /// Sampling temperature for the model.
     pub temperature: f64,
@@ -40,7 +43,7 @@ impl Default for Run {
             num_ctx: 16384,
             max_output_tokens: 8192,
             max_retries: 1,
-            think: false,
+            think: true,
             temperature: 0.2,
         }
     }
@@ -50,6 +53,27 @@ impl Default for Run {
 #[derive(Debug, Deserialize)]
 pub struct Output {
     pub dir: PathBuf,
+}
+
+/// Ledger method budgets: the manager and each fresh worker delegation
+/// carry separate turn budgets (paper: fresh worker per cycle with its
+/// own call allowance). `retries` covers worker delegations.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default)]
+pub struct LedgerBudgets {
+    pub manager_turns: usize,
+    pub worker_turns: usize,
+    pub retries: u32,
+}
+
+impl Default for LedgerBudgets {
+    fn default() -> Self {
+        Self {
+            manager_turns: 30,
+            worker_turns: 60,
+            retries: 1,
+        }
+    }
 }
 
 /// Source section: input codebase, target language, and toolchain.

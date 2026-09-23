@@ -14,9 +14,9 @@ run:
   max_output_tokens: 4096
   # Whole-run retries when a model turn truncates or errors.
   max_retries: 1
-  # Thinking mode off: think blocks on long prompts delay the first tool
-  # call. Benchmark parity with the other methods.
-  think: false
+  # Thinking mode on: the models reason before tool calls, and the
+  # resilience hook retries a turn the provider cut short.
+  think: true
   # Sampling temperature. Low value for deterministic tool use.
   temperature: 0.2
 

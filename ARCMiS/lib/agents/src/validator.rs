@@ -64,10 +64,16 @@ impl Validator {
     }
 
     /// Run the validator agent over one task. `max_turns` bounds the
-    /// model-call budget. Returns the structured result artifact. The model
-    /// must deliver it through the output-tool call.
-    pub async fn run(agent: &Agent, task: &ValidatorRequest, max_turns: usize) -> anyhow::Result<ValidatorResponse> {
-        crate::util::task::task(agent, task, max_turns).await
+    /// model-call budget. `max_retries` bounds whole-task retries. Returns
+    /// the structured result artifact. The model must deliver it through
+    /// the output-tool call.
+    pub async fn run(
+        agent: &Agent,
+        task: &ValidatorRequest,
+        max_turns: usize,
+        max_retries: u32,
+    ) -> anyhow::Result<ValidatorResponse> {
+        crate::util::task::task(agent, task, max_turns, max_retries).await
     }
 }
 

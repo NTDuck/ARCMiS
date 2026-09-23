@@ -223,35 +223,58 @@ where
     C: rig::client::AgentClientExt,
     C::CompletionModel: 'static,
 {
-    // The shared hook logs every turn and tool call to the console.
-    let monolith = agents::Monolith::build(client, config, provider, log.clone());
-    let monolith_result = agents::Monolith::run(&monolith, task, config.run.max_turns).await?;
+    // The resilience hook caps output tokens, retries truncated turns,
+    // and rewrites tool failures; the run log underneath records it all.
+    let hook = agents::util::resilience::ResilienceHook::new(log.clone(), config.run.max_output_tokens);
+    let monolith = agents::Monolith::build(client, config, provider, hook.clone());
+    let monolith_result = agents::Monolith::run(&monolith, task, config.run.max_turns, config.run.max_retries).await?;
     tracing::info!(
         files_written = monolith_result.files_written,
         approach = %monolith_result.approach,
         "monolith finished"
     );
 
-    // Wire and run the validator over the monolith's output.
+    // The shared validator runs at the end of every method.
+    let validation =
+        run_validator(client, config, provider, &monolith_result.output_dir, &monolith_result.approach, &hook).await?;
+    result::finish(config, &validation, started.elapsed(), experiment_dir)
+}
+
+/// Wire and run the shared validator agent over a produced workspace.
+/// Every method ends in this typed report.
+async fn run_validator<C>(
+    client: &C,
+    config: &Config,
+    provider: &Provider,
+    output_dir: &str,
+    approach: &str,
+    hook: &agents::util::resilience::ResilienceHook<run_log::RunLog>,
+) -> Result<ValidatorResponse>
+where
+    C: rig::client::AgentClientExt,
+    C::CompletionModel: 'static,
+{
     let validation_task = ValidatorRequest {
-        output_dir: monolith_result.output_dir.clone(),
+        output_dir: output_dir.to_owned(),
         toolchain: vec!["build".to_owned(), "test".to_owned()],
         test_command: config.source.target.test_command.clone(),
-        approach: monolith_result.approach.clone(),
+        approach: approach.to_owned(),
     };
-    let validator = agents::Validator::build(client, config, provider, log.clone());
-    let validation = agents::Validator::run(&validator, &validation_task, config.run.max_turns).await?;
+    let validator = agents::Validator::build(client, config, provider, hook.clone());
+    let validation =
+        agents::Validator::run(&validator, &validation_task, config.run.max_turns, config.run.max_retries).await?;
     tracing::info!(
         compiled = validation.compiled,
         test_pass_rate = ?validation.test_pass_rate,
         "validator finished"
     );
-
-    result::finish(config, &validation, started.elapsed(), experiment_dir)
+    Ok(validation)
 }
 
-/// Wire and run the ledger method. The manager reports its own validation,
-/// so no second agent runs. The result lands in the same yaml shape.
+/// Wire and run the ledger method, then validate its output with the
+/// shared validator. The manager works through fresh-budget worker
+/// delegations; the harness-side verdict comes from the validator agent,
+/// mirroring the paper's harness-side public-test verifier.
 async fn run_ledger<C>(
     client: &C,
     config: &Config,
@@ -265,27 +288,25 @@ where
     C: rig::client::AgentClientExt,
     C::CompletionModel: 'static,
 {
-    let ledger = agents::Ledger::build(client, config, provider, log.clone());
-    let result = agents::Ledger::run(&ledger, task, config.run.max_turns).await?;
+    let hook = agents::util::resilience::ResilienceHook::new(log.clone(), config.run.max_output_tokens);
+    let ledger = agents::Ledger::build(client, config, provider, hook.clone(), config.ledger.clone());
+    let result = agents::Ledger::run(&ledger, task, config.ledger.manager_turns, config.run.max_retries).await?;
     tracing::info!(
         compiled = result.compiled,
         test_pass_rate = ?result.test_pass_rate,
         approach = %result.approach,
         "ledger finished"
     );
-    let validation = ValidatorResponse {
-        compiled: result.compiled,
-        test_pass_rate: result.test_pass_rate,
-        steps: Vec::new(),
-    };
+    let validation =
+        run_validator(client, config, provider, &config.output.dir.to_string_lossy(), &result.approach, &hook).await?;
     result::finish(config, &validation, started.elapsed(), experiment_dir)
 }
 
-/// Wire and run the ReCode method. The Recode namespace builds its four
-/// agents (analyzer, planner, translator, validator) and runs the
-/// deterministic pipeline from the paper's Algorithm 1. The final reporter
-/// reports its own validation, so no second agent runs. The result lands
-/// in the same yaml shape.
+/// Wire and run the ReCode method, then validate its output with the
+/// shared validator. The Recode namespace builds its four agents
+/// (analyzer, planner, translator, validator) and runs the deterministic
+/// pipeline from the paper's Algorithm 1 with per-phase budgets. The
+/// final shared validator produces the harness-side typed report.
 async fn run_recode<C>(
     client: &C,
     config: &Config,
@@ -299,8 +320,9 @@ where
     C: rig::client::AgentClientExt,
     C::CompletionModel: 'static,
 {
-    let result =
-        agents::Recode::run(client, config, provider, task, log.clone(), config.run.max_turns, MAX_ITER).await?;
+    let hook = agents::util::resilience::ResilienceHook::new(log.clone(), config.run.max_output_tokens);
+    let budgets = agents::recode::PhaseBudgets::uniform(config.run.max_turns, config.run.max_retries);
+    let result = agents::Recode::run(client, config, provider, task, hook.clone(), budgets, MAX_ITER).await?;
     tracing::info!(
         compiled = result.compiled,
         test_pass_rate = ?result.test_pass_rate,
@@ -309,11 +331,8 @@ where
         approach = %result.approach,
         "recode finished"
     );
-    let validation = ValidatorResponse {
-        compiled: result.compiled,
-        test_pass_rate: result.test_pass_rate,
-        steps: Vec::new(),
-    };
+    let validation =
+        run_validator(client, config, provider, &config.output.dir.to_string_lossy(), &result.approach, &hook).await?;
     result::finish(config, &validation, started.elapsed(), experiment_dir)
 }
 

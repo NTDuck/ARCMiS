@@ -13,15 +13,24 @@ run:
   max_output_tokens: 4096
   # Whole-run retries when a model turn truncates or errors.
   max_retries: 1
-  # Thinking mode off: think blocks on long prompts delay the first tool
-  # call. Benchmark parity with the other methods.
-  think: false
+  # Thinking mode on: the models reason before tool calls, and the
+  # resilience hook retries a turn the provider cut short.
+  think: true
   # Sampling temperature. Low value for deterministic tool use.
   temperature: 0.2
 
 output:
   # Destination root for the transformed codebase and run logs.
   dir: .artifacts/GildedRose-Refactoring-Kata/Rust/ledger-method
+
+# Ledger method budgets. The manager and each fresh worker delegation
+# carry separate turn budgets; the worker budget is the larger one
+# because one delegation translates and verifies whole units.
+ledger:
+  manager_turns: 30
+  worker_turns: 60
+  # Extra attempts per worker delegation after a failed attempt.
+  retries: 1
 
 source:
   # Input codebase to transform.

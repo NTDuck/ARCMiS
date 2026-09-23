@@ -2,9 +2,8 @@
 //! dependency ordered implementation plan.
 
 use crate::util::config::Config;
-use crate::util::noop_hook::NoopHook;
 use crate::util::provider::Provider;
-use rig::agent::{Agent, OutputMode};
+use rig::agent::{Agent, AgentHook, OutputMode};
 use rig::client::AgentClientExt;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -43,8 +42,15 @@ pub struct Planner;
 impl Planner {
     /// Build the planner agent. The agent writes the plan and the
     /// skeleton files with the write and bash tools and returns a
-    /// structured plan. It runs under the no-op hook.
-    pub fn build<C>(client: &C, config: &Config, provider: &Provider, write: Write, bash: Bash) -> Agent
+    /// structured plan. `hook` observes every model call and tool call.
+    pub fn build<C>(
+        client: &C,
+        config: &Config,
+        provider: &Provider,
+        write: Write,
+        bash: Bash,
+        hook: impl AgentHook + 'static,
+    ) -> Agent
     where
         C: AgentClientExt,
         C::CompletionModel: 'static,
@@ -59,7 +65,7 @@ impl Planner {
             .max_tokens(config.run.max_output_tokens)
             .output_schema::<PlanningOutput>()
             .output_mode(OutputMode::Tool)
-            .add_hook(NoopHook);
+            .add_hook(hook);
         if let Some(params) = provider.extra_params(&config.run) {
             builder = builder.additional_params(params);
         }

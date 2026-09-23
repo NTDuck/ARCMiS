@@ -7,6 +7,7 @@ use crate::util::noop_hook::NoopHook;
 use crate::util::provider::Provider;
 use rig::agent::Agent;
 use rig::client::AgentClientExt;
+use rig::completion::Prompt;
 use tools::{Bash, Write};
 
 /// Preamble for the ledger worker. Working rules only. The task data
@@ -53,5 +54,25 @@ impl Worker {
             builder = builder.additional_params(params);
         }
         builder.build()
+    }
+}
+
+impl Worker {
+    /// Prompt the worker over one delegated task with its own fresh turn
+    /// budget. The paper's fresh-context worker starts every delegation
+    /// with a full budget, not the manager's remaining one.
+    pub async fn run(agent: &Agent, task: &str, max_turns: usize, max_retries: u32) -> anyhow::Result<String> {
+        let prompt = format!("You are the ledger worker. Task:\n{task}");
+        let mut last_error = None;
+        for attempt in 0..=max_retries {
+            if attempt > 0 {
+                tracing::warn!(attempt, "worker retry after failed attempt");
+            }
+            match agent.prompt(&prompt).max_turns(max_turns).await {
+                Ok(raw) => return Ok(raw),
+                Err(error) => last_error = Some(error),
+            }
+        }
+        Err(anyhow::anyhow!(last_error.expect("retry loop ran at least once")).context("worker failed after retries"))
     }
 }

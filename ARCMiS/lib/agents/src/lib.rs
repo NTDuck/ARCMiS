@@ -7,6 +7,7 @@ pub mod util {
     pub mod noop_hook;
     pub mod provider;
     pub mod registry;
+    pub mod resilience;
     pub mod sources;
     pub mod task;
 }

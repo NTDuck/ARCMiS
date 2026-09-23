@@ -9,12 +9,15 @@
 //! paper fixes the pipeline order. The orchestration here is the same
 //! deterministic scaffold code (Algorithm 1), not a manager agent. The
 //! last two agents form an iterative translate, validate, and fix loop
-//! with at most `max_iter` rounds. The reporter turns the final validation
-//! report into the typed response.
+//! with at most `max_iter` rounds.
 //!
 //! Every phase agent shares one snapshot store, one write tool root, and
 //! one bash root at the config output dir. The phase agents talk through
-//! the workspace files and through the typed task payloads.
+//! the workspace files and through the typed task payloads. Every phase
+//! runs under the caller's hook, so the whole pipeline lands in one
+//! trace. Each phase carries its own fresh turn budget, matching the
+//! paper's per-agent timeout (Algorithm 1 input), and its own whole-task
+//! retry budget.
 
 use crate::monolith::MonolithRequest;
 use crate::util::config::Config;
@@ -31,6 +34,41 @@ pub mod reporter;
 pub mod translator;
 pub mod validator;
 
+/// Per-phase turn budgets for one pipeline run. Algorithm 1 gives every
+/// agent its own timeout; the turn budgets mirror that per-agent bound.
+#[derive(Debug, Clone, Copy)]
+pub struct PhaseBudgets {
+    /// Analyzer model-call budget.
+    pub analyzer: usize,
+    /// Planner model-call budget.
+    pub planner: usize,
+    /// Translator model-call budget, per loop round.
+    pub translator: usize,
+    /// Validator model-call budget, per invocation (including the
+    /// coverage-gap test generation pass).
+    pub validator: usize,
+    /// Reporter model-call budget.
+    pub reporter: usize,
+    /// Whole-phase task retries shared by every phase.
+    pub retries: u32,
+}
+
+impl PhaseBudgets {
+    /// One shared budget for every phase: the paper's single model and
+    /// single per-agent timeout shrink to one turn count when the config
+    /// gives no per-phase split.
+    pub fn uniform(max_turns: usize, retries: u32) -> Self {
+        Self {
+            analyzer: max_turns,
+            planner: max_turns,
+            translator: max_turns,
+            validator: max_turns,
+            reporter: max_turns,
+            retries,
+        }
+    }
+}
+
 /// The ReCode method namespace. [`Recode::run`] executes one task through
 /// the fixed four phase pipeline.
 pub struct Recode;
@@ -38,17 +76,16 @@ pub struct Recode;
 impl Recode {
     /// Run the ReCode pipeline over one task. Deterministic scaffold code
     /// per Algorithm 1 of the paper: analyze, plan, then translate and
-    /// validate in a fix loop, then report. `hook` observes the two
-    /// loop agents, the translator and the validator. `max_turns` bounds
-    /// each agent's model-call budget. `max_iter` bounds the fix
-    /// rounds.
+    /// validate in a fix loop, then report. `hook` observes every phase
+    /// agent. `budgets` carries the per-phase model-call budgets.
+    /// `max_iter` bounds the fix rounds.
     pub async fn run<C>(
         client: &C,
         config: &Config,
         provider: &Provider,
         task: &MonolithRequest,
         hook: impl AgentHook + Clone + 'static,
-        max_turns: usize,
+        budgets: PhaseBudgets,
         max_iter: usize,
     ) -> anyhow::Result<RecodeResponse>
     where
@@ -71,10 +108,11 @@ impl Recode {
             Bash {
                 root: config.output.dir.clone(),
             },
+            hook.clone(),
         );
         let analyzer_report: analyzer::AnalyzerReport = {
             let design_prompt = serde_json::json!({ "task": task });
-            crate::util::task::task(&analyzer, &design_prompt, max_turns).await?
+            crate::util::task::task(&analyzer, &design_prompt, budgets.analyzer, budgets.retries).await?
         };
 
         // Phase 2: plan the translation units. The planner reads the
@@ -90,10 +128,11 @@ impl Recode {
             Bash {
                 root: config.output.dir.clone(),
             },
+            hook.clone(),
         );
         let planning_output: planner::PlanningOutput = {
             let plan_prompt = serde_json::json!({ "task": task, "design_report": &analyzer_report });
-            crate::util::task::task(&planner, &plan_prompt, max_turns).await?
+            crate::util::task::task(&planner, &plan_prompt, budgets.planner, budgets.retries).await?
         };
         let plan_value = serde_json::to_value(&planning_output)?;
 
@@ -130,7 +169,7 @@ impl Recode {
                 hook.clone(),
             );
             let translator_report: translator::TranslatorReport =
-                crate::util::task::task(&translator, &translator_prompt, max_turns).await?;
+                crate::util::task::task(&translator, &translator_prompt, budgets.translator, budgets.retries).await?;
 
             let validator = validator::Validator::build(
                 client,
@@ -151,7 +190,7 @@ impl Recode {
                 "test_generation": false,
             });
             let report: validator::ValidationReport =
-                crate::util::task::task(&validator, &validator_prompt, max_turns).await?;
+                crate::util::task::task(&validator, &validator_prompt, budgets.validator, budgets.retries).await?;
 
             // Full success closes the loop: the build passes, every
             // test passes, and no plan function lacks coverage.
@@ -172,7 +211,7 @@ impl Recode {
                     "uncovered_functions": &report.uncovered_functions,
                 });
                 let coverage_report: validator::ValidationReport =
-                    crate::util::task::task(&validator, &generator_prompt, max_turns).await?;
+                    crate::util::task::task(&validator, &generator_prompt, budgets.validator, budgets.retries).await?;
                 validation_report = Some(coverage_report);
                 continue;
             }
@@ -184,7 +223,8 @@ impl Recode {
         // Phase 5: emit the final typed response from the last
         // validation report.
         let reporter = reporter::Reporter::build(client, config, provider);
-        let response: RecodeResponse = crate::util::task::task(&reporter, &validation_report, max_turns).await?;
+        let response: RecodeResponse =
+            crate::util::task::task(&reporter, &validation_report, budgets.reporter, budgets.retries).await?;
         Ok(response)
     }
 }
@@ -195,15 +235,15 @@ impl Recode {
 // input artifact is the shared [`MonolithRequest`].
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct RecodeResponse {
-    /// Build outcome of the translated codebase: true when the build
-    /// succeeds.
+    /// Whether the final validation pass reports the build and tests as
+    /// successful.
     pub compiled: bool,
-    /// Fraction of translated tests that pass. `None` when the target has
-    /// no test suite.
+    /// Fraction of translated tests that passed in the final validation
+    /// pass. `None` when the target has no test suite.
     pub test_pass_rate: Option<f64>,
-    /// Number of repositories the pipeline translated. One per run.
+    /// Number of repositories produced (always one per run).
     pub repos_translated: u32,
-    /// Number of files the pipeline wrote.
+    /// Number of files written across every phase.
     pub files_written: u32,
     /// One-line summary of the translation approach.
     pub approach: String,
