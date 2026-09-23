@@ -29,7 +29,12 @@ where
             Ok(raw) => {
                 return serde_json::from_str(&raw).context("task response parse failed");
             },
-            Err(error) => last_error = Some(error),
+            Err(error) => {
+                // The retry warning alone hides the cause: log the full
+                // error chain so a sweep failure names its reason.
+                tracing::error!(attempt, error = ?error, "task attempt failed");
+                last_error = Some(error);
+            },
         }
     }
     Err(anyhow::anyhow!(last_error.expect("retry loop ran at least once")).context("task failed after retries"))
