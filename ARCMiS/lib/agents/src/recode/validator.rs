@@ -60,7 +60,7 @@ impl Validator {
             .temperature(config.run.temperature)
             .max_tokens(config.run.max_output_tokens)
             .output_schema::<ValidationReport>()
-            .output_mode(OutputMode::Prompted)
+            .output_mode(OutputMode::Tool)
             .add_hook(hook);
         if let Some(params) = provider.extra_params(&config.run) {
             builder = builder.additional_params(params);
