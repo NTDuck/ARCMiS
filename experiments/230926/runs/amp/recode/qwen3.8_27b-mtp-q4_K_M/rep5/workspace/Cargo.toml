@@ -1,0 +1,12 @@
+[package]
+name = "amp"
+version = "0.0.1"
+edition = "2021"
+description = "Abstract Message Protocol"
+license = "MIT"
+
+[dependencies]
+# none — pure standard library
+
+# Keep this crate standalone (do not inherit a parent workspace).
+[workspace]

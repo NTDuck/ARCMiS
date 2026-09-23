@@ -1,0 +1,11 @@
+[package]
+name = "amp"
+version = "0.0.1"
+edition = "2021"
+license = "MIT"
+description = "Abstract Message Protocol"
+
+[dependencies]
+
+# Keep this package out of any parent Cargo workspace.
+[workspace]

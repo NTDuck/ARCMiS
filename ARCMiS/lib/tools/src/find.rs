@@ -56,7 +56,7 @@ impl Tool for Find {
         let matchers = build_matchers(&args.paths).map_err(ToolExecutionError::other)?;
         let mut files =
             walk_files(&self.root, hidden, gitignore, &matchers, limit).map_err(ToolExecutionError::other)?;
-        files.sort_by(|left, right| right.modified.cmp(&left.modified));
+        files.sort_by_key(|file| std::cmp::Reverse(file.modified));
         files.truncate(limit);
         let output = render_list(&files);
         Ok(ToolOutput::text(output))

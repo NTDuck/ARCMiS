@@ -1,0 +1,4 @@
+{"kind":"model_call","turn":1,"agent":"monolith","tool":null,"args":null,"result":null}
+{"kind":"tool_call","turn":1,"agent":"monolith","tool":"bash","args":"{\"command\":\"ls -la && cargo --version\"}","result":null}
+{"kind":"tool_result","turn":1,"agent":"monolith","tool":"bash","args":"{\"command\":\"ls -la && cargo --version\"}","result":"total 0\ndrwxr-xr-x 1 ayin users   0 Sep 23 16:04 .\ndrwxr-xr-x 1 ayin users 116 Sep 23 16:04 ..\ncargo 1.97.1 (c980f4866 2026-06-30)\n"}
+{"kind":"model_call","turn":2,"agent":"monolith","tool":null,"args":null,"result":null}

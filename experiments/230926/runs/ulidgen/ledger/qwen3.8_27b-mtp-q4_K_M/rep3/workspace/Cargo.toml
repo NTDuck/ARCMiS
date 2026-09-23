@@ -1,0 +1,9 @@
+[package]
+name = "ulidgen"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+
+# Standalone package; not a member of any parent workspace.
+[workspace]

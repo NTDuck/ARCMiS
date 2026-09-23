@@ -1,0 +1,13 @@
+[package]
+name = "amp"
+version = "0.0.1"
+edition = "2021"
+description = "Abstract Message Protocol"
+license = "MIT"
+
+[lib]
+name = "amp"
+path = "src/lib.rs"
+
+# Keep this crate standalone even when nested inside another Cargo workspace.
+[workspace]

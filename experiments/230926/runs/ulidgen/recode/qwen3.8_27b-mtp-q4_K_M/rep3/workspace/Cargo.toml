@@ -1,0 +1,14 @@
+[package]
+name = "ulidgen"
+version = "0.1.0"
+edition = "2021"
+
+# Isolate from any enclosing cargo workspace.
+[workspace]
+
+[dependencies]
+getrandom = "0.2"
+
+[[bin]]
+name = "ulidgen"
+path = "src/main.rs"

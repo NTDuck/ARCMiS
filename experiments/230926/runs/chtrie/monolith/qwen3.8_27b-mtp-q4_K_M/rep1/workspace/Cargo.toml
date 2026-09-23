@@ -1,0 +1,13 @@
+[package]
+name = "chtrie"
+version = "0.1.0"
+edition = "2021"
+license = "BSD-3-Clause"
+description = "CH-Trie: the official Rust library of the coordinate hash trie"
+homepage = "https://www.dyx.name"
+
+[lib]
+name = "chtrie"
+path = "src/lib.rs"
+
+[workspace]

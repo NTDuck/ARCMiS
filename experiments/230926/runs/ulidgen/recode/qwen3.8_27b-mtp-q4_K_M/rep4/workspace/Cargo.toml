@@ -1,0 +1,10 @@
+[package]
+name = "ulidgen"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+getrandom = "0.3"
+
+# Keep this crate out of any parent Cargo workspace.
+[workspace]

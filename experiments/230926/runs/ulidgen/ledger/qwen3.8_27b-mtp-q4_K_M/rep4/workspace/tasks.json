@@ -1,0 +1,32 @@
+[
+  {
+    "id": "scaffold",
+    "title": "Scaffold Cargo project (Cargo.toml, src/lib.rs, src/main.rs, tests/)",
+    "status": "done",
+    "notes": "Package 'ulidgen' with lib name 'ulidgen_r' and binary 'ulidgen'. Single external dependency: getrandom. Layout per plan.md."
+  },
+  {
+    "id": "impl-lib",
+    "title": "Implement ulidgen_r in Rust (timestamp encoding, same-ms increment, entropy)",
+    "status": "done",
+    "notes": "Port src/ulid.c 1:1: SystemTime ms -> little-endian base32 into indices 9..=0; same-ms in-place increment with Z->0 wrap; all-Z overflow sleeps 1234567 ns and recurses; 16 random bytes via getrandom, abort() on failure; alphabet 0123456789ABCDEFGHJKMNPQRSTVWXYZ."
+  },
+  {
+    "id": "impl-cli",
+    "title": "Implement ulidgen CLI binary (-n N, -t line tagging)",
+    "status": "done",
+    "notes": "Port src/ulidgen.c: manual arg parsing mimicking getopt \"n:t\" (-n consumes next arg via atol-style leading-digit parse, default 1; -t sets tag mode; unknown args ignored, no default case); -t reads stdin with BufRead::read_line preserving trailing newline and prints 'ULID<space>line' using one reused [u8; 27] buffer; -n prints N ULIDs one per line; flushes stdout and exits 1 on any stdout write error, else 0 (mirrors exit(!!ferror(stdout)))."
+  },
+  {
+    "id": "port-tests",
+    "title": "Port tests/test.c to Rust #[test] functions",
+    "status": "done",
+    "notes": "Ported tests/test.c to tests/test.rs: test_ulid_length, test_ulid_structure (enabled as a real #[test], was commented out of C main), test_ulid_uniqueness, test_ulid_sortability (1.5 ms sleep via Duration::from_nanos(1_500_000)). Fresh [0u8; 27] buffers per test; buffer converted to String via bytes up to NUL (max 26). is_valid_ulid helper ported. cargo test: all 4 pass."
+  },
+  {
+    "id": "verify",
+    "title": "Build and test verification (cargo build, cargo test, CLI smoke test)",
+    "status": "done",
+    "notes": "Final verification: cargo build exit 0 (clean, no warnings); cargo test exit 0 (tests/test.rs: 4 passed, 0 failed \u2014 test_ulid_length, test_ulid_structure, test_ulid_uniqueness, test_ulid_sortability; lib/main/doc suites 0 tests); cargo clippy exit 0, no warnings; smoke 'cargo run -q -- -n 3' exit 0 with 3 valid 26-char ULIDs (same-ms increment visible: ...QG6/QG7/QG8); printf 'x\\ny\\n' | cargo run -q -- -t exit 0 with 2 tagged lines (...JJJS x / ...JJJT y). All workspace files present; tasks.json valid JSON."
+  }
+]

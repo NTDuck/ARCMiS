@@ -319,7 +319,8 @@ where
     let hook =
         agents::util::resilience::ResilienceHook::for_provider(log.clone(), config.run.max_output_tokens, ollama);
     let budgets = agents::recode::PhaseBudgets::uniform(config.run.max_turns, config.run.max_retries);
-    let result = agents::Recode::run(client, config, provider, task, hook.clone(), budgets, config.recode.max_rounds).await?;
+    let result =
+        agents::Recode::run(client, config, provider, task, hook.clone(), budgets, config.recode.max_rounds).await?;
     tracing::info!(
         compiled = result.compiled,
         test_pass_rate = ?result.test_pass_rate,

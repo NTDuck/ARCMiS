@@ -1,0 +1,9 @@
+[package]
+name = "amp"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+
+# Keep this crate out of any enclosing cargo workspace.
+[workspace]

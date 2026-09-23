@@ -1,0 +1,27 @@
+[
+  {
+    "id": "t1",
+    "title": "Scaffold Cargo project: Cargo.toml, src/lib.rs, src/main.rs, tests/test.rs",
+    "status": "done"
+  },
+  {
+    "id": "t2",
+    "title": "Implement UlidGen core: /dev/urandom entropy, ms timestamp, same-ms increment, overflow sleep fallback, Crockford base32 encode/decode",
+    "status": "done"
+  },
+  {
+    "id": "t3",
+    "title": "Implement CLI in src/main.rs: -n N generation and -t stdin line-tagging mode",
+    "status": "done"
+  },
+  {
+    "id": "t4",
+    "title": "Translate C test suite to Rust: length, structure, uniqueness, sortability",
+    "status": "done"
+  },
+  {
+    "id": "t5",
+    "title": "Build with cargo build and make cargo test pass; fix all failures",
+    "status": "done"
+  }
+]

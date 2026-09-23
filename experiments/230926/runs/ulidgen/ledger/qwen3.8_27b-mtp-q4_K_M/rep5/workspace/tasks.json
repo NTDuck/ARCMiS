@@ -1,0 +1,27 @@
+[
+  {
+    "id": 1,
+    "title": "Create Cargo.toml and project skeleton (src/lib.rs, src/main.rs, tests/test.rs)",
+    "status": "done"
+  },
+  {
+    "id": 2,
+    "title": "Implement ulidgen_r in src/lib.rs: Crockford base32 tables, SystemTime ms timestamp, /dev/urandom random bytes, same-millisecond increment with overflow retry",
+    "status": "done"
+  },
+  {
+    "id": 3,
+    "title": "Implement CLI in src/main.rs: -n N count flag and -t stdin line mode (BufRead::lines)",
+    "status": "done"
+  },
+  {
+    "id": 4,
+    "title": "Translate tests/test.c assertions into tests/test.rs (length 26, valid base32 chars, uniqueness, lexicographic order after 1.5ms delay)",
+    "status": "done"
+  },
+  {
+    "id": 5,
+    "title": "Build with cargo build, run cargo test, fix all failures",
+    "status": "done"
+  }
+]

@@ -1,0 +1,12 @@
+[package]
+name = "amp"
+version = "0.0.1"
+edition = "2021"
+license = "MIT"
+description = "AMP message encoding/decoding (Rust port of the C amp library)"
+
+[lib]
+name = "amp"
+path = "src/lib.rs"
+
+[workspace]

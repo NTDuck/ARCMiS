@@ -138,13 +138,14 @@ fn search_file(path: &Path, relative: &str, matcher: &grep_regex::RegexMatcher) 
                 output.push_str(&format!("*{}:...\n", previous + 2));
             }
         }
-        for row in start..=end {
+        for (row, line) in lines[start..=end].iter().enumerate() {
+            let row = start + row;
             let marker = if row == matched {
                 "*"
             } else {
                 " "
             };
-            output.push_str(&format!("{marker}{}:{}\n", row + 1, lines[row]));
+            output.push_str(&format!("{marker}{}:{}\n", row + 1, line));
         }
         last_end = Some(end);
     }

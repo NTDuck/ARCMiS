@@ -1,0 +1,32 @@
+[
+  {
+    "id": "t0",
+    "title": "Planning: restore missing C sources from authoritative spec and rewrite plan.md against the real argv protocol API (header byte version/argc nibbles + u32be length-prefixed args)",
+    "status": "done"
+  },
+  {
+    "id": "t1",
+    "title": "Scaffold Cargo project: Cargo.toml (package name 'amp', edition 2021, no deps) and src/lib.rs skeleton with public API surface (AMP_VERSION, Amp struct with version/argc/buf/pos, amp_encode, amp_decode, amp_decode_arg)",
+    "status": "done"
+  },
+  {
+    "id": "t2",
+    "title": "Translate amp.h/amp.c into Rust in src/lib.rs: amp_encode to Vec<u8>, amp_decode and amp_decode_arg with &mut Amp cursor, version/argc nibble packing, u32be endianness and length-prefix framing exactly as in the C code",
+    "status": "done"
+  },
+  {
+    "id": "t3",
+    "title": "Port tests/test.c to tests/test.rs 1:1: encode [\"some\",\"stuff\",\"here\"], decode header, assert version==1 and argc==3, decode 3 args and assert equality",
+    "status": "done"
+  },
+  {
+    "id": "t4",
+    "title": "Build and verify: cargo build with no warnings, cargo test all green; fix any failures in the Rust code (never weaken tests)",
+    "status": "done"
+  },
+  {
+    "id": "t5",
+    "title": "Cleanup and parity check against C semantics: endianness, version/argc nibble packing, buffer cursor advancement, length-prefix widths; remove dead code and confirm public API matches plan.md",
+    "status": "done"
+  }
+]

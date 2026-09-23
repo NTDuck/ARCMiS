@@ -1,0 +1,32 @@
+[
+  {
+    "id": "t1-scaffold",
+    "title": "Scaffold Cargo project: Cargo.toml (no deps), src/lib.rs, src/main.rs, tests/ dir",
+    "status": "done",
+    "note": "Cargo.toml (no deps, standalone [workspace]), src/lib.rs, src/main.rs, tests/ dir all present."
+  },
+  {
+    "id": "t2-core",
+    "title": "Port ulidgen_r core logic to Rust (timestamp encoding, same flag, in-place increment, /dev/urandom entropy, abort on failure)",
+    "status": "done",
+    "note": "Ported to src/lib.rs as pub fn ulidgen_r(&mut [u8; 27]); cargo build clean; sanity checks (NUL terminator, alphabet validity, same-ms increment, all-Z rollover) passed."
+  },
+  {
+    "id": "t3-cli",
+    "title": "Port CLI (-n N, -t) to Rust with manual arg parsing, line-buffered stdout, non-zero exit on write error",
+    "status": "done",
+    "note": "Ported src/ulidgen.c to src/main.rs: getopt(\"n:t\")-style parsing (-n N, attached -nN, -t, combined clusters; unknown options print brief stderr message and are skipped, exit behavior unchanged); -t mode reads stdin with read_line (keeps trailing newline, like getdelim), reuses one [u8;27] buffer, prints \"{ulid} {line}\"; -n mode loops n times with puts-style output; flush at end, exit(1) on write error else 0. cargo build clean; smoke tests: -n 3 gives 3 unique 26-char valid-base32 ULIDs incrementing within same ms; printf \"a\\nb\\n\" | -t tags both lines; -n3 attached form works; -x prints stderr and still exits 0."
+  },
+  {
+    "id": "t4-tests",
+    "title": "Port tests/test.c to tests/test.rs (length, structure, uniqueness, sortability) and run cargo test",
+    "status": "done",
+    "note": "Ported tests/test.c to tests/test.rs: is_valid_ulid helper (len 26 + base32 alphabet check), test_ulid_length, test_ulid_structure (active, per plan), test_ulid_uniqueness (two separate [u8;27] buffers), test_ulid_sortability (1.5 ms sleep via Duration::from_nanos(1_500_000), lexicographic assert). Uses ulidgen::ulidgen_r; 27-byte buffer converted to 26-char string. cargo test: 4 passed; 0 failed (lib/main/doc suites: 0 tests each). No fixes needed."
+  },
+  {
+    "id": "t5-verify",
+    "title": "Verify build + tests pass and behavior parity with the C binary (output format, increment semantics, -t mode)",
+    "status": "done",
+    "note": "Verified: cargo build clean (no warnings, exit 0); cargo test: 4 passed; 0 failed (test_ulid_length, test_ulid_structure, test_ulid_uniqueness, test_ulid_sortability). Parity vs C binary (gcc -O2 src/ulidgen.c src/ulid.c): -n 3 -> both 3 lines, all 26 chars, all valid Crockford base32, no duplicates, consecutive lines increment; printf 'x\\ny\\n' | -t -> both 2 lines matching '^[0-9A-HJKMNP-TV-Z]{26} [xy]$' with trailing newline preserved (od -c confirmed); default -> exactly 1 ULID each; exit code 0 for all. Cargo.toml has empty [dependencies]."
+  }
+]

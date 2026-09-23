@@ -123,9 +123,8 @@ fn parse_patch(input: &str) -> Result<Patch, String> {
             continue;
         }
         let op = parse_op(line, &remaining[index + 1..])?;
-        let consumed = op.rows.len();
         ops.push(op);
-        index += 1 + header_rows_consumed(line, consumed);
+        index += 1;
     }
     if ops.is_empty() {
         return Err("patch has no operations after the header.".to_owned());
@@ -135,16 +134,6 @@ fn parse_patch(input: &str) -> Result<Patch, String> {
         tag,
         ops,
     })
-}
-
-/// Count how many body rows belong to the op header just parsed.
-fn header_rows_consumed(header: &str, row_count: usize) -> usize {
-    let _ = row_count;
-    if header.trim_end().ends_with(':') || header.trim().starts_with("delete ") {
-        0
-    } else {
-        0
-    }
 }
 
 /// Parse one op header plus its `+TEXT` body rows from the remaining lines.

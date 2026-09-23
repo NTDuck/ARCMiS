@@ -1,0 +1,16 @@
+[package]
+name = "ulidgen"
+version = "0.1.0"
+edition = "2021"
+description = "generate or tag lines with ULID (Universally Unique Lexicographically Sortable Identifier)"
+license = "Unlicense"
+
+[workspace]
+
+[lib]
+name = "ulidgen"
+path = "src/lib.rs"
+
+[[bin]]
+name = "ulidgen"
+path = "src/main.rs"

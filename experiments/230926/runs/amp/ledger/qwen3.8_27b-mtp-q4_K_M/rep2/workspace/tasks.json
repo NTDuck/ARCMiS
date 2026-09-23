@@ -1,0 +1,26 @@
+[
+  {
+    "id": "scaffold",
+    "title": "Scaffold the Cargo crate",
+    "status": "done",
+    "notes": "Created Cargo.toml (crate name 'amp', edition 2021, no dependencies; empty [workspace] table to detach from an enclosing cargo workspace found outside the project root) and src/lib.rs with the public API surface: AMP_VERSION const, AmpMessage struct, amp_encode, amp_decode, amp_decode_arg."
+  },
+  {
+    "id": "implement",
+    "title": "Implement the amp library",
+    "status": "done",
+    "notes": "Translated the REAL C source (not the planning assumptions): 1-byte header (version<<4 | argc), then per-arg 4-byte BE length + raw bytes. amp_encode(argv: &[&str]) -> Vec<u8>; amp_decode(buf: &[u8]) -> AmpMessage { version: u16, argc: u16, buf: Vec<u8>, pos: usize }; amp_decode_arg(&mut AmpMessage) -> Vec<u8> reads BE u32 length, copies bytes, advances cursor. No unsafe, no raw pointers, no external dependencies."
+  },
+  {
+    "id": "port-tests",
+    "title": "Port tests/test.c to Rust",
+    "status": "done",
+    "notes": "tests/amp.rs: single #[test] mirroring the C test exactly — encode [\"some\",\"stuff\",\"here\"], assert version==1 and argc==3, decode the three args via amp_decode_arg and assert they equal \"some\", \"stuff\", \"here\"."
+  },
+  {
+    "id": "verify",
+    "title": "Build and test verification",
+    "status": "done",
+    "notes": "cargo build: Finished dev profile, exit 0. cargo test: 1 passed; 0 failed (integration test encode_decode_round_trip ok; 0 unit tests, 0 doc-tests). Byte-compatible with the C wire format."
+  }
+]

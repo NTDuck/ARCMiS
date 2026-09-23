@@ -1,0 +1,21 @@
+- Brainstorm worker: workspace was empty, so copied the C source (src/amp.c, src/amp.h, tests/test.c, Makefile, Readme.md, package.json) from the dataset assets into the workspace.
+- Analyzed the C codebase and wrote brainstorm.md covering: ownership/cursor mapping (Amp<'a> with &[u8] cursor, decode_arg(&mut self) -> Result<Vec<u8>, AmpError>), VLA -> Vec, char* -> &[u8]/Vec<u8>, error handling decision (encode infallible, decode Result for malformed input), test mapping (assert_eq! on byte slices), Makefile -> Cargo.toml + cargo test, two API approaches (recommended: struct + &mut self methods), file layout (Cargo.toml, src/lib.rs + src/amp.rs, tests/test.rs), and edge cases (argc>15 4-bit truncation, empty args, empty payloads, binary/NUL data, truncated buffers, BE u32, cursor exhaustion).
+- No Rust code written yet, per task.
+- Implementation worker: created the Rust crate per brainstorm.md (Approach A):
+  - Cargo.toml (package amp 0.0.1, MIT, no deps; added empty [workspace] table to detach from the parent /home/ayin/projs/ARCMiS workspace, otherwise cargo refused to build).
+  - src/lib.rs (crate root: pub mod amp; pub use amp::*;).
+  - src/amp.rs (AMP_VERSION=1, Amp<'a> with private &[u8] cursor, Amp::new -> Result, decode_arg(&mut self) -> Result<Vec<u8>, AmpError>, encode(args: &[&[u8]]) -> Vec<u8>, AmpError enum with Display + std::error::Error).
+  - tests/test.rs (roundtrip test mirroring tests/test.c).
+- Fixed one test compile error: iterating &[&[u8]] yields &&[u8], so assert_eq! needed *expected.
+- cargo test: 1 passed, 0 failed.
+
+## Verification run
+- `ls -la`, `cat` of Cargo.toml, src/lib.rs, src/amp.rs, tests/test.rs: all present and consistent.
+- `cargo test`: PASS — 1 test passed (`encode_decode_roundtrip`), 0 failed.
+- `cargo build`: PASS, exit 0.
+- Warnings: none (verified with forced recompile after `touch`).
+- Sanity check vs src/amp.c:
+  - u32 length is big-endian in both (C `read_u32_be`/`write_u32_be` ↔ Rust `from_be_bytes`/`to_be_bytes`).
+  - Header byte = `version << 4 | argc` in both (Rust additionally masks argc to 4 bits, safe).
+  - Decode advances the cursor in both (`msg->buf = buf + 1`, `+= 4`, `+= len` ↔ Rust slice cursor `&buf[1..]`, `&rest[len..]`).
+- Fixes made: none.

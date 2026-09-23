@@ -139,13 +139,11 @@ fn preview_file(path: &Path, relative: &str, ops: &[OpSpec], changed: &mut usize
     for op in ops {
         let pattern = ast_grep_core::Pattern::try_new(&op.pat, language)
             .map_err(|error| format!("bad pattern '{}': {error}", op.pat))?;
-        let mut count = 0usize;
-        for matched in parsed.root().find_all(&pattern) {
-            if count >= MAX_MATCHES_PER_FILE {
-                diff.push_str("... more matches elided\n");
-                break;
-            }
-            count += 1;
+        let matches = parsed.root().find_all(&pattern).take(MAX_MATCHES_PER_FILE).collect::<Vec<_>>();
+        if parsed.root().find_all(&pattern).count() > MAX_MATCHES_PER_FILE {
+            diff.push_str("... more matches elided\n");
+        }
+        for matched in matches {
             let line = matched.start_pos().line() + 1;
             diff.push_str(&format!("-{line}:{}\n", matched.text()));
             diff.push_str(&format!("+{line}:{}\n", op.out.trim_end()));

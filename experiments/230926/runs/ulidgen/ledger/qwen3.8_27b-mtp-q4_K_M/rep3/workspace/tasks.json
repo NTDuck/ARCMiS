@@ -1,0 +1,8 @@
+[
+  {"id": 1, "title": "Scaffold Cargo project: Cargo.toml (std-only, no deps), src/lib.rs, src/main.rs, tests/test.rs", "status": "done"},
+  {"id": 2, "title": "Port src/ulid.c to src/lib.rs: ulidgen_r with ms timestamp base32 encoding, in-place increment (Z wraparound, invalid-char re-randomize), 1.23ms sleep + recursion fallback, /dev/urandom 16-byte randomization", "status": "done"},
+  {"id": 3, "title": "Port src/ulidgen.c to src/main.rs: manual -n/-t parsing, N-ULID loop, line-tagging mode with newline-preserving read_line, per-line flush, exit(1) on stdout write error", "status": "done"},
+  {"id": 4, "title": "Port tests/test.c to tests/test.rs: length, structure, uniqueness, sortability (1.5ms sleep) tests as #[test] functions", "status": "done"},
+  {"id": 5, "title": "Build with cargo build, fix all compile errors, run cargo test until green", "status": "done"},
+  {"id": 6, "title": "Verify CLI behavior manually (ulidgen -n 3, echo | ulidgen -t) and confirm output format matches C version", "status": "done"}
+]

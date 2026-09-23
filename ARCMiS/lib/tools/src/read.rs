@@ -143,22 +143,21 @@ fn read_directory(path: &Path, relative: &str) -> Result<String, String> {
         rows.push((entry.file_name().to_string_lossy().into_owned(), is_dir, size));
     }
     rows.sort_by(|left, right| left.0.cmp(&right.0));
-    let mut output = format!("¶{relative}#0000\n");
-    let mut shown = 0;
-    for (name, is_dir, size) in rows {
-        if shown >= MAX_DIR_ENTRIES {
-            output.push_str(&format!("... {} more entries elided\n", shown));
-            break;
-        }
-        let suffix = if is_dir {
+    let output = format!("¶{relative}#0000\n");
+    let shown = rows.len().min(MAX_DIR_ENTRIES);
+    let mut lines = output;
+    for (name, is_dir, size) in rows.iter().take(shown) {
+        let suffix = if *is_dir {
             "/"
         } else {
             ""
         };
-        output.push_str(&format!("{}{} ({})\n", name, suffix, format_size(size)));
-        shown += 1;
+        lines.push_str(&format!("{}{} ({})\n", name, suffix, format_size(*size)));
     }
-    Ok(output)
+    if shown < rows.len() {
+        lines.push_str(&format!("... {} more entries elided\n", rows.len() - shown));
+    }
+    Ok(lines)
 }
 
 /// Render one byte count in a short human form.
