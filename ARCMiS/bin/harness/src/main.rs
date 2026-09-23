@@ -69,12 +69,6 @@ struct Args {
     offload: bool,
 }
 
-/// True when the provider is the local ollama daemon. Offload applies
-/// only there: a remote gateway holds no local VRAM.
-fn is_ollama(name: Option<&str>) -> bool {
-    name.unwrap_or("ollama") == "ollama"
-}
-
 /// Parse `--flag value` pairs and the two positionals.
 fn parse_args() -> Args {
     let mut parsed = Args::default();
@@ -225,7 +219,9 @@ where
 {
     // The resilience hook caps output tokens, retries truncated turns,
     // and rewrites tool failures; the run log underneath records it all.
-    let hook = agents::util::resilience::ResilienceHook::new(log.clone(), config.run.max_output_tokens);
+    let ollama = matches!(provider, Provider::Ollama { .. });
+    let hook =
+        agents::util::resilience::ResilienceHook::for_provider(log.clone(), config.run.max_output_tokens, ollama);
     let monolith = agents::Monolith::build(client, config, provider, hook.clone());
     let monolith_result = agents::Monolith::run(&monolith, task, config.run.max_turns, config.run.max_retries).await?;
     tracing::info!(
@@ -288,7 +284,9 @@ where
     C: rig::client::AgentClientExt,
     C::CompletionModel: 'static,
 {
-    let hook = agents::util::resilience::ResilienceHook::new(log.clone(), config.run.max_output_tokens);
+    let ollama = matches!(provider, Provider::Ollama { .. });
+    let hook =
+        agents::util::resilience::ResilienceHook::for_provider(log.clone(), config.run.max_output_tokens, ollama);
     let ledger = agents::Ledger::build(client, config, provider, hook.clone(), config.ledger.clone());
     let result = agents::Ledger::run(&ledger, task, config.ledger.manager_turns, config.run.max_retries).await?;
     tracing::info!(
@@ -320,7 +318,9 @@ where
     C: rig::client::AgentClientExt,
     C::CompletionModel: 'static,
 {
-    let hook = agents::util::resilience::ResilienceHook::new(log.clone(), config.run.max_output_tokens);
+    let ollama = matches!(provider, Provider::Ollama { .. });
+    let hook =
+        agents::util::resilience::ResilienceHook::for_provider(log.clone(), config.run.max_output_tokens, ollama);
     let budgets = agents::recode::PhaseBudgets::uniform(config.run.max_turns, config.run.max_retries);
     let result = agents::Recode::run(client, config, provider, task, hook.clone(), budgets, MAX_ITER).await?;
     tracing::info!(

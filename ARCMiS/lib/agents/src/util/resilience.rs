@@ -14,7 +14,7 @@ use rig::agent::{
     RequestPatch, ToolCall, ToolCallAction, ToolResultAction, ToolResultEvent,
 };
 use rig::completion::FinishReason;
-use rig::message::AssistantContent;
+use rig::message::{AssistantContent, Message};
 use rig::tool::ToolOutput;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -38,25 +38,55 @@ pub async fn task_with_retry<Response>(
 }
 
 /// Hook that every top-level agent carries. It caps the output tokens at
-/// the configured value and grows the cap once when the provider cuts a
-/// turn short, so one truncated file write does not poison a phase.
+/// the configured value, grows the cap once when the provider cuts a
+/// turn short, and, on ollama, keeps a user turn at the history tail so
+/// the chat template accepts the request.
 #[derive(Clone)]
 pub struct ResilienceHook<H> {
     inner: H,
     cap: Arc<AtomicU64>,
     ceiling: u64,
+    /// Ollama rejects a chat whose messages end with an assistant
+    /// message ("no user query found in messages"). Survey runs lost 17
+    /// attempts to it. Only ollama sets this flag.
+    needs_trailing_user: bool,
 }
 
 impl<H> ResilienceHook<H> {
     /// Wrap an inner hook (typically the run log) with the resilience
     /// policy. The cap starts at the config value and may grow to
-    /// `ceiling` (four times the start) on a truncated turn.
+    /// `ceiling` (four times the start) on a truncated turn. `ollama`
+    /// enables the trailing-user-turn guard.
     pub fn new(inner: H, max_output_tokens: u64) -> Self {
+        Self::for_provider(inner, max_output_tokens, false)
+    }
+
+    /// Provider-aware constructor. The harness passes `ollama = true`
+    /// for the native ollama client.
+    pub fn for_provider(inner: H, max_output_tokens: u64, ollama: bool) -> Self {
         Self {
             inner,
             cap: Arc::new(AtomicU64::new(max_output_tokens)),
             ceiling: max_output_tokens.saturating_mul(4),
+            needs_trailing_user: ollama,
         }
+    }
+
+    /// Build the guarded history for one model call. When the request
+    /// would end with an assistant message, append one synthetic user
+    /// turn that tells the model to continue. Ollama's chat template
+    /// rejects the bare-assistant tail otherwise.
+    fn guarded_history(&self, history: &[Message]) -> Option<Vec<Message>> {
+        if !self.needs_trailing_user {
+            return None;
+        }
+        let ends_with_assistant = history.last().is_some_and(|message| matches!(message, Message::Assistant { .. }));
+        if !ends_with_assistant {
+            return None;
+        }
+        let mut patched = history.to_vec();
+        patched.push(Message::user("Continue with the task. Use the tools and the workspace files."));
+        Some(patched)
     }
 }
 
@@ -66,13 +96,18 @@ impl<H: AgentHook + Sync> AgentHook for ResilienceHook<H> {
         // rides each request, grown or not.
         let cap = self.cap.load(Ordering::Relaxed);
         let inner = self.inner.on_completion_call(ctx, event).await;
-        match inner {
-            CompletionCallAction::Continue => CompletionCallAction::patch(RequestPatch::new().max_tokens(cap)),
-            // The inner hook's own patch wins over the resilience cap:
-            // rebuild one patch, inner fields applied after the cap.
-            // RequestPatch::merge is private, so compose by hand.
-            CompletionCallAction::Patch(inner_patch) => {
+        let guarded = self.guarded_history(event.history);
+        let history_guard = guarded.map(|history| RequestPatch::new().history(history));
+        match (history_guard, inner) {
+            // The inner hook's own patch wins over the resilience fields:
+            // rebuild one patch, resilience fields first, inner fields
+            // applied after. RequestPatch::merge is private, so compose
+            // by hand.
+            (guard, CompletionCallAction::Patch(inner_patch)) => {
                 let mut patch = RequestPatch::new().max_tokens(cap);
+                if let Some(history) = guard.and_then(|patch| patch.history) {
+                    patch = patch.history(history);
+                }
                 if let Some(value) = inner_patch.max_tokens {
                     patch = patch.max_tokens(value);
                 }
@@ -88,9 +123,18 @@ impl<H: AgentHook + Sync> AgentHook for ResilienceHook<H> {
                 if let Some(value) = inner_patch.additional_params.clone() {
                     patch = patch.additional_params(value);
                 }
+                if let Some(history) = inner_patch.history {
+                    patch = patch.history(history);
+                }
                 CompletionCallAction::Patch(patch)
             },
-            stop => stop,
+            (guard, inner) => {
+                if let Some(history) = guard.and_then(|patch| patch.history) {
+                    let patch = RequestPatch::new().max_tokens(cap).history(history);
+                    return CompletionCallAction::Patch(patch);
+                }
+                inner
+            },
         }
     }
 
