@@ -77,10 +77,12 @@ for model in "${MODELS[@]}"; do
         end_ns=$(date +%s%N)
         wall_s=$(( (end_ns - start_ns) / 1000000000 ))
         # Turns used: the highest model-call turn across every agent in the
-        # trace. The rig runner logs `Agent run finished turn=X` per agent;
-        # take the max so the report can compare budgets to usage.
-        turns=$(grep -oE "model call turn=[0-9]+" "$out/stdout.log" 2>/dev/null \
-          | grep -oE "[0-9]+" | sort -n | tail -1)
+        # trace. Tracing colors the output, and the ANSI escapes wrap the
+        # `turn` key, so strip them before matching. The rig runner logs
+        # `Agent run finished turn=X` per agent; take the max so the
+        # report can compare budgets to usage.
+        turns=$(sed 's/\x1b\[[0-9;]*m//g' "$out/stdout.log" 2>/dev/null \
+          | grep -oE "model call turn=[0-9]+" | grep -oE "[0-9]+" | sort -n | tail -1)
         turns="${turns:-0}"
         # One marker per attempt: a failed cell stays failed on resume
         # instead of retrying a deterministic failure forever.
