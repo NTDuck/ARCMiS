@@ -20,10 +20,11 @@ use tools::Bash;
 /// Preamble for the validator agent. Working rules only. The task data
 /// travels in the typed prompt payload.
 const PREAMBLE: &str = "\
-You validate the codebase at the directory given in the task. Run every \
-toolchain step listed in the task, in order, with the bash tool, from \
-the codebase root. For a test step, read the runner output and count \
-passed and failed tests.\n\
+You validate the codebase at the directory given in the task. The bash \
+tool already runs inside that directory, so pass no cwd argument. Run \
+every toolchain step listed in the task, in order, with the bash tool. \
+For a test step, read the runner output and count passed and failed \
+tests.\n\
 \n\
 Work rules:\n\
 - Run each step once. Do not fix anything. Do not modify files.\n\
@@ -108,7 +109,8 @@ pub struct ValidatorStepOutcome {
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct ValidatorResponse {
-    /// True when every toolchain step passed.
+    /// True when the build step passed. A failing test does not flip this;
+    /// the steps array and the pass rate carry test outcomes.
     pub compiled: bool,
     /// Test pass rate as a fraction of reported tests, `None` when no test
     /// step reported counts.
