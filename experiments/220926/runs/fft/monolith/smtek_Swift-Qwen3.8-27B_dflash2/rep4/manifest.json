@@ -9,11 +9,11 @@
     "max_retries": 1,
     "temperature": 0.2
   },
-  "config_path": "/home/ayin/projs/ARCMiS/experiments/220926/runs/fft/monolith/smtek_Swift-Qwen3.8-27B_dflash2/rep4/config.yml",
+  "config_path": "experiments/220926/runs/fft/monolith/smtek_Swift-Qwen3.8-27B_dflash2/rep4/config.yml",
   "problem_root": "assets/fft/C",
   "target_language": "rust",
-  "git_revision": "e4a47fc",
+  "git_revision": "ffa00f5",
   "parents": [],
   "hypothesis": "",
-  "created_at": "20260922T154131Z"
+  "created_at": "20260923T001638Z"
 }

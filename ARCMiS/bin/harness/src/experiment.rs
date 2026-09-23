@@ -140,17 +140,23 @@ fn passed_count(text: &str) -> u32 {
     count_marker(text, " passed")
 }
 
-/// Count `N passed` occurrences.
+/// Count `<n> passed` occurrences. Cargo writes the number and the
+/// marker as two whitespace-separated tokens, often with a trailing
+/// semicolon (`1 passed;`), so scan token pairs instead of suffixes.
 fn count_marker(text: &str, marker: &str) -> u32 {
+    let marker_word = marker.trim_start();
     let mut total = 0;
-    for line in text.lines() {
-        for token in line.split_whitespace() {
-            if let Some(number) = token.strip_suffix(marker) {
-                if let Ok(value) = number.parse::<u32>() {
+    let mut previous: Option<&str> = None;
+    for token in text.split_whitespace() {
+        if let Some(current) = previous.take() {
+            let word = token.trim_end_matches(|c: char| !c.is_ascii_alphabetic());
+            if word == marker_word {
+                if let Ok(value) = current.parse::<u32>() {
                     total += value;
                 }
             }
         }
+        previous = Some(token);
     }
     total
 }

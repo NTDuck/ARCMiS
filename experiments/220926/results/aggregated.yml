@@ -8,9 +8,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 4.8
   failure_classes:
     other: 5
@@ -22,9 +24,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 1
-  test_pass_rate_mean: 0
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  verified: 0
+  test_pass_rate_mean: nan
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 101.6
   failure_classes:
     max_turns: 4
@@ -36,9 +40,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 22.2
   failure_classes:
     other: 5
@@ -50,9 +56,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 4.8
   failure_classes:
     other: 5
@@ -64,9 +72,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 101.6
   failure_classes:
     model_output: 3
@@ -79,9 +89,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 22.2
   failure_classes:
     other: 5
@@ -93,9 +105,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 4.8
   failure_classes:
     other: 5
@@ -107,9 +121,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 101.6
   failure_classes:
     model_output: 5
@@ -121,9 +137,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 22.2
   failure_classes:
     other: 5
@@ -135,9 +153,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 24
   failure_classes:
     max_turns: 5
@@ -149,9 +169,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 76.4
   failure_classes:
     max_turns: 5
@@ -163,9 +185,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 1
-  test_pass_rate_mean: 0
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  verified: 0
+  test_pass_rate_mean: nan
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 59.8
   failure_classes:
     max_turns: 4
@@ -178,9 +202,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 24
   failure_classes:
     max_turns: 2
@@ -193,9 +219,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 76.4
   failure_classes:
     model_output: 3
@@ -208,9 +236,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 59.8
   failure_classes:
     model_output: 5
@@ -222,9 +252,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 24
   failure_classes:
     max_turns: 2
@@ -237,9 +269,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 76.4
   failure_classes:
     model_output: 1
@@ -252,9 +286,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 59.8
   failure_classes:
     model_output: 2
@@ -267,9 +303,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 55.4
   failure_classes:
     max_turns: 5
@@ -281,9 +319,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 72
   failure_classes:
     max_turns: 5
@@ -295,9 +335,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 84.8
   failure_classes:
     max_turns: 5
@@ -309,9 +351,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 55.4
   failure_classes:
     max_turns: 2
@@ -324,8 +368,10 @@ cells:
   compiled: 2
   compile_rate: 0.4
   scored: 2
-  test_pass_rate_mean: 0
-  tests_passed_mean: 0
+  verified: 2
+  test_pass_rate_mean: 1
+  test_pass_rate_std: 0
+  tests_passed_mean: 1.5
   tests_failed_mean: 0
   wall_s_mean: 72
   failure_classes:
@@ -338,8 +384,10 @@ cells:
   compiled: 3
   compile_rate: 0.6
   scored: 3
-  test_pass_rate_mean: 0
-  tests_passed_mean: 0
+  verified: 3
+  test_pass_rate_mean: 1
+  test_pass_rate_std: 0
+  tests_passed_mean: 1
   tests_failed_mean: 0
   wall_s_mean: 84.8
   failure_classes:
@@ -352,9 +400,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 55.4
   failure_classes:
     max_turns: 3
@@ -367,9 +417,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 72
   failure_classes:
     max_turns: 1
@@ -383,9 +435,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 84.8
   failure_classes:
     max_turns: 1
@@ -398,9 +452,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 71.2
   failure_classes:
     max_turns: 5
@@ -412,9 +468,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 1
-  test_pass_rate_mean: 0
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  verified: 0
+  test_pass_rate_mean: nan
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 99.4
   failure_classes:
     max_turns: 3
@@ -427,9 +485,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 107.6
   failure_classes:
     max_turns: 5
@@ -441,9 +501,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 71.2
   failure_classes:
     max_turns: 3
@@ -456,9 +518,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 99.4
   failure_classes:
     max_turns: 3
@@ -472,9 +536,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 107.6
   failure_classes:
     max_turns: 3
@@ -487,9 +553,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 71.2
   failure_classes:
     max_turns: 4
@@ -502,9 +570,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 99.4
   failure_classes:
     model_output: 2
@@ -517,9 +587,11 @@ cells:
   compiled: 0
   compile_rate: 0
   scored: 0
+  verified: 0
   test_pass_rate_mean: nan
-  tests_passed_mean: 0
-  tests_failed_mean: 0
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
   wall_s_mean: 107.6
   failure_classes:
     model_output: 5

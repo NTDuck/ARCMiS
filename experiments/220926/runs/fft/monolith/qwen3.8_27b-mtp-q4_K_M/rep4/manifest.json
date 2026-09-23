@@ -9,11 +9,11 @@
     "max_retries": 1,
     "temperature": 0.2
   },
-  "config_path": "/home/ayin/projs/ARCMiS/experiments/220926/runs/fft/monolith/qwen3.8_27b-mtp-q4_K_M/rep4/config.yml",
+  "config_path": "experiments/220926/runs/fft/monolith/qwen3.8_27b-mtp-q4_K_M/rep4/config.yml",
   "problem_root": "assets/fft/C",
   "target_language": "rust",
-  "git_revision": "1c10566",
+  "git_revision": "ffa00f5",
   "parents": [],
   "hypothesis": "",
-  "created_at": "20260922T133642Z"
+  "created_at": "20260923T001502Z"
 }

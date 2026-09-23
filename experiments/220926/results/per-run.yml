@@ -12,8 +12,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 4
   failure_class: other
+  verified: false
 -
   project: cjson
   method: ledger
@@ -28,8 +30,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 5
   failure_class: other
+  verified: false
 -
   project: cjson
   method: ledger
@@ -44,8 +48,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 5
   failure_class: other
+  verified: false
 -
   project: cjson
   method: ledger
@@ -60,8 +66,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 5
   failure_class: other
+  verified: false
 -
   project: cjson
   method: ledger
@@ -76,8 +84,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 5
   failure_class: other
+  verified: false
 -
   project: cjson
   method: ledger
@@ -92,8 +102,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: 111.1
+  evaluated: false
   wall_s: 102
   failure_class: ""
+  verified: false
 -
   project: cjson
   method: ledger
@@ -108,8 +120,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 107
   failure_class: max_turns
+  verified: false
 -
   project: cjson
   method: ledger
@@ -124,8 +138,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 112
   failure_class: max_turns
+  verified: false
 -
   project: cjson
   method: ledger
@@ -140,8 +156,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 87
   failure_class: max_turns
+  verified: false
 -
   project: cjson
   method: ledger
@@ -156,8 +174,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 100
   failure_class: max_turns
+  verified: false
 -
   project: cjson
   method: ledger
@@ -172,8 +192,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 24
   failure_class: other
+  verified: false
 -
   project: cjson
   method: ledger
@@ -188,8 +210,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 22
   failure_class: other
+  verified: false
 -
   project: cjson
   method: ledger
@@ -204,8 +228,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 23
   failure_class: other
+  verified: false
 -
   project: cjson
   method: ledger
@@ -220,8 +246,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 21
   failure_class: other
+  verified: false
 -
   project: cjson
   method: ledger
@@ -236,8 +264,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 21
   failure_class: other
+  verified: false
 -
   project: cjson
   method: monolith
@@ -252,8 +282,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 4
   failure_class: other
+  verified: false
 -
   project: cjson
   method: monolith
@@ -268,8 +300,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 5
   failure_class: other
+  verified: false
 -
   project: cjson
   method: monolith
@@ -284,8 +318,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 5
   failure_class: other
+  verified: false
 -
   project: cjson
   method: monolith
@@ -300,8 +336,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 5
   failure_class: other
+  verified: false
 -
   project: cjson
   method: monolith
@@ -316,8 +354,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 5
   failure_class: other
+  verified: false
 -
   project: cjson
   method: monolith
@@ -332,8 +372,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 102
   failure_class: model_output
+  verified: false
 -
   project: cjson
   method: monolith
@@ -348,8 +390,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 107
   failure_class: other
+  verified: false
 -
   project: cjson
   method: monolith
@@ -364,8 +408,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 112
   failure_class: other
+  verified: false
 -
   project: cjson
   method: monolith
@@ -380,8 +426,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 87
   failure_class: model_output
+  verified: false
 -
   project: cjson
   method: monolith
@@ -396,8 +444,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 100
   failure_class: model_output
+  verified: false
 -
   project: cjson
   method: monolith
@@ -412,8 +462,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 24
   failure_class: other
+  verified: false
 -
   project: cjson
   method: monolith
@@ -428,8 +480,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 22
   failure_class: other
+  verified: false
 -
   project: cjson
   method: monolith
@@ -444,8 +498,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 23
   failure_class: other
+  verified: false
 -
   project: cjson
   method: monolith
@@ -460,8 +516,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 21
   failure_class: other
+  verified: false
 -
   project: cjson
   method: monolith
@@ -476,8 +534,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 21
   failure_class: other
+  verified: false
 -
   project: cjson
   method: recode
@@ -492,8 +552,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 4
   failure_class: other
+  verified: false
 -
   project: cjson
   method: recode
@@ -508,8 +570,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 5
   failure_class: other
+  verified: false
 -
   project: cjson
   method: recode
@@ -524,8 +588,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 5
   failure_class: other
+  verified: false
 -
   project: cjson
   method: recode
@@ -540,8 +606,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 5
   failure_class: other
+  verified: false
 -
   project: cjson
   method: recode
@@ -556,8 +624,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 5
   failure_class: other
+  verified: false
 -
   project: cjson
   method: recode
@@ -572,8 +642,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 102
   failure_class: model_output
+  verified: false
 -
   project: cjson
   method: recode
@@ -588,8 +660,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 107
   failure_class: model_output
+  verified: false
 -
   project: cjson
   method: recode
@@ -604,8 +678,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 112
   failure_class: model_output
+  verified: false
 -
   project: cjson
   method: recode
@@ -620,8 +696,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 87
   failure_class: model_output
+  verified: false
 -
   project: cjson
   method: recode
@@ -636,8 +714,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 100
   failure_class: model_output
+  verified: false
 -
   project: cjson
   method: recode
@@ -652,8 +732,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 24
   failure_class: other
+  verified: false
 -
   project: cjson
   method: recode
@@ -668,8 +750,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 22
   failure_class: other
+  verified: false
 -
   project: cjson
   method: recode
@@ -684,8 +768,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 23
   failure_class: other
+  verified: false
 -
   project: cjson
   method: recode
@@ -700,8 +786,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 21
   failure_class: other
+  verified: false
 -
   project: cjson
   method: recode
@@ -716,8 +804,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 21
   failure_class: other
+  verified: false
 -
   project: expr
   method: ledger
@@ -732,8 +822,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 31
   failure_class: max_turns
+  verified: false
 -
   project: expr
   method: ledger
@@ -748,8 +840,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 31
   failure_class: max_turns
+  verified: false
 -
   project: expr
   method: ledger
@@ -764,8 +858,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 12
   failure_class: max_turns
+  verified: false
 -
   project: expr
   method: ledger
@@ -780,8 +876,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 15
   failure_class: max_turns
+  verified: false
 -
   project: expr
   method: ledger
@@ -796,8 +894,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 31
   failure_class: max_turns
+  verified: false
 -
   project: expr
   method: ledger
@@ -812,8 +912,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 59
   failure_class: max_turns
+  verified: false
 -
   project: expr
   method: ledger
@@ -828,8 +930,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 58
   failure_class: max_turns
+  verified: false
 -
   project: expr
   method: ledger
@@ -844,8 +948,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 64
   failure_class: max_turns
+  verified: false
 -
   project: expr
   method: ledger
@@ -860,8 +966,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 57
   failure_class: max_turns
+  verified: false
 -
   project: expr
   method: ledger
@@ -876,8 +984,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 144
   failure_class: max_turns
+  verified: false
 -
   project: expr
   method: ledger
@@ -892,8 +1002,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 35
   failure_class: max_turns
+  verified: false
 -
   project: expr
   method: ledger
@@ -908,8 +1020,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: 88.3
+  evaluated: false
   wall_s: 90
   failure_class: tests_failed
+  verified: false
 -
   project: expr
   method: ledger
@@ -924,8 +1038,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 53
   failure_class: max_turns
+  verified: false
 -
   project: expr
   method: ledger
@@ -940,8 +1056,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 66
   failure_class: max_turns
+  verified: false
 -
   project: expr
   method: ledger
@@ -956,8 +1074,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 55
   failure_class: max_turns
+  verified: false
 -
   project: expr
   method: monolith
@@ -972,8 +1092,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 31
   failure_class: model_output
+  verified: false
 -
   project: expr
   method: monolith
@@ -988,8 +1110,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 31
   failure_class: model_output
+  verified: false
 -
   project: expr
   method: monolith
@@ -1004,8 +1128,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 12
   failure_class: max_turns
+  verified: false
 -
   project: expr
   method: monolith
@@ -1020,8 +1146,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 15
   failure_class: max_turns
+  verified: false
 -
   project: expr
   method: monolith
@@ -1036,8 +1164,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 31
   failure_class: model_output
+  verified: false
 -
   project: expr
   method: monolith
@@ -1052,8 +1182,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 59
   failure_class: other
+  verified: false
 -
   project: expr
   method: monolith
@@ -1068,8 +1200,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 58
   failure_class: model_output
+  verified: false
 -
   project: expr
   method: monolith
@@ -1084,8 +1218,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 64
   failure_class: model_output
+  verified: false
 -
   project: expr
   method: monolith
@@ -1100,8 +1236,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 57
   failure_class: model_output
+  verified: false
 -
   project: expr
   method: monolith
@@ -1116,8 +1254,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 144
   failure_class: other
+  verified: false
 -
   project: expr
   method: monolith
@@ -1132,8 +1272,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 35
   failure_class: model_output
+  verified: false
 -
   project: expr
   method: monolith
@@ -1148,8 +1290,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 90
   failure_class: model_output
+  verified: false
 -
   project: expr
   method: monolith
@@ -1164,8 +1308,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 53
   failure_class: model_output
+  verified: false
 -
   project: expr
   method: monolith
@@ -1180,8 +1326,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 66
   failure_class: model_output
+  verified: false
 -
   project: expr
   method: monolith
@@ -1196,8 +1344,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 55
   failure_class: model_output
+  verified: false
 -
   project: expr
   method: recode
@@ -1212,8 +1362,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 31
   failure_class: model_output
+  verified: false
 -
   project: expr
   method: recode
@@ -1228,8 +1380,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 31
   failure_class: model_output
+  verified: false
 -
   project: expr
   method: recode
@@ -1244,8 +1398,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 12
   failure_class: max_turns
+  verified: false
 -
   project: expr
   method: recode
@@ -1260,8 +1416,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 15
   failure_class: model_output
+  verified: false
 -
   project: expr
   method: recode
@@ -1276,8 +1434,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 31
   failure_class: max_turns
+  verified: false
 -
   project: expr
   method: recode
@@ -1292,8 +1452,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 59
   failure_class: other
+  verified: false
 -
   project: expr
   method: recode
@@ -1308,8 +1470,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 58
   failure_class: other
+  verified: false
 -
   project: expr
   method: recode
@@ -1324,8 +1488,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 64
   failure_class: other
+  verified: false
 -
   project: expr
   method: recode
@@ -1340,8 +1506,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 57
   failure_class: model_output
+  verified: false
 -
   project: expr
   method: recode
@@ -1356,8 +1524,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 144
   failure_class: other
+  verified: false
 -
   project: expr
   method: recode
@@ -1372,8 +1542,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 35
   failure_class: other
+  verified: false
 -
   project: expr
   method: recode
@@ -1388,8 +1560,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 90
   failure_class: other
+  verified: false
 -
   project: expr
   method: recode
@@ -1404,8 +1578,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 53
   failure_class: model_output
+  verified: false
 -
   project: expr
   method: recode
@@ -1420,8 +1596,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 66
   failure_class: other
+  verified: false
 -
   project: expr
   method: recode
@@ -1436,8 +1614,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 55
   failure_class: model_output
+  verified: false
 -
   project: fft
   method: ledger
@@ -1452,8 +1632,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 186
   failure_class: max_turns
+  verified: false
 -
   project: fft
   method: ledger
@@ -1468,8 +1650,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 27
   failure_class: max_turns
+  verified: false
 -
   project: fft
   method: ledger
@@ -1484,8 +1668,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 6
   failure_class: max_turns
+  verified: false
 -
   project: fft
   method: ledger
@@ -1500,8 +1686,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 30
   failure_class: max_turns
+  verified: false
 -
   project: fft
   method: ledger
@@ -1516,8 +1704,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 28
   failure_class: max_turns
+  verified: false
 -
   project: fft
   method: ledger
@@ -1532,8 +1722,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 60
   failure_class: max_turns
+  verified: false
 -
   project: fft
   method: ledger
@@ -1548,8 +1740,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 75
   failure_class: max_turns
+  verified: false
 -
   project: fft
   method: ledger
@@ -1564,8 +1758,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 98
   failure_class: max_turns
+  verified: false
 -
   project: fft
   method: ledger
@@ -1580,8 +1776,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 66
   failure_class: max_turns
+  verified: false
 -
   project: fft
   method: ledger
@@ -1596,8 +1794,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 61
   failure_class: max_turns
+  verified: false
 -
   project: fft
   method: ledger
@@ -1612,8 +1812,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 82
   failure_class: max_turns
+  verified: false
 -
   project: fft
   method: ledger
@@ -1628,8 +1830,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 87
   failure_class: max_turns
+  verified: false
 -
   project: fft
   method: ledger
@@ -1644,8 +1848,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 88
   failure_class: max_turns
+  verified: false
 -
   project: fft
   method: ledger
@@ -1660,8 +1866,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 79
   failure_class: max_turns
+  verified: false
 -
   project: fft
   method: ledger
@@ -1676,8 +1884,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 88
   failure_class: max_turns
+  verified: false
 -
   project: fft
   method: monolith
@@ -1692,8 +1902,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 186
   failure_class: max_turns
+  verified: false
 -
   project: fft
   method: monolith
@@ -1708,8 +1920,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 27
   failure_class: max_turns
+  verified: false
 -
   project: fft
   method: monolith
@@ -1724,8 +1938,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 6
   failure_class: model_output
+  verified: false
 -
   project: fft
   method: monolith
@@ -1740,8 +1956,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 30
   failure_class: model_output
+  verified: false
 -
   project: fft
   method: monolith
@@ -1756,8 +1974,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 28
   failure_class: model_output
+  verified: false
 -
   project: fft
   method: monolith
@@ -1772,24 +1992,28 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 60
   failure_class: max_turns
+  verified: false
 -
   project: fft
   method: monolith
   model: "qwen3.8:27b-mtp-q4_K_M"
   rep: rep2
   max_turns: 14
-  tests_passed: 0
+  tests_passed: 1
   tests_failed: 0
   test_success: true
   scored: true
   compiled: true
   reported_pass_rate: '1.00'
   reported_compiled: true
-  elapsed_s: 71.9
+  elapsed_s: 42.9
+  evaluated: true
   wall_s: 75
   failure_class: ""
+  verified: true
 -
   project: fft
   method: monolith
@@ -1804,24 +2028,28 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 98
   failure_class: max_turns
+  verified: false
 -
   project: fft
   method: monolith
   model: "qwen3.8:27b-mtp-q4_K_M"
   rep: rep4
   max_turns: 14
-  tests_passed: 0
+  tests_passed: 2
   tests_failed: 0
   test_success: true
   scored: true
   compiled: true
   reported_pass_rate: '1.00'
   reported_compiled: true
-  elapsed_s: 72
+  elapsed_s: 46.7
+  evaluated: true
   wall_s: 66
   failure_class: ""
+  verified: true
 -
   project: fft
   method: monolith
@@ -1836,24 +2064,28 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 61
   failure_class: max_turns
+  verified: false
 -
   project: fft
   method: monolith
   model: "smtek/Swift-Qwen3.8-27B:dflash2"
   rep: rep1
   max_turns: 14
-  tests_passed: 0
+  tests_passed: 1
   tests_failed: 0
   test_success: true
   scored: true
   compiled: true
   reported_pass_rate: '1.00'
   reported_compiled: true
-  elapsed_s: 82
+  elapsed_s: 51.4
+  evaluated: true
   wall_s: 82
   failure_class: ""
+  verified: true
 -
   project: fft
   method: monolith
@@ -1868,40 +2100,46 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 87
   failure_class: max_turns
+  verified: false
 -
   project: fft
   method: monolith
   model: "smtek/Swift-Qwen3.8-27B:dflash2"
   rep: rep3
   max_turns: 14
-  tests_passed: 0
+  tests_passed: 1
   tests_failed: 0
   test_success: true
   scored: true
   compiled: true
   reported_pass_rate: '1.00'
   reported_compiled: true
-  elapsed_s: 88
+  elapsed_s: 21.6
+  evaluated: true
   wall_s: 88
   failure_class: ""
+  verified: true
 -
   project: fft
   method: monolith
   model: "smtek/Swift-Qwen3.8-27B:dflash2"
   rep: rep4
   max_turns: 14
-  tests_passed: 0
+  tests_passed: 1
   tests_failed: 0
   test_success: true
   scored: true
   compiled: true
   reported_pass_rate: '1.00'
   reported_compiled: true
-  elapsed_s: 79
+  elapsed_s: 25.7
+  evaluated: true
   wall_s: 79
   failure_class: ""
+  verified: true
 -
   project: fft
   method: monolith
@@ -1916,8 +2154,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 88
   failure_class: max_turns
+  verified: false
 -
   project: fft
   method: recode
@@ -1932,8 +2172,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 186
   failure_class: model_output
+  verified: false
 -
   project: fft
   method: recode
@@ -1948,8 +2190,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 27
   failure_class: max_turns
+  verified: false
 -
   project: fft
   method: recode
@@ -1964,8 +2208,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 6
   failure_class: max_turns
+  verified: false
 -
   project: fft
   method: recode
@@ -1980,8 +2226,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 30
   failure_class: max_turns
+  verified: false
 -
   project: fft
   method: recode
@@ -1996,8 +2244,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 28
   failure_class: model_output
+  verified: false
 -
   project: fft
   method: recode
@@ -2012,8 +2262,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 60
   failure_class: max_turns
+  verified: false
 -
   project: fft
   method: recode
@@ -2028,8 +2280,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 75
   failure_class: model_output
+  verified: false
 -
   project: fft
   method: recode
@@ -2044,8 +2298,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 98
   failure_class: other
+  verified: false
 -
   project: fft
   method: recode
@@ -2060,8 +2316,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 66
   failure_class: other
+  verified: false
 -
   project: fft
   method: recode
@@ -2076,8 +2334,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 61
   failure_class: model_output
+  verified: false
 -
   project: fft
   method: recode
@@ -2092,8 +2352,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 82
   failure_class: model_output
+  verified: false
 -
   project: fft
   method: recode
@@ -2108,8 +2370,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 87
   failure_class: max_turns
+  verified: false
 -
   project: fft
   method: recode
@@ -2124,8 +2388,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 88
   failure_class: model_output
+  verified: false
 -
   project: fft
   method: recode
@@ -2140,8 +2406,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 79
   failure_class: model_output
+  verified: false
 -
   project: fft
   method: recode
@@ -2156,8 +2424,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 88
   failure_class: model_output
+  verified: false
 -
   project: totp
   method: ledger
@@ -2172,8 +2442,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 57
   failure_class: max_turns
+  verified: false
 -
   project: totp
   method: ledger
@@ -2188,8 +2460,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 214
   failure_class: max_turns
+  verified: false
 -
   project: totp
   method: ledger
@@ -2204,8 +2478,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 47
   failure_class: max_turns
+  verified: false
 -
   project: totp
   method: ledger
@@ -2220,8 +2496,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 8
   failure_class: max_turns
+  verified: false
 -
   project: totp
   method: ledger
@@ -2236,8 +2514,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 30
   failure_class: max_turns
+  verified: false
 -
   project: totp
   method: ledger
@@ -2252,8 +2532,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 101
   failure_class: other
+  verified: false
 -
   project: totp
   method: ledger
@@ -2268,8 +2550,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 104
   failure_class: max_turns
+  verified: false
 -
   project: totp
   method: ledger
@@ -2284,8 +2568,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 102
   failure_class: max_turns
+  verified: false
 -
   project: totp
   method: ledger
@@ -2300,8 +2586,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: 83.7
+  evaluated: false
   wall_s: 89
   failure_class: ""
+  verified: false
 -
   project: totp
   method: ledger
@@ -2316,8 +2604,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 101
   failure_class: max_turns
+  verified: false
 -
   project: totp
   method: ledger
@@ -2332,8 +2622,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 124
   failure_class: max_turns
+  verified: false
 -
   project: totp
   method: ledger
@@ -2348,8 +2640,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 120
   failure_class: max_turns
+  verified: false
 -
   project: totp
   method: ledger
@@ -2364,8 +2658,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 90
   failure_class: max_turns
+  verified: false
 -
   project: totp
   method: ledger
@@ -2380,8 +2676,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 114
   failure_class: max_turns
+  verified: false
 -
   project: totp
   method: ledger
@@ -2396,8 +2694,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 90
   failure_class: max_turns
+  verified: false
 -
   project: totp
   method: monolith
@@ -2412,8 +2712,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 57
   failure_class: model_output
+  verified: false
 -
   project: totp
   method: monolith
@@ -2428,8 +2730,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 214
   failure_class: max_turns
+  verified: false
 -
   project: totp
   method: monolith
@@ -2444,8 +2748,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 47
   failure_class: max_turns
+  verified: false
 -
   project: totp
   method: monolith
@@ -2460,8 +2766,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 8
   failure_class: max_turns
+  verified: false
 -
   project: totp
   method: monolith
@@ -2476,8 +2784,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 30
   failure_class: model_output
+  verified: false
 -
   project: totp
   method: monolith
@@ -2492,8 +2802,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 101
   failure_class: model_output
+  verified: false
 -
   project: totp
   method: monolith
@@ -2508,8 +2820,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 104
   failure_class: max_turns
+  verified: false
 -
   project: totp
   method: monolith
@@ -2524,8 +2838,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 102
   failure_class: max_turns
+  verified: false
 -
   project: totp
   method: monolith
@@ -2540,8 +2856,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 89
   failure_class: other
+  verified: false
 -
   project: totp
   method: monolith
@@ -2556,8 +2874,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 101
   failure_class: max_turns
+  verified: false
 -
   project: totp
   method: monolith
@@ -2572,8 +2892,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 124
   failure_class: max_turns
+  verified: false
 -
   project: totp
   method: monolith
@@ -2588,8 +2910,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 120
   failure_class: max_turns
+  verified: false
 -
   project: totp
   method: monolith
@@ -2604,8 +2928,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 90
   failure_class: model_output
+  verified: false
 -
   project: totp
   method: monolith
@@ -2620,8 +2946,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 114
   failure_class: max_turns
+  verified: false
 -
   project: totp
   method: monolith
@@ -2636,8 +2964,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 90
   failure_class: model_output
+  verified: false
 -
   project: totp
   method: recode
@@ -2652,8 +2982,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 57
   failure_class: max_turns
+  verified: false
 -
   project: totp
   method: recode
@@ -2668,8 +3000,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 214
   failure_class: max_turns
+  verified: false
 -
   project: totp
   method: recode
@@ -2684,8 +3018,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 47
   failure_class: model_output
+  verified: false
 -
   project: totp
   method: recode
@@ -2700,8 +3036,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 8
   failure_class: max_turns
+  verified: false
 -
   project: totp
   method: recode
@@ -2716,8 +3054,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 30
   failure_class: max_turns
+  verified: false
 -
   project: totp
   method: recode
@@ -2732,8 +3072,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 101
   failure_class: other
+  verified: false
 -
   project: totp
   method: recode
@@ -2748,8 +3090,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 104
   failure_class: other
+  verified: false
 -
   project: totp
   method: recode
@@ -2764,8 +3108,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 102
   failure_class: model_output
+  verified: false
 -
   project: totp
   method: recode
@@ -2780,8 +3126,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 89
   failure_class: model_output
+  verified: false
 -
   project: totp
   method: recode
@@ -2796,8 +3144,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 101
   failure_class: other
+  verified: false
 -
   project: totp
   method: recode
@@ -2812,8 +3162,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 124
   failure_class: model_output
+  verified: false
 -
   project: totp
   method: recode
@@ -2828,8 +3180,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 120
   failure_class: model_output
+  verified: false
 -
   project: totp
   method: recode
@@ -2844,8 +3198,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 90
   failure_class: model_output
+  verified: false
 -
   project: totp
   method: recode
@@ -2860,8 +3216,10 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 114
   failure_class: model_output
+  verified: false
 -
   project: totp
   method: recode
@@ -2876,5 +3234,7 @@
   reported_pass_rate: n/a
   reported_compiled: false
   elapsed_s: nan
+  evaluated: false
   wall_s: 90
   failure_class: model_output
+  verified: false
