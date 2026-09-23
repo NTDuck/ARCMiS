@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1,
+    "title": "Lexer: Implement tokenization of C expressions into a Token enum",
+    "status": "pending"
+  },
+  {
+    "id": 2,
+    "title": "Parser: Implement recursive descent parser building an Expr AST with correct precedence",
+    "status": "pending"
+  },
+  {
+    "id": 3,
+    "title": "Evaluator: Implement tree-walking evaluator with environment map and short-circuit evaluation",
+    "status": "pending"
+  },
+  {
+    "id": 4,
+    "title": "Tests and CLI: Port C test suite to Rust integration tests and wire up main.rs CLI",
+    "status": "pending"
+  }
+]

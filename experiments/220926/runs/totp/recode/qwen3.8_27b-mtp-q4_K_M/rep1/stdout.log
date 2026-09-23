@@ -1,0 +1,18 @@
+[2m2026-09-22T14:33:23.503335Z[0m [32m INFO[0m [2mharness::experiment[0m[2m:[0m experiment manifest written [3mmanifest[0m[2m=[0m/home/ayin/projs/ARCMiS/experiments/220926/runs/totp/recode/qwen3.8_27b-mtp-q4_K_M/rep1/manifest.json
+[2m2026-09-22T14:33:23.503355Z[0m [32m INFO[0m [2mharness[0m[2m:[0m migration run started [3mmodel[0m[2m=[0mqwen3.8:27b-mtp-q4_K_M [3mmax_turns[0m[2m=[0m40 [3mnum_ctx[0m[2m=[0m16384 [3moutput_dir[0m[2m=[0m/home/ayin/projs/ARCMiS/experiments/220926/runs/totp/recode/qwen3.8_27b-mtp-q4_K_M/rep1/workspace
+[2m2026-09-22T14:33:23.510925Z[0m [32m INFO[0m [2magents::util::sources[0m[2m:[0m collected input sources [3mroot[0m[2m=[0massets/totp/C [3mfiles[0m[2m=[0m9 [3mper_file_cap[0m[2m=[0m16384
+[2m2026-09-22T14:33:23.511037Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 1/40
+[2m2026-09-22T14:33:49.270636Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 2/40
+[2m2026-09-22T14:33:50.919092Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 3/40
+[2m2026-09-22T14:33:52.458352Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 4/40
+[2m2026-09-22T14:33:55.464854Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 5/40
+[2m2026-09-22T14:33:56.469072Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 6/40
+[2m2026-09-22T14:33:58.290839Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 7/40
+[2m2026-09-22T14:34:02.636719Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 8/40
+[2m2026-09-22T14:34:04.123850Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 9/40
+[2m2026-09-22T14:34:05.855242Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 10/40
+[2m2026-09-22T14:34:08.907283Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 11/40
+[2m2026-09-22T14:34:38.115588Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 12/40
+[2m2026-09-22T14:35:06.345722Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Agent run finished [3mturn[0m[2m=[0m12 [3mmax_turns[0m[2m=[0m40
+[2m2026-09-22T14:35:06.347100Z[0m [32m INFO[0m [2mharness::offload[0m[2m:[0m offloading model [3mmodel[0m[2m=[0mqwen3.8:27b-mtp-q4_K_M
+[2m2026-09-22T14:35:06.510847Z[0m [31mERROR[0m [2mharness[0m[2m:[0m harness run failed [3merror[0m[2m=[0mexpected value at line 1 column 1

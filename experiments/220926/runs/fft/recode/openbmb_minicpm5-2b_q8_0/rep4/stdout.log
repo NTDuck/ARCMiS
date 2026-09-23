@@ -1,0 +1,45 @@
+[2m2026-09-22T12:00:19.262287Z[0m [32m INFO[0m [2mharness::experiment[0m[2m:[0m experiment manifest written [3mmanifest[0m[2m=[0m/home/ayin/projs/ARCMiS/experiments/220926/runs/fft/recode/openbmb_minicpm5-2b:q8_0/rep4/manifest.json
+[2m2026-09-22T12:00:19.262316Z[0m [32m INFO[0m [2mharness[0m[2m:[0m migration run started [3mmodel[0m[2m=[0mopenbmb/minicpm5-2b:q8_0 [3mmax_turns[0m[2m=[0m40 [3mnum_ctx[0m[2m=[0m16384 [3moutput_dir[0m[2m=[0m/home/ayin/projs/ARCMiS/experiments/220926/runs/fft/recode/openbmb_minicpm5-2b:q8_0/rep4/workspace
+[2m2026-09-22T12:00:19.267536Z[0m [32m INFO[0m [2magents::util::sources[0m[2m:[0m collected input sources [3mroot[0m[2m=[0massets/fft/C [3mfiles[0m[2m=[0m4 [3mper_file_cap[0m[2m=[0m16384
+[2m2026-09-22T12:00:19.267633Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 1/40
+[2m2026-09-22T12:00:36.826715Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 2/40
+[2m2026-09-22T12:00:37.819853Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 3/40
+[2m2026-09-22T12:00:39.954709Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 4/40
+[2m2026-09-22T12:00:51.327557Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 5/40
+[2m2026-09-22T12:01:07.020986Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 6/40
+[2m2026-09-22T12:01:20.284379Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 7/40
+[2m2026-09-22T12:01:20.904574Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 8/40
+[2m2026-09-22T12:01:21.283743Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 9/40
+[2m2026-09-22T12:01:24.076021Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 10/40
+[2m2026-09-22T12:01:37.442519Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 11/40
+[2m2026-09-22T12:01:53.236974Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 12/40
+[2m2026-09-22T12:02:08.810099Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 13/40
+[2m2026-09-22T12:02:13.528180Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 14/40
+[2m2026-09-22T12:02:27.306395Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 15/40
+[2m2026-09-22T12:02:45.226413Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 16/40
+[2m2026-09-22T12:03:01.578200Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 17/40
+[2m2026-09-22T12:03:04.734361Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 18/40
+[2m2026-09-22T12:03:19.584386Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 19/40
+[2m2026-09-22T12:03:38.020523Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 20/40
+[2m2026-09-22T12:03:55.070501Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 21/40
+[2m2026-09-22T12:03:58.952020Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 22/40
+[2m2026-09-22T12:04:11.811450Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 23/40
+[2m2026-09-22T12:04:28.537499Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 24/40
+[2m2026-09-22T12:04:45.223979Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 25/40
+[2m2026-09-22T12:04:49.989535Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 26/40
+[2m2026-09-22T12:05:03.526726Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 27/40
+[2m2026-09-22T12:05:21.138599Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 28/40
+[2m2026-09-22T12:05:38.396346Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 29/40
+[2m2026-09-22T12:05:43.813366Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 30/40
+[2m2026-09-22T12:05:58.244834Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 31/40
+[2m2026-09-22T12:06:16.504795Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 32/40
+[2m2026-09-22T12:06:34.394929Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 33/40
+[2m2026-09-22T12:06:40.962490Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 34/40
+[2m2026-09-22T12:06:58.118438Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 35/40
+[2m2026-09-22T12:07:17.345162Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 36/40
+[2m2026-09-22T12:07:36.318033Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 37/40
+[2m2026-09-22T12:07:43.982234Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 38/40
+[2m2026-09-22T12:08:02.241715Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 39/40
+[2m2026-09-22T12:08:22.613960Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 40/40
+[2m2026-09-22T12:08:42.789601Z[0m [32m INFO[0m [2mharness::offload[0m[2m:[0m offloading model [3mmodel[0m[2m=[0mopenbmb/minicpm5-2b:q8_0
+[2m2026-09-22T12:08:43.009770Z[0m [31mERROR[0m [2mharness[0m[2m:[0m harness run failed [3merror[0m[2m=[0mMaxTurnsError: reached max turns limit: 40

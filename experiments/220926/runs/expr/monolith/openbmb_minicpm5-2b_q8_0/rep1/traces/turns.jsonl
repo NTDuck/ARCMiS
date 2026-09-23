@@ -1,0 +1,4 @@
+{"kind":"model_call","turn":1,"agent":"monolith","tool":null,"args":null,"result":null}
+{"kind":"tool_call","turn":1,"agent":"monolith","tool":"write","args":"{\"content\":\"[package]\\nname = \\\"mapper_expr\\\"\\nversion = \\\"0.1.0\\\"\\nedition = \\\"2021\\\"\\n\\n[dependencies]\\n\\n[profile.release]\\nopt-level = 2\\n\",\"path\":\"Cargo.toml\"}","result":null}
+{"kind":"tool_result","turn":1,"agent":"monolith","tool":"write","args":"{\"content\":\"[package]\\nname = \\\"mapper_expr\\\"\\nversion = \\\"0.1.0\\\"\\nedition = \\\"2021\\\"\\n\\n[dependencies]\\n\\n[profile.release]\\nopt-level = 2\\n\",\"path\":\"Cargo.toml\"}","result":"¶Cargo.toml#FD1B\nWrote 115 bytes to 'Cargo.toml'."}
+{"kind":"model_call","turn":2,"agent":"monolith","tool":null,"args":null,"result":null}

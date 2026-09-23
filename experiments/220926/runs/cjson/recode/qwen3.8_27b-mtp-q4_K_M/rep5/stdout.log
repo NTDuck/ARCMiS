@@ -1,0 +1,17 @@
+[2m2026-09-22T15:05:31.012643Z[0m [32m INFO[0m [2mharness::experiment[0m[2m:[0m experiment manifest written [3mmanifest[0m[2m=[0m/home/ayin/projs/ARCMiS/experiments/220926/runs/cjson/recode/qwen3.8_27b-mtp-q4_K_M/rep5/manifest.json
+[2m2026-09-22T15:05:31.012665Z[0m [32m INFO[0m [2mharness[0m[2m:[0m migration run started [3mmodel[0m[2m=[0mqwen3.8:27b-mtp-q4_K_M [3mmax_turns[0m[2m=[0m40 [3mnum_ctx[0m[2m=[0m16384 [3moutput_dir[0m[2m=[0m/home/ayin/projs/ARCMiS/experiments/220926/runs/cjson/recode/qwen3.8_27b-mtp-q4_K_M/rep5/workspace
+[2m2026-09-22T15:05:31.019315Z[0m [33m WARN[0m [2magents::util::sources[0m[2m:[0m input file truncated to context cap [3mfile[0m[2m=[0msrc/cJSON.c [3mper_file_cap[0m[2m=[0m16384
+[2m2026-09-22T15:05:31.019346Z[0m [32m INFO[0m [2magents::util::sources[0m[2m:[0m collected input sources [3mroot[0m[2m=[0massets/cjson/C [3mfiles[0m[2m=[0m12 [3mper_file_cap[0m[2m=[0m16384
+[2m2026-09-22T15:05:31.019588Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 1/40
+[2m2026-09-22T15:06:00.958395Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 2/40
+[2m2026-09-22T15:06:02.944515Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 3/40
+[2m2026-09-22T15:06:04.813458Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 4/40
+[2m2026-09-22T15:06:07.133458Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 5/40
+[2m2026-09-22T15:06:09.754700Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 6/40
+[2m2026-09-22T15:06:10.881695Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 7/40
+[2m2026-09-22T15:06:12.755737Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 8/40
+[2m2026-09-22T15:06:13.964122Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 9/40
+[2m2026-09-22T15:06:16.387798Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 10/40
+[2m2026-09-22T15:06:25.939203Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 11/40
+[2m2026-09-22T15:06:26.110902Z[0m [32m INFO[0m [2mharness::offload[0m[2m:[0m offloading model [3mmodel[0m[2m=[0mqwen3.8:27b-mtp-q4_K_M
+[2m2026-09-22T15:06:26.314927Z[0m [31mERROR[0m [2mharness[0m[2m:[0m harness run failed [3merror[0m[2m=[0mCompletionError: HttpError: Invalid status code 500 Internal Server Error with message: {"error":"no user query found in messages"}

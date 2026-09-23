@@ -1,0 +1,37 @@
+# Migration run configuration. The agent reads this file. The agent does not hardcode anything from it.
+
+run:
+  # Model that drives the agent (ollama model tag). Overridable with --model.
+  model: openbmb/minicpm5-2b:q8_0
+  # Turn budget for the agent tool loop.
+  max_turns: 14
+  # Model context window. The 27B model serves up to 128k. 16k keeps the KV
+  # cache and the per-file byte caps inside the benchmark budget.
+  num_ctx: 16384
+  # Max output tokens per model call (ollama num_predict). Headroom for one
+  # translated file per turn.
+  max_output_tokens: 4096
+  # Whole-run retries when a model turn truncates or errors.
+  max_retries: 1
+  # Thinking mode off: think blocks on long prompts delay the first tool
+  # call. Benchmark parity with the other methods.
+  think: false
+  # Sampling temperature. Low value for deterministic tool use.
+  temperature: 0.2
+
+output:
+  # Destination root for the transformed codebase and run logs. The method
+  # comes from --method; each survey run copies the config with its own
+  # experiment workspace, so no method subdirectory lives here.
+  dir: /home/ayin/projs/ARCMiS/experiments/220926/runs/cjson/monolith/openbmb_minicpm5-2b:q8_0/rep1/workspace
+
+source:
+  # Input codebase to transform. From the ReCodeAgent dataset (crust,
+  # C to Rust pair).
+  language: c
+  root: assets/cjson/C
+  # Target language and toolchain for the output codebase and the test run.
+  target:
+    language: rust
+    # Cargo test invocation for the translated tests. The runner and profile come from the toolchain.
+    test_command: cargo test

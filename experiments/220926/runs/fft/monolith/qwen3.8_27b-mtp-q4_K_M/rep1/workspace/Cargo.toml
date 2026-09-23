@@ -1,0 +1,13 @@
+[package]
+name = "fft"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "fft"
+path = "src/lib.rs"
+
+[profile.release]
+opt-level = 3
+
+[workspace]

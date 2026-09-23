@@ -1,0 +1,9 @@
+[2m2026-09-22T12:09:43.313798Z[0m [32m INFO[0m [2mharness::experiment[0m[2m:[0m experiment manifest written [3mmanifest[0m[2m=[0m/home/ayin/projs/ARCMiS/experiments/220926/runs/totp/monolith/openbmb_minicpm5-2b:q8_0/rep1/manifest.json
+[2m2026-09-22T12:09:43.313827Z[0m [32m INFO[0m [2mharness[0m[2m:[0m migration run started [3mmodel[0m[2m=[0mopenbmb/minicpm5-2b:q8_0 [3mmax_turns[0m[2m=[0m14 [3mnum_ctx[0m[2m=[0m16384 [3moutput_dir[0m[2m=[0m/home/ayin/projs/ARCMiS/experiments/220926/runs/totp/monolith/openbmb_minicpm5-2b:q8_0/rep1/workspace
+[2m2026-09-22T12:09:43.320404Z[0m [32m INFO[0m [2magents::util::sources[0m[2m:[0m collected input sources [3mroot[0m[2m=[0massets/totp/C [3mfiles[0m[2m=[0m9 [3mper_file_cap[0m[2m=[0m16384
+[2m2026-09-22T12:09:43.320506Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 1/14
+[2m2026-09-22T12:09:43.320510Z[0m [32m INFO[0m [2mharness::run_log[0m[2m:[0m model call [3mturn[0m[2m=[0m1
+[2m2026-09-22T12:10:11.795994Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 2/14
+[2m2026-09-22T12:10:11.796020Z[0m [32m INFO[0m [2mharness::run_log[0m[2m:[0m model call [3mturn[0m[2m=[0m2
+[2m2026-09-22T12:10:40.284116Z[0m [32m INFO[0m [2mharness::offload[0m[2m:[0m offloading model [3mmodel[0m[2m=[0mopenbmb/minicpm5-2b:q8_0
+[2m2026-09-22T12:10:40.389571Z[0m [31mERROR[0m [2mharness[0m[2m:[0m harness run failed [3merror[0m[2m=[0mCompletionError: HttpError: Invalid status code 500 Internal Server Error with message: {"error":"llama-server returned invalid tool call arguments for \"write\": unexpected end of JSON input"}

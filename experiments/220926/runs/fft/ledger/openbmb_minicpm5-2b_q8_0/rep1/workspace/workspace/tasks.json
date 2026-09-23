@@ -1,0 +1,49 @@
+[
+  {
+    "id": "seed-001",
+    "title": "Project Setup and Cargo.toml Configuration",
+    "description": "Create the Rust project structure with Cargo.toml specifying dependencies for complex number support, testing, and documentation. Set up the module layout for the FFT library including src/, tests/, and Cargo.toml.",
+    "order": 1,
+    "dependencies": [],
+    "notes": "This is the foundational task. All subsequent tasks depend on this being complete."
+  },
+  {
+    "id": "seed-002",
+    "title": "Complex Number Implementation",
+    "description": "Implement a basic complex number type in Rust that supports construction, arithmetic operations (+, -, *, /), magnitude calculation, and conjugation. This will serve as the foundation for all FFT operations.",
+    "order": 2,
+    "dependencies": ["seed-001"],
+    "notes": "Use std::arch::complex as a reference but implement a domain-specific variant that matches C's complex.h conventions."
+  },
+  {
+    "id": "seed-003",
+    "title": "Core FFT Algorithm Implementation",
+    "description": "Implement the Cooley-Tukey radix-2 FFT algorithm in Rust. This is the most critical task — it must faithfully translate the C source FFT implementation while using Rust idioms. Focus on: input/output array handling, bit-reversal permutation, recursive/iterative butterfly operations, and normalization.",
+    "order": 3,
+    "dependencies": ["seed-002"],
+    "notes": "If the C source uses iterative FFT, implement the same approach. Pay special attention to the exact butterfly computation formula. Consider whether to use unsafe blocks for pointer manipulation or pure Rust approaches."
+  },
+  {
+    "id": "seed-004",
+    "title": "Memory Management Translation",
+    "description": "Translate C memory allocation/deallocation patterns (malloc, calloc, realloc, free) to their Rust equivalents (Box, Vec, alloc, drop). Implement safe wrappers for common C memory patterns used in FFT implementations (pre-allocated buffers, temporary arrays, result storage).",
+    "order": 4,
+    "dependencies": ["seed-001"],
+    "notes": "Create a memory_management module that provides idiomatic Rust wrappers around C-style memory operations. Include tests verifying correct memory lifecycle."
+  },
+  {
+    "id": "seed-005",
+    "title": "FFT Utility Functions and Helpers",
+    "description": "Implement utility functions commonly found in FFT libraries: next_power_of_two, fft_size_parity_check, bit-reversal permutation, pre/post processing for real-input FFTs. These are typically small but essential building blocks.",
+    "order": 5,
+    "dependencies": ["seed-002"],
+    "notes": "These utilities are often the bulk of a C FFT library's non-algorithm code. Ensure they handle edge cases correctly."
+  },
+  {
+    "id": "seed-006",
+    "title": "Integration Tests and Verification",
+    "description": "Write comprehensive integration tests that verify the translated FFT library produces results identical to the original C implementation. Compare against known test vectors (e.g., small input sets, known FFT outputs). Include both forward and inverse FFT tests.",
+    "order": 6,
+    "dependencies": ["seed-003", "seed-004", "seed-005"],
+    "notes": "This is the final verification step. The test harness should accept the original C FFT output as a reference and compare against Rust output within numerical tolerance."
+  }

@@ -1,0 +1,19 @@
+{
+  "candidate_id": "rep1",
+  "method": "ledger",
+  "model": "openbmb/minicpm5-2b:q8_0",
+  "budgets": {
+    "max_turns": 14,
+    "num_ctx": 16384,
+    "max_output_tokens": 4096,
+    "max_retries": 1,
+    "temperature": 0.2
+  },
+  "config_path": "/home/ayin/projs/ARCMiS/experiments/220926/runs/totp/ledger/openbmb_minicpm5-2b:q8_0/rep1/config.yml",
+  "problem_root": "assets/totp/C",
+  "target_language": "rust",
+  "git_revision": "db54992",
+  "parents": [],
+  "hypothesis": "",
+  "created_at": "20260922T121540Z"
+}

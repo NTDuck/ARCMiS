@@ -1,0 +1,19 @@
+{
+  "candidate_id": "rep1",
+  "method": "recode",
+  "model": "smtek/Swift-Qwen3.8-27B:dflash2",
+  "budgets": {
+    "max_turns": 40,
+    "num_ctx": 16384,
+    "max_output_tokens": 4096,
+    "max_retries": 1,
+    "temperature": 0.2
+  },
+  "config_path": "/home/ayin/projs/ARCMiS/experiments/220926/runs/expr/recode/smtek_Swift-Qwen3.8-27B_dflash2/rep1/config.yml",
+  "problem_root": "assets/expr/C",
+  "target_language": "rust",
+  "git_revision": "e4a47fc",
+  "parents": [],
+  "hypothesis": "",
+  "created_at": "20260922T170049Z"
+}

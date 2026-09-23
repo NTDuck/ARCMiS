@@ -1,0 +1,16 @@
+[2m2026-09-22T14:10:06.497934Z[0m [32m INFO[0m [2mharness::experiment[0m[2m:[0m experiment manifest written [3mmanifest[0m[2m=[0m/home/ayin/projs/ARCMiS/experiments/220926/runs/fft/recode/qwen3.8_27b-mtp-q4_K_M/rep3/manifest.json
+[2m2026-09-22T14:10:06.497974Z[0m [32m INFO[0m [2mharness[0m[2m:[0m migration run started [3mmodel[0m[2m=[0mqwen3.8:27b-mtp-q4_K_M [3mmax_turns[0m[2m=[0m40 [3mnum_ctx[0m[2m=[0m16384 [3moutput_dir[0m[2m=[0m/home/ayin/projs/ARCMiS/experiments/220926/runs/fft/recode/qwen3.8_27b-mtp-q4_K_M/rep3/workspace
+[2m2026-09-22T14:10:06.504097Z[0m [32m INFO[0m [2magents::util::sources[0m[2m:[0m collected input sources [3mroot[0m[2m=[0massets/fft/C [3mfiles[0m[2m=[0m4 [3mper_file_cap[0m[2m=[0m16384
+[2m2026-09-22T14:10:06.504197Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 1/40
+[2m2026-09-22T14:10:33.878454Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 2/40
+[2m2026-09-22T14:10:35.667942Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 3/40
+[2m2026-09-22T14:10:38.758363Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 4/40
+[2m2026-09-22T14:10:40.718925Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 5/40
+[2m2026-09-22T14:10:41.877848Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 6/40
+[2m2026-09-22T14:10:43.523492Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 7/40
+[2m2026-09-22T14:10:47.388775Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 8/40
+[2m2026-09-22T14:10:48.926810Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 9/40
+[2m2026-09-22T14:10:51.342267Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 10/40
+[2m2026-09-22T14:10:52.702493Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 11/40
+[2m2026-09-22T14:11:40.280327Z[0m [32m INFO[0m [2mharness::offload[0m[2m:[0m offloading model [3mmodel[0m[2m=[0mqwen3.8:27b-mtp-q4_K_M
+[2m2026-09-22T14:11:40.434591Z[0m [31mERROR[0m [2mharness[0m[2m:[0m harness run failed [3merror[0m[2m=[0mCompletionError: ResponseError: Response contained no message or tool call (empty)

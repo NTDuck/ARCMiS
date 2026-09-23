@@ -1,0 +1,16 @@
+[package]
+name = "fft"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "test_1"
+path = "src/test_1.rs"
+
+[[lib]]
+name = "fft"
+path = "src/fft.rs"
+
+[[test]]
+name = "test_fft"
+path = "tests/test_fft.rs"

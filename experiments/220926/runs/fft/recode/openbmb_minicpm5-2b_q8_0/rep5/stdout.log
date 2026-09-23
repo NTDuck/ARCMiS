@@ -1,0 +1,12 @@
+[2m2026-09-22T12:08:43.045419Z[0m [32m INFO[0m [2mharness::experiment[0m[2m:[0m experiment manifest written [3mmanifest[0m[2m=[0m/home/ayin/projs/ARCMiS/experiments/220926/runs/fft/recode/openbmb_minicpm5-2b:q8_0/rep5/manifest.json
+[2m2026-09-22T12:08:43.045451Z[0m [32m INFO[0m [2mharness[0m[2m:[0m migration run started [3mmodel[0m[2m=[0mopenbmb/minicpm5-2b:q8_0 [3mmax_turns[0m[2m=[0m40 [3mnum_ctx[0m[2m=[0m16384 [3moutput_dir[0m[2m=[0m/home/ayin/projs/ARCMiS/experiments/220926/runs/fft/recode/openbmb_minicpm5-2b:q8_0/rep5/workspace
+[2m2026-09-22T12:08:43.050871Z[0m [32m INFO[0m [2magents::util::sources[0m[2m:[0m collected input sources [3mroot[0m[2m=[0massets/fft/C [3mfiles[0m[2m=[0m4 [3mper_file_cap[0m[2m=[0m16384
+[2m2026-09-22T12:08:43.050960Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 1/40
+[2m2026-09-22T12:08:47.847849Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 2/40
+[2m2026-09-22T12:08:48.629844Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 3/40
+[2m2026-09-22T12:08:50.005724Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 4/40
+[2m2026-09-22T12:08:59.434551Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 5/40
+[2m2026-09-22T12:09:00.475998Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 6/40
+[2m2026-09-22T12:09:16.073399Z[0m [32m INFO[0m [2mrig_agent::agent::prompt_request::streaming[0m[2m:[0m Current conversation Turns: 7/40
+[2m2026-09-22T12:09:43.194326Z[0m [32m INFO[0m [2mharness::offload[0m[2m:[0m offloading model [3mmodel[0m[2m=[0mopenbmb/minicpm5-2b:q8_0
+[2m2026-09-22T12:09:43.281899Z[0m [31mERROR[0m [2mharness[0m[2m:[0m harness run failed [3merror[0m[2m=[0mCompletionError: HttpError: Invalid status code 500 Internal Server Error with message: {"error":"llama-server returned invalid tool call arguments for \"write\": unexpected end of JSON input"}

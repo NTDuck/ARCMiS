@@ -1,0 +1,10 @@
+[package]
+name = "mapper_expr"
+version = "0.1.0"
+edition = "2021"
+description = "Rust translation of libmapper expression evaluator"
+
+[dependencies]
+
+[profile.release]
+opt-level = 3

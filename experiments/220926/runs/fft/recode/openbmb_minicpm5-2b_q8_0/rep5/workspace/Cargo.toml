@@ -1,0 +1,14 @@
+[package]
+name = "fft"
+edition = "2021"
+
+[[bench]]
+name = "fft_bench"
+harness = false
+
+[dependencies]
+# No external deps needed for core FFT - using std::f64::consts::PI
+# For complex math, we can use num-complex or just f32 operations
+# Let's keep it simple with f32 and std::f64::consts::PI
+
+[dev-dependencies]

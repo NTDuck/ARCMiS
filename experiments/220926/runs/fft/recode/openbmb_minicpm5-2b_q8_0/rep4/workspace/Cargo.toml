@@ -1,0 +1,14 @@
+[package]
+name = "fft"
+version = "0.1.0"
+edition = "2021"
+description = "A lightweight Cooley-Tukey FFT implementation in Rust"
+
+[lib]
+name = "fft"
+crate-type = ["cdylib"]
+
+[dependencies]
+
+[profile.release]
+opt-level = 3

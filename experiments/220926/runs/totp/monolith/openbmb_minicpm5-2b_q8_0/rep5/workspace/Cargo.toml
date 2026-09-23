@@ -1,0 +1,10 @@
+[package]
+name = "totp"
+version = "0.1.0"
+edition = "2021"
+description = "From-scratch, dependency-free implementation of TOTP, including SHA1, for education."
+
+[dependencies]
+
+[profile.release]
+opt-level = 2

@@ -1,0 +1,7 @@
+{"kind":"model_call","turn":1,"agent":"monolith","tool":null,"args":null,"result":null}
+{"kind":"tool_call","turn":1,"agent":"monolith","tool":"write","args":"{\"content\":\"[package]\\nname = \\\"fft\\\"\\nversion = \\\"0.1.0\\\"\\nedition = \\\"2021\\\"\\n\\n[dependencies]\\n\",\"path\":\"/Cargo.toml\"}","result":null}
+{"kind":"tool_result","turn":1,"agent":"monolith","tool":"write","args":"{\"content\":\"[package]\\nname = \\\"fft\\\"\\nversion = \\\"0.1.0\\\"\\nedition = \\\"2021\\\"\\n\\n[dependencies]\\n\",\"path\":\"/Cargo.toml\"}","result":"path '/Cargo.toml' is absolute. Use a path relative to the output workspace root, for example 'src/lib.rs'."}
+{"kind":"model_call","turn":2,"agent":"monolith","tool":null,"args":null,"result":null}
+{"kind":"tool_call","turn":2,"agent":"monolith","tool":"write","args":"{\"content\":\"[package]\\nname = \\\"fft\\\"\\nversion = \\\"0.1.0\\\"\\nedition = \\\"2021\\\"\\n\\n[dependencies]\\n\",\"path\":\"Cargo.toml\"}","result":null}
+{"kind":"tool_result","turn":2,"agent":"monolith","tool":"write","args":"{\"content\":\"[package]\\nname = \\\"fft\\\"\\nversion = \\\"0.1.0\\\"\\nedition = \\\"2021\\\"\\n\\n[dependencies]\\n\",\"path\":\"Cargo.toml\"}","result":"¶Cargo.toml#D09B\nWrote 74 bytes to 'Cargo.toml'."}
+{"kind":"model_call","turn":3,"agent":"monolith","tool":null,"args":null,"result":null}
