@@ -35,6 +35,11 @@ struct Budgets {
     max_output_tokens: u64,
     max_retries: u32,
     temperature: f64,
+    /// Recode fix-round ceiling (`config.recode.max_rounds`).
+    recode_max_rounds: usize,
+    /// Ledger budget split (`config.ledger`).
+    ledger_manager_turns: usize,
+    ledger_worker_turns: usize,
 }
 
 /// One problem record inside the per-problem file.
@@ -86,6 +91,9 @@ pub fn write_manifest(dir: &Path, config: &Config, config_path: &Path, method: &
             max_output_tokens: config.run.max_output_tokens,
             max_retries: config.run.max_retries,
             temperature: config.run.temperature,
+            recode_max_rounds: config.recode.max_rounds,
+            ledger_manager_turns: config.ledger.manager_turns,
+            ledger_worker_turns: config.ledger.worker_turns,
         },
         config_path: config_path.display().to_string(),
         problem_root: config.source.root.display().to_string(),

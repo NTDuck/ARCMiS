@@ -12,7 +12,7 @@
 //!    validator returns a structured [`ValidatorResponse`].
 //!    The `ReCodeAgent-method` config selects the ReCode pipeline: a
 //!    four-agent deterministic loop (analyze, plan, translate, validate)
-//!    over `MAX_ITER` outer iterations.
+//!    over the configured fix-round ceiling (`run.recode.max_rounds`).
 //! 7. Write the result yaml into `{output_dir}/.ARCMiS/result/` and log
 //!    its path.
 //!
@@ -38,9 +38,6 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::ExitCode;
 use std::time::Instant;
-
-/// Algorithm 1 maximum outer iterations for the ReCode method.
-const MAX_ITER: usize = 5;
 
 #[tokio::main]
 async fn main() -> ExitCode {
@@ -322,7 +319,7 @@ where
     let hook =
         agents::util::resilience::ResilienceHook::for_provider(log.clone(), config.run.max_output_tokens, ollama);
     let budgets = agents::recode::PhaseBudgets::uniform(config.run.max_turns, config.run.max_retries);
-    let result = agents::Recode::run(client, config, provider, task, hook.clone(), budgets, MAX_ITER).await?;
+    let result = agents::Recode::run(client, config, provider, task, hook.clone(), budgets, config.recode.max_rounds).await?;
     tracing::info!(
         compiled = result.compiled,
         test_pass_rate = ?result.test_pass_rate,

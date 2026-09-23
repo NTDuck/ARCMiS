@@ -17,6 +17,9 @@ pub struct Config {
     /// Ledger method budgets. Ignored by the other methods.
     #[serde(default)]
     pub ledger: LedgerBudgets,
+    /// Recode fix-round ceiling. Ignored by the other methods.
+    #[serde(default)]
+    pub recode: RecodeBudgets,
 }
 
 /// Run section: model identity and agent budget.
@@ -45,6 +48,23 @@ impl Default for Run {
             max_retries: 1,
             think: true,
             temperature: 0.2,
+        }
+    }
+}
+
+/// Recode budgets: how many fix rounds the pipeline may run after the
+/// first execution round. The paper's Algorithm 1 loops until the
+/// validator passes or the ceiling hits.
+#[derive(Debug, Deserialize)]
+#[serde(default)]
+pub struct RecodeBudgets {
+    pub max_rounds: usize,
+}
+
+impl Default for RecodeBudgets {
+    fn default() -> Self {
+        Self {
+            max_rounds: 10,
         }
     }
 }
