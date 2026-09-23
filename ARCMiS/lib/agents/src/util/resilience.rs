@@ -80,8 +80,27 @@ impl<H> ResilienceHook<H> {
         if !self.needs_trailing_user {
             return None;
         }
-        let ends_with_assistant = history.last().is_some_and(|message| matches!(message, Message::Assistant { .. }));
-        if !ends_with_assistant {
+        // Two rejected tails: a bare assistant message, and a user
+        // message whose content is only tool results (ollama maps rig
+        // tool results to role=tool on the wire, and the qwen3.8 chat
+        // template then finds no user query). Both get a trailing user
+        // turn so the template has its query slot filled.
+        let needs_guard = history.last().is_some_and(|message| match message {
+            Message::Assistant {
+                ..
+            } => true,
+            Message::User {
+                content,
+                ..
+            } => {
+                !content.is_empty()
+                    && content.iter().all(|part| matches!(part, rig::message::UserContent::ToolResult(_)))
+            },
+            Message::System {
+                ..
+            } => false,
+        });
+        if !needs_guard {
             return None;
         }
         let mut patched = history.to_vec();
