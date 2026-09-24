@@ -41,8 +41,8 @@ fn role_catalog_is_complete_and_prompted() {
 
 #[test]
 fn tool_allowlists_partition_read_and_write() {
-    // Judges never get write tools; movers always get edit or write.
-    for role in [Role::Validator, Role::Critic, Role::Analyst, Role::FleetAnalyst] {
+    // Judges never get write tools; the analyst and movers do.
+    for role in [Role::Validator, Role::Critic, Role::FleetAnalyst] {
         let tools = role.allowed_tools();
         assert!(
             !tools.contains(&"edit") && !tools.contains(&"write"),
@@ -50,7 +50,7 @@ fn tool_allowlists_partition_read_and_write() {
             role.name()
         );
     }
-    for role in [Role::Translator, Role::Repairer, Role::Tester] {
+    for role in [Role::Analyst, Role::Translator, Role::Repairer, Role::Tester] {
         let tools = role.allowed_tools();
         assert!(
             tools.contains(&"edit") || tools.contains(&"write"),

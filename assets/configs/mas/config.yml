@@ -39,8 +39,9 @@ mas:
   plan_cap: 4000
   notes_cap: 8000
   # Model ladder, weakest first. The fleet analyst promotes along this list.
+  # Keep the entries to models the local ollama daemon actually serves; the
+  # preflight fails fast otherwise.
   model_ladder:
-    - qwen3.8:8b
     - qwen3.8:27b-mtp-q4_K_M
   # Characterization tests the tester may write per module.
   max_generated_tests_per_module: 4

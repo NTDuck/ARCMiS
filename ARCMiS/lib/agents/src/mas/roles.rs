@@ -77,8 +77,9 @@ impl Role {
             // The manager reads state and writes plans/tasks/notes through
             // the blackboard files, not through code tools.
             Role::Manager => &["read", "search", "find", "ask"],
-            // Analysts and judges read only.
-            Role::Analyst | Role::Validator | Role::Critic | Role::FleetAnalyst => {
+            // Analysts write artifacts (source map, graphs); judges read only.
+            Role::Analyst => &["read", "write", "search", "find", "ast_grep"],
+            Role::Validator | Role::Critic | Role::FleetAnalyst => {
                 &["read", "search", "find", "ast_grep"]
             },
             // The planner reads artifacts and writes plan.json through write.

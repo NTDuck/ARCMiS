@@ -2728,12 +2728,16 @@ name = "harness"
 version = "0.1.0"
 dependencies = [
  "ARCMiS-agents",
+ "ARCMiS-blackboard",
+ "ARCMiS-orchestrator",
+ "ARCMiS-snapcompact",
  "ARCMiS-tools",
  "anyhow",
  "rig",
  "serde",
  "serde_json",
  "serde_yaml",
+ "tempfile",
  "time",
  "tokio",
  "tracing",

@@ -53,6 +53,8 @@ pub struct ManagerLoop {
     pub ledger: Ledger,
     /// Round counter.
     pub round: usize,
+    /// Retries per model call on transient provider errors.
+    pub max_retries: u32,
 }
 
 impl ManagerLoop {
@@ -68,14 +70,17 @@ impl ManagerLoop {
             .ok_or_else(|| anyhow::anyhow!("manager agent missing"))?;
 
         // The manager answers with one verb line: `DECISION: <verb> [args]`.
-        use rig::completion::Prompt as _;
-        let answer = manager.prompt(&prompt).await?;
+        let answer = prompt_with_retries(manager, &prompt, self.max_retries).await?;
         let decision = parse_decision(&answer)
             .ok_or_else(|| anyhow::anyhow!("manager gave no DECISION line: {answer:?}"))?;
 
         match decision {
             DecisionVerb::Delegate { role, task } => {
-                self.execute_delegation(role, &task).await
+                // Every delegation runs under a tracked task; the task list
+                // is the progress signal the breaker reads.
+                let tasks = TaskList::new(&self.run_dir);
+                let task_id = tasks.add(task.trim(), &[])?;
+                self.execute_delegation(role, &task, &task_id).await
             },
             DecisionVerb::Replan => {
                 self.ledger
@@ -110,7 +115,7 @@ impl ManagerLoop {
     }
 
     /// Delegate one task: route, build the guard, run the specialist, judge.
-    async fn execute_delegation(&mut self, role_hint: Option<String>, task: &str) -> anyhow::Result<RoundOutcome> {
+    async fn execute_delegation(&mut self, role_hint: Option<String>, task: &str, task_id: &str) -> anyhow::Result<RoundOutcome> {
         let state = blackboard::state::read(&self.run_dir)?.expect("state read above");
         // Route: keyword pass first, model fallback.
         let role = role_hint
@@ -139,23 +144,22 @@ impl ManagerLoop {
             .agents
             .agent(role)
             .ok_or_else(|| anyhow::anyhow!("agent for {} missing", role.name()))?;
-        use rig::completion::Prompt as _;
         let instruction = format!("{task}\n\nRun phase: {:?}. Guard: edit only inside workspace/target/.", state.phase);
-        let output = agent.prompt(instruction).await?;
+        let output = prompt_with_retries(agent, &instruction, self.max_retries).await?;
 
         // Judge the output by the role's contract line.
         let verdict = judge_output(role, &output);
-        let tasks = TaskList::new(&self.run_dir);
 
         match verdict {
             Judged::Pass => {
+                let tasks = TaskList::new(&self.run_dir);
+                tasks.set_status(task_id, TaskStatus::Done)?;
                 self.ledger
                     .append_observation(&blackboard::Observation {
                         at: now(),
                         kind: "delegation_pass".into(),
-                        detail: serde_json::json!({"role": role.name()}),
+                        detail: serde_json::json!({"role": role.name(), "task": task_id}),
                     })?;
-                let _ = tasks;
                 Ok(RoundOutcome::Delegated {
                     role,
                     task: task.to_owned(),
@@ -163,6 +167,8 @@ impl ManagerLoop {
                 })
             },
             Judged::Fail(reason) => {
+                let tasks = TaskList::new(&self.run_dir);
+                tasks.set_status(task_id, TaskStatus::Blocked)?;
                 self.ledger
                     .append_failure(&blackboard::Failure {
                         at: now(),
@@ -193,7 +199,7 @@ impl ManagerLoop {
             .map(|failure| format!("- [{}] {}: {}", failure.phase, failure.category, failure.root_cause))
             .collect();
         Ok(format!(
-            "ROUND {}\n\nSTATE: phase={:?} batch={:?} model={}\n\nPLAN:\n{}\n\nNOTES:\n{}\n\nRECENT FAILURES:\n{}\n\nTASKS:\n{}\n\nDecide the next action. Answer with one line:\nDECISION: delegate <role> | <task description>\nDECISION: replan\nDECISION: escalate | <reason>\nDECISION: done\nDECISION: finish | <reason>",
+            "ROUND {}\n\nSTATE: phase={:?} batch={:?} model={}\n\nPLAN:\n{}\n\nNOTES:\n{}\n\nRECENT FAILURES:\n{}\n\nTASKS:\n{}\n\nDecide the next action. Answer with one line exactly in one of these forms (plain words, no angle brackets, no function-call syntax):\nDECISION: delegate ROLE | TASK TEXT\nDECISION: replan\nDECISION: escalate | REASON\nDECISION: done\nDECISION: finish | REASON\nROLE is one of: analyst, architect, planner, translator, validator, tester, failure-analyst, critic, repairer, fleet-analyst.",
             self.round,
             state.phase,
             state.current_batch,
@@ -309,6 +315,48 @@ enum Judged {
     Pass,
     /// The specialist failed its contract; the string says why.
     Fail(String),
+}
+
+/// Prompt one agent, retrying transient provider failures up to `max_retries`
+/// times. Transport- and server-side failures (HTTP 4xx/5xx wrapped in
+/// `HttpError`, provider 500s) are retryable; a run that exhausted its budget
+/// or was cancelled is not.
+async fn prompt_with_retries(
+    agent: &rig::agent::Agent,
+    prompt: &str,
+    max_retries: u32,
+) -> anyhow::Result<String> {
+    use rig::completion::Prompt as _;
+    let mut attempt = 0;
+    loop {
+        match agent.prompt(prompt.to_owned()).await {
+            Ok(answer) => return Ok(answer),
+            Err(error) if attempt < max_retries && is_transient(&error) => {
+                attempt += 1;
+                tracing::warn!(
+                    attempt,
+                    max_retries,
+                    error = %error,
+                    "transient provider failure; retrying model call"
+                );
+            },
+            Err(error) => return Err(error.into()),
+        }
+    }
+}
+
+/// Whether a prompt error looks transient: provider-side HTTP failures and
+/// response-encoding hiccups. Budget exhaustion and cancellation are not.
+fn is_transient(error: &rig::completion::PromptError) -> bool {
+    match error {
+        rig::completion::PromptError::CompletionError(error) => match error {
+            rig::completion::CompletionError::HttpError(_)
+            | rig::completion::CompletionError::ProviderError(_)
+            | rig::completion::CompletionError::ResponseError(_) => true,
+            _ => false,
+        },
+        _ => false,
+    }
 }
 
 /// Read a file or empty string when absent.

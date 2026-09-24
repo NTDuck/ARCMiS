@@ -30,10 +30,20 @@ impl MasAgents {
 /// Build every role's agent from one client. Works for any provider whose
 /// client implements `CompletionClient` (ollama native, netmind OpenAI
 /// wire): the blanket `AgentClientExt` produces the same `AgentBuilder`.
-pub fn build<C>(client: &C, fleet: &Fleet, run: &Run) -> anyhow::Result<MasAgents>
+///
+/// `tools_for_role` supplies the portable tool adapters for one role; each
+/// adapter is registered on that role's agent only, so the model sees
+/// exactly its allowlist.
+pub fn build<C, F>(
+    client: &C,
+    fleet: &Fleet,
+    run: &Run,
+    tools_for_role: F,
+) -> anyhow::Result<MasAgents>
 where
     C: CompletionClient,
     C::CompletionModel: 'static,
+    F: Fn(Role) -> Vec<tools::portable::Named>,
 {
     let mut agents = BTreeMap::new();
     for role in Role::ALL {
@@ -42,11 +52,22 @@ where
         let mut builder = client
             .agent(model)
             .preamble(&prompt)
-            .temperature(run.temperature);
+            .temperature(run.temperature)
+            .default_max_turns(run.max_turns);
         if let Some(params) = extra_params(run) {
             builder = builder.additional_params(params);
         }
-        agents.insert(role.name(), builder.build());
+        // Fold the adapters through the public portable_dynamic_tool; the
+        // first call transitions the builder into the tools state.
+        let mut adapters = tools_for_role(role).into_iter();
+        let mut with_tools = match adapters.next() {
+            Some(first) => builder.portable_dynamic_tool(first.tool),
+            None => anyhow::bail!("role {} has no tools", role.name()),
+        };
+        for named in adapters {
+            with_tools = with_tools.portable_dynamic_tool(named.tool);
+        }
+        agents.insert(role.name(), with_tools.build());
     }
     Ok(MasAgents {
         agents: Arc::new(agents),

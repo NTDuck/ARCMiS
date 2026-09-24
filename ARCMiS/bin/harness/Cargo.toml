@@ -8,6 +8,9 @@ description = "Binary entry point for ARCMiS."
 
 [dependencies]
 agents = { package = "ARCMiS-agents", path = "../../lib/agents" }
+blackboard = { package = "ARCMiS-blackboard", path = "../../lib/blackboard" }
+orchestrator = { package = "ARCMiS-orchestrator", path = "../../lib/orchestrator" }
+snapcompact = { package = "ARCMiS-snapcompact", path = "../../lib/snapcompact" }
 tools = { package = "ARCMiS-tools", path = "../../lib/tools" }
 anyhow.workspace = true
 rig = "0.42.0"
@@ -15,9 +18,12 @@ serde.workspace = true
 serde_json.workspace = true
 serde_yaml.workspace = true
 time.workspace = true
-tokio = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "process"] }
 tracing.workspace = true
 tracing-subscriber.workspace = true
+
+[dev-dependencies]
+tempfile = "3"
 
 [lints]
 workspace = true
