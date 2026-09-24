@@ -1,16 +1,41 @@
-//! `edit` applies one hashline patch to one file inside the sandbox root.
+//! `edit` applies one hashline patch to one or more files inside the sandbox
+//! root through `oxi_hashline::Patcher`.
 
 use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
 use serde::Deserialize;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-/// `edit` applies hashline patches and consumes snapshot tags for validation.
+/// Consecutive byte-identical no-op failures tolerated on one file/payload
+/// before a hard error (oh-my-pi noop-loop-guard).
+const NOOP_GUARD_LIMIT: usize = 3;
+
+/// `edit` routes hashline patches through `oxi_hashline::apply_edits` via the
+/// shared `Patcher`. Stale tags and no-ops are typed errors the model recovers
+/// from by re-reading.
 pub struct Edit {
     /// Root directory. Tool paths resolve inside it.
     pub root: PathBuf,
-    /// Shared snapshot cache. Tags must match the last read or write.
-    pub snapshots: Arc<crate::util::snapshots::SnapshotStore>,
+    /// Shared patcher: owns the `HashlineFs` impl over `root` and the shared
+    /// snapshot store.
+    pub patcher: Arc<oxi_hashline::Patcher>,
+    /// No-op loop guard: (path, payload-hash) -> consecutive count.
+    noop_counts: Arc<std::sync::Mutex<std::collections::HashMap<u64, usize>>>,
+}
+
+impl Edit {
+    /// Construct the edit tool over `root` with the given snapshot store.
+    pub fn new(root: PathBuf, snapshots: Arc<dyn oxi_hashline::SnapshotStore>) -> Arc<Self> {
+        let fs = Arc::new(RootFs {
+            root: root.clone(),
+        });
+        let patcher = Arc::new(oxi_hashline::Patcher::new(fs, snapshots));
+        Arc::new(Self {
+            root,
+            patcher,
+            noop_counts: Arc::new(std::sync::Mutex::new(std::collections::HashMap::new())),
+        })
+    }
 }
 
 impl Tool for Edit {
@@ -20,291 +45,136 @@ impl Tool for Edit {
     type Output = ToolOutput;
 
     fn description(&self) -> String {
-        "Apply one hashline patch to one file inside the sandbox root.".to_owned()
+        "Apply one hashline patch to one or more files inside the sandbox root.".to_owned()
     }
 
     fn parameters(&self) -> serde_json::Value {
         serde_json::json!({
             "type": "object",
             "properties": {
-                "input": {
+                "patch": {
                     "type": "string",
-                    "description": "One patch: a '¶PATH#TAG' header, then ops 'replace N..M:' with '+TEXT' rows, 'delete N..M', or 'insert before N:' / 'insert after N:' / 'insert head:' / 'insert tail:'."
+                    "description": "One patch: one '[PATH#TAG]' header per file, then ops 'SWAP start.=end:' with '+TEXT' rows, 'DEL start.=end', 'INS.PRE N:' / 'INS.POST N:' / 'INS.HEAD:' / 'INS.TAIL:' with '+TEXT' rows."
                 }
             },
-            "required": ["input"]
+            "required": ["patch"]
         })
     }
 
     async fn call(&self, _context: &mut ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
-        let patch = parse_patch(&args.input).map_err(ToolExecutionError::other)?;
-        let requested = patch.path.clone();
-        let absolute = crate::util::path::path_sanitize(&self.root, &requested).map_err(ToolExecutionError::other)?;
-        let snapshot = self
-            .snapshots
-            .lookup(&patch.tag)
-            .ok_or_else(|| stale_tag_error(&requested, &patch.tag))
-            .map_err(ToolExecutionError::other)?;
-        let (snapshot_path, lines) = snapshot;
-        if snapshot_path != requested {
-            return Err(ToolExecutionError::other(format!(
-                "tag '{}' belongs to '{snapshot_path}', not '{requested}'. Re-read the file.",
-                patch.tag
-            )));
+        let patch = oxi_hashline::split_patch_input(&args.patch, None)
+            .map_err(|error| ToolExecutionError::other(error.to_string()))?;
+        let payload_key = payload_fingerprint(&args.patch);
+        let result = self.patcher.apply(&patch).await;
+        match result {
+            Ok(applied) => {
+                self.noop_counts.lock().expect("noop guard poisoned").clear();
+                let mut output = String::new();
+                for section in &applied.sections {
+                    output.push_str(&format!(
+                        "[{}#{}]\nApplied to '{}' (first changed line: {}).\n",
+                        section.path,
+                        section.new_hash,
+                        section.path,
+                        section.first_changed_line.map(|l| l.to_string()).unwrap_or_else(|| "none".to_owned())
+                    ));
+                }
+                Ok(ToolOutput::text(output))
+            },
+            Err(oxi_hashline::HashlineError::NoOp { path }) => {
+                let mut counts = self.noop_counts.lock().expect("noop guard poisoned");
+                let count = counts.entry(payload_key).or_insert(0);
+                *count += 1;
+                let trip = *count >= NOOP_GUARD_LIMIT;
+                if trip {
+                    counts.clear();
+                }
+                let message = if trip {
+                    format!(
+                        "Edit to {path} is a no-op and has repeated {NOOP_GUARD_LIMIT} times. Stop editing this file with the same patch; the change you want is already present. Re-read the file and verify."
+                    )
+                } else {
+                    format!(
+                        "Edit to {path} resulted in no changes ({count}/{NOOP_GUARD_LIMIT} of the no-op guard). The file already matches your patch. Re-read the file."
+                    )
+                };
+                Err(ToolExecutionError::other(message))
+            },
+            Err(error) => Err(ToolExecutionError::other(error.to_string())),
         }
-        let output = apply_ops(&lines, &patch.ops)
-            .map_err(|error| ToolExecutionError::other(format!("edit failed for '{requested}': {error}")))?;
-        let text = join_lines(&output);
-        tokio::fs::write(&absolute, text.as_bytes())
-            .await
-            .map_err(|error| ToolExecutionError::other(format!("edit failed for '{requested}': {error}")))?;
-        let tag = self.snapshots.mint(&requested, &text);
-        Ok(ToolOutput::text(format!(
-            "¶{requested}#{tag}\nApplied {} op(s) to '{requested}'. Re-read before the next edit.",
-            patch.ops.len()
-        )))
     }
 }
 
 /// Arguments for `edit`.
 #[derive(Debug, Deserialize)]
 pub struct EditArgs {
-    pub input: String,
+    pub patch: String,
 }
 
-/// One parsed patch operation.
-#[derive(Debug)]
-struct PatchOp {
-    kind: OpKind,
-    start: usize,
-    end: usize,
-    rows: Vec<String>,
+/// Stable 64-bit fingerprint of the patch text for the no-op guard.
+fn payload_fingerprint(patch: &str) -> u64 {
+    // FNV-1a: stable, dependency-free, and collision-resistant enough to
+    // distinguish repeated payloads of the same file.
+    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
+    for byte in patch.as_bytes() {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
+    }
+    hash
 }
 
-/// Kind of one patch operation.
-#[derive(Debug)]
-enum OpKind {
-    Replace,
-    Delete,
-    InsertBefore,
-    InsertAfter,
-    InsertHead,
-    InsertTail,
+/// `HashlineFs` implementation rooted at the tool's root directory.
+struct RootFs {
+    root: PathBuf,
 }
 
-/// One parsed patch: header plus operations.
-#[derive(Debug)]
-struct Patch {
-    path: String,
-    tag: String,
-    ops: Vec<PatchOp>,
+impl RootFs {
+    /// Resolve one root-relative path, refusing traversal outside the root.
+    fn resolve(&self, path: &str) -> Result<PathBuf, oxi_hashline::HashlineError> {
+        crate::util::path::path_sanitize(&self.root, path)
+            .map_err(|error| oxi_hashline::HashlineError::Io(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                error,
+            )))
+    }
 }
 
-/// Parse the `¶PATH#TAG` header and the op lines from the patch input.
-fn parse_patch(input: &str) -> Result<Patch, String> {
-    let mut lines = input.lines();
-    let header = lines.next().ok_or_else(|| "empty patch input. Start with a '¶PATH#TAG' header line.".to_owned())?;
-    let header = header.trim();
-    let body = header.strip_prefix('¶').ok_or_else(|| "patch must start with a '¶PATH#TAG' header line.".to_owned())?;
-    let (path, tag) =
-        body.rsplit_once('#').ok_or_else(|| "patch header must end with '#TAG'. Re-read the file.".to_owned())?;
-    let path = path.trim().to_owned();
-    let tag = tag.trim().to_owned();
-    if path.is_empty() || tag.is_empty() {
-        return Err("patch header is incomplete. Re-read the file.".to_owned());
-    }
-    let mut ops = Vec::new();
-    let mut index = 0usize;
-    let remaining: Vec<&str> = lines.collect();
-    while index < remaining.len() {
-        let line = remaining[index].trim_end();
-        if line.trim().is_empty() {
-            index += 1;
-            continue;
-        }
-        let op = parse_op(line, &remaining[index + 1..])?;
-        ops.push(op);
-        index += 1;
-    }
-    if ops.is_empty() {
-        return Err("patch has no operations after the header.".to_owned());
-    }
-    Ok(Patch {
-        path,
-        tag,
-        ops,
-    })
-}
-
-/// Parse one op header plus its `+TEXT` body rows from the remaining lines.
-fn parse_op(header: &str, rest: &[&str]) -> Result<PatchOp, String> {
-    let trimmed = header.trim();
-    if trimmed.starts_with("insert head:") {
-        return Ok(PatchOp {
-            kind: OpKind::InsertHead,
-            start: 0,
-            end: 0,
-            rows: collect_rows(rest)?,
-        });
-    }
-    if trimmed.starts_with("insert tail:") {
-        return Ok(PatchOp {
-            kind: OpKind::InsertTail,
-            start: 0,
-            end: 0,
-            rows: collect_rows(rest)?,
-        });
-    }
-    if let Some(target) = trimmed.strip_prefix("insert before ") {
-        let line = parse_line_number(target.trim_end_matches(':'))?;
-        return Ok(PatchOp {
-            kind: OpKind::InsertBefore,
-            start: line,
-            end: line,
-            rows: collect_rows(rest)?,
-        });
-    }
-    if let Some(target) = trimmed.strip_prefix("insert after ") {
-        let line = parse_line_number(target.trim_end_matches(':'))?;
-        return Ok(PatchOp {
-            kind: OpKind::InsertAfter,
-            start: line,
-            end: line,
-            rows: collect_rows(rest)?,
-        });
-    }
-    if let Some(range) = trimmed.strip_prefix("delete ") {
-        let (start, end) = parse_range(range.trim_end_matches(':'))?;
-        return Ok(PatchOp {
-            kind: OpKind::Delete,
-            start,
-            end,
-            rows: Vec::new(),
-        });
-    }
-    if let Some(range) = trimmed.strip_prefix("replace ") {
-        let (start, end) = parse_range(range.trim_end_matches(':'))?;
-        return Ok(PatchOp {
-            kind: OpKind::Replace,
-            start,
-            end,
-            rows: collect_rows(rest)?,
-        });
-    }
-    Err(format!("unknown op '{trimmed}'. Use 'replace N..M:', 'delete N..M', or 'insert before/after/head/tail:'."))
-}
-
-/// Collect the `+TEXT` body rows that follow one op header.
-fn collect_rows(rest: &[&str]) -> Result<Vec<String>, String> {
-    let mut rows = Vec::new();
-    for line in rest {
-        if !line.starts_with('+') {
-            break;
-        }
-        rows.push(line[1..].to_owned());
-    }
-    Ok(rows)
-}
-
-/// Parse one 1-based line number.
-fn parse_line_number(text: &str) -> Result<usize, String> {
-    text.trim().parse::<usize>().map_err(|_| format!("bad line number '{text}' in patch op"))
-}
-
-/// Parse one `N..M` range with M optional (defaults to N).
-fn parse_range(text: &str) -> Result<(usize, usize), String> {
-    let (start_text, end_text) = match text.split_once("..") {
-        Some((start, end)) => (start, Some(end)),
-        None => (text, None),
-    };
-    let start = parse_line_number(start_text)?;
-    let end = match end_text {
-        Some(end) => parse_line_number(end)?,
-        None => start,
-    };
-    if end < start {
-        return Err(format!("range {start}..{end} has end before start"));
-    }
-    Ok((start, end))
-}
-
-/// Build the stale-tag error the model sees after the file changed.
-fn stale_tag_error(path: &str, tag: &str) -> String {
-    format!(
-        "stale tag '{tag}' for '{path}'. The file changed since the last read. Re-read the file and use the new '¶PATH#TAG' header."
-    )
-}
-
-/// Apply the operations in order to the snapshot lines.
-fn apply_ops(lines: &[String], ops: &[PatchOp]) -> Result<Vec<String>, String> {
-    let mut output: Vec<String> = lines.to_vec();
-    for op in ops {
-        match op.kind {
-            OpKind::Replace => {
-                let end = op.end.min(output.len());
-                let start = op.start.min(end.saturating_add(1)).saturating_sub(1);
-                if op.start > output.len() {
-                    return Err(format!(
-                        "replace {}..{} is past the end ({} lines). Re-read the file.",
-                        op.start,
-                        op.end,
-                        output.len()
-                    ));
-                }
-                let replacement: Vec<String> = op.rows.clone();
-                output.splice(start..end, replacement);
-            },
-            OpKind::Delete => {
-                if op.start > output.len() {
-                    return Err(format!(
-                        "delete {}..{} is past the end ({} lines). Re-read the file.",
-                        op.start,
-                        op.end,
-                        output.len()
-                    ));
-                }
-                let end = op.end.min(output.len());
-                let start = op.start.saturating_sub(1);
-                output.drain(start..end);
-            },
-            OpKind::InsertBefore => {
-                let index = op.start.saturating_sub(1).min(output.len());
-                splice_rows(&mut output, index, op);
-            },
-            OpKind::InsertAfter => {
-                let index = op.start.min(output.len());
-                splice_rows(&mut output, index, op);
-            },
-            OpKind::InsertHead => {
-                splice_rows(&mut output, 0, op);
-            },
-            OpKind::InsertTail => {
-                let index = output.len();
-                splice_rows(&mut output, index, op);
-            },
+#[async_trait::async_trait]
+impl oxi_hashline::HashlineFs for RootFs {
+    async fn read_text(&self, path: &str) -> Result<String, oxi_hashline::HashlineError> {
+        let resolved = self.resolve(path)?;
+        match tokio::fs::read_to_string(&resolved).await {
+            Ok(text) => Ok(oxi_hashline::normalize_to_lf(&oxi_hashline::strip_bom(&text))),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Err(
+                oxi_hashline::HashlineError::NotFound {
+                    path: path.to_owned(),
+                },
+            ),
+            Err(error) => Err(oxi_hashline::HashlineError::Io(error)),
         }
     }
-    Ok(output)
-}
 
-/// Insert one op's rows into the output at the given index.
-fn splice_rows(output: &mut Vec<String>, index: usize, op: &PatchOp) {
-    let mut insert: Vec<String> = Vec::with_capacity(op.rows.len());
-    for row in &op.rows {
-        insert.push(row.clone());
+    async fn write_text(&self, path: &str, text: &str) -> Result<String, oxi_hashline::HashlineError> {
+        let resolved = self.resolve(path)?;
+        if let Some(parent) = resolved.parent() {
+            tokio::fs::create_dir_all(parent)
+                .await
+                .map_err(oxi_hashline::HashlineError::Io)?;
+        }
+        // Atomic write: temp file in the target directory, then rename.
+        let temp = resolved.with_extension("arcmis.tmp");
+        tokio::fs::write(&temp, text.as_bytes())
+            .await
+            .map_err(oxi_hashline::HashlineError::Io)?;
+        tokio::fs::rename(&temp, &resolved)
+            .await
+            .map_err(oxi_hashline::HashlineError::Io)?;
+        Ok(path.to_owned())
     }
-    let tail = output.split_off(index);
-    output.extend(insert);
-    output.extend(tail);
-}
 
-/// Join lines back into one string with a trailing newline.
-fn join_lines(lines: &[String]) -> String {
-    if lines.is_empty() {
-        String::new()
-    } else {
-        let mut text = lines.join("\n");
-        text.push('\n');
-        text
+    fn canonical_path(&self, path: &str) -> String {
+        crate::util::path::path_sanitize(&self.root, path)
+            .map(|resolved| resolved.to_string_lossy().into_owned())
+            .unwrap_or_else(|_| path.to_owned())
     }
 }

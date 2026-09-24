@@ -9,6 +9,8 @@ name = "tools"
 
 [dependencies]
 rig = "0.42.0"
+oxi-hashline.workspace = true
+async-trait = "0.1"
 serde.workspace = true
 serde_json.workspace = true
 tokio = { workspace = true, features = ["process", "macros", "rt-multi-thread", "fs", "io-util", "sync", "time"] }
@@ -23,18 +25,6 @@ ast-grep-language = "0.45.3"
 rusqlite = { version = "0.40.2", features = ["bundled"] }
 uuid = { version = "1.26.1", features = ["v4"] }
 sha2 = "0.10.9"
-
-[dev-dependencies]
-cucumber.workspace = true
-tokio.workspace = true
-
-[features]
-cucumber-tests = []
-
-[[test]]
-name = "cucumber"
-harness = false
-required-features = ["cucumber-tests"]
 
 [lints]
 workspace = true

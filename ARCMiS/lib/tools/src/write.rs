@@ -9,8 +9,9 @@ use std::sync::Arc;
 pub struct Write {
     /// Root directory. Tool paths resolve inside it.
     pub root: PathBuf,
-    /// Shared snapshot cache. The write mints a tag for the new content.
-    pub snapshots: Arc<crate::util::snapshots::SnapshotStore>,
+    /// Shared snapshot store. The write records the new content; the returned
+    /// tag anchors the next edit.
+    pub snapshots: Arc<dyn oxi_hashline::SnapshotStore>,
 }
 
 impl Tool for Write {
@@ -55,15 +56,25 @@ impl Tool for Write {
             Some(parent) => parent.to_path_buf(),
             None => self.root.clone(),
         };
-        tokio::fs::create_dir_all(parent)
+        // Atomic write: temp file in the target directory, then rename.
+        let temp = parent.join(format!(
+            ".{}.tmp",
+            requested.rsplit('/').next().unwrap_or("file")
+        ));
+        tokio::fs::create_dir_all(&parent)
             .await
             .map_err(|error| ToolExecutionError::other(format!("write failed for '{requested}': {error}")))?;
-        tokio::fs::write(&absolute, text.as_bytes())
+        tokio::fs::write(&temp, text.as_bytes())
             .await
             .map_err(|error| ToolExecutionError::other(format!("write failed for '{requested}': {error}")))?;
-        let tag = self.snapshots.mint(&requested, &text);
-        let header = format!("¶{requested}#{tag}\n");
-        Ok(ToolOutput::text(format!("{header}Wrote {bytes} bytes to '{requested}'.")))
+        tokio::fs::rename(&temp, &absolute)
+            .await
+            .map_err(|error| ToolExecutionError::other(format!("write failed for '{requested}': {error}")))?;
+        let tag = self.snapshots.record(&requested, &text, None);
+        let header = format!("[{requested}#{tag}]\n");
+        Ok(ToolOutput::text(format!(
+            "{header}Wrote {bytes} bytes to '{requested}'."
+        )))
     }
 }
 
@@ -74,12 +85,12 @@ pub struct WriteArgs {
     pub content: String,
 }
 
-/// Strip pasted `¶PATH#TAG` headers, `LINE:` prefixes, and `+` body rows
+/// Strip pasted `[PATH#TAG]` headers, `LINE:` prefixes, and `+` body rows
 /// that models echo back from `read` output.
 fn strip_echo(content: &str) -> String {
     let mut lines: Vec<&str> = Vec::new();
     for line in content.lines() {
-        if line.starts_with('¶') {
+        if line.starts_with('[') && line.trim_end().ends_with(']') && line.contains('#') {
             continue;
         }
         let body = match line.find(':') {

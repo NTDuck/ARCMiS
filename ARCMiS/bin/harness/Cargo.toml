@@ -10,8 +10,6 @@ description = "Binary entry point for ARCMiS."
 agents = { package = "ARCMiS-agents", path = "../../lib/agents" }
 tools = { package = "ARCMiS-tools", path = "../../lib/tools" }
 anyhow.workspace = true
-futures = "0.3.31"
-reqwest = { version = "0.12", default-features = false, features = ["json"] }
 rig = "0.42.0"
 serde.workspace = true
 serde_json.workspace = true
@@ -20,17 +18,6 @@ time.workspace = true
 tokio = { workspace = true }
 tracing.workspace = true
 tracing-subscriber.workspace = true
-
-[dev-dependencies]
-cucumber.workspace = true
-
-[features]
-cucumber-tests = []
-
-[[test]]
-name = "cucumber"
-harness = false
-required-features = ["cucumber-tests"]
 
 [lints]
 workspace = true

@@ -7,13 +7,37 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Arc;
 
+/// Default number of body lines emitted per text read (oh-my-pi default).
+const DEFAULT_LIMIT: usize = 400;
+/// Default byte ceiling per text read.
+const DEFAULT_BYTES: usize = 32 * 1024;
+/// Hard byte cap: files above this size are reported, never read.
+const HARD_BYTES: usize = 200 * 1024;
+/// Cap on lines shown per directory listing.
+const MAX_DIR_ENTRIES: usize = 3000;
+/// Cap on table rows emitted for one SQLite table.
+const MAX_TABLE_ROWS: usize = 100;
+
 /// `read` returns file content, directory listings, and structured data with
 /// hashline tags for later edits.
 pub struct Read {
     /// Root directory. Tool paths resolve inside it.
     pub root: PathBuf,
-    /// Shared snapshot cache. Minted tags back the `¶PATH#TAG` headers.
-    pub snapshots: Arc<crate::util::snapshots::SnapshotStore>,
+    /// Shared snapshot store. Every text read records a snapshot; the minted
+    /// tag backs the `[<path>#<TAG>]` header the next edit anchors on.
+    pub snapshots: Arc<dyn oxi_hashline::SnapshotStore>,
+}
+
+/// Arguments for `read`.
+#[derive(Debug, Deserialize)]
+pub struct ReadArgs {
+    pub path: String,
+    /// 1-indexed line to start from (1 = first line).
+    #[serde(default)]
+    pub offset: Option<usize>,
+    /// Number of body lines to return after `offset`.
+    #[serde(default)]
+    pub limit: Option<usize>,
 }
 
 impl Tool for Read {
@@ -33,6 +57,14 @@ impl Tool for Read {
                 "path": {
                     "type": "string",
                     "description": "File, directory, URL, or SQLite path. Optional line selectors like ':50-200' or ':raw'."
+                },
+                "offset": {
+                    "type": "integer",
+                    "description": "1-indexed line number to start from. Default 1."
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Number of body lines to return. Default 400."
                 }
             },
             "required": ["path"]
@@ -48,9 +80,12 @@ impl Tool for Read {
         let (target, selector) = split_selector(&raw);
         let target = target.to_string_lossy().into_owned();
         let relative = relative_display(&path);
+        let limit = args.limit.unwrap_or(DEFAULT_LIMIT).max(1);
+        let offset = args.offset.unwrap_or(1).max(1);
         let absolute = path.clone();
+        let store = self.snapshots.clone();
         let output = tokio::task::spawn_blocking(move || -> Result<String, String> {
-            read_local(&absolute, &relative, &selector, &target)
+            read_local(&store, &absolute, &relative, &selector, &target, offset, limit)
         })
         .await
         .map_err(|error| ToolExecutionError::other(format!("read join failed: {error}")))?
@@ -58,21 +93,6 @@ impl Tool for Read {
         Ok(ToolOutput::text(output))
     }
 }
-
-/// Arguments for `read`.
-#[derive(Debug, Deserialize)]
-pub struct ReadArgs {
-    pub path: String,
-}
-
-/// Maximum number of lines emitted per file read.
-const MAX_LINES: usize = 3000;
-/// Maximum byte size emitted per read.
-const MAX_BYTES: usize = 50 * 1024;
-/// Cap on lines shown per directory listing.
-const MAX_DIR_ENTRIES: usize = 3000;
-/// Cap on table rows emitted for one SQLite table.
-const MAX_TABLE_ROWS: usize = 100;
 
 /// Split one trailing `:selector` suffix from the raw path argument.
 fn split_selector(raw: &str) -> (PathBuf, String) {
@@ -91,7 +111,7 @@ fn split_selector(raw: &str) -> (PathBuf, String) {
     (PathBuf::from(target), selector)
 }
 
-/// Render the relative path shown in the `¶` header.
+/// Render the relative path shown in the `[]` header.
 fn relative_display(path: &Path) -> String {
     path.file_name()
         .map(|name| name.to_string_lossy().into_owned())
@@ -99,12 +119,20 @@ fn relative_display(path: &Path) -> String {
 }
 
 /// Dispatch a local read by kind: directory, SQLite, archive, or text.
-fn read_local(path: &Path, relative: &str, selector: &str, _target: &str) -> Result<String, String> {
-    let metadata = metadata(path).map_err(|error| format!("read failed for '{relative}': {error}"))?;
-    if metadata.is_dir() {
+fn read_local(
+    store: &Arc<dyn oxi_hashline::SnapshotStore>,
+    path: &Path,
+    relative: &str,
+    selector: &str,
+    _target: &str,
+    offset: usize,
+    limit: usize,
+) -> Result<String, String> {
+    let meta = metadata(path).map_err(|error| format!("read failed for '{relative}': {error}"))?;
+    if meta.is_dir() {
         return read_directory(path, relative);
     }
-    if metadata.is_file() {
+    if meta.is_file() {
         let lower = relative.to_ascii_lowercase();
         if lower.ends_with(".sqlite")
             || lower.ends_with(".sqlite3")
@@ -124,9 +152,9 @@ fn read_local(path: &Path, relative: &str, selector: &str, _target: &str) -> Res
             || lower.ends_with(".tgz")
         {
             // Archive members are skipped in this build. Report the container.
-            return Ok(format!("¶{relative}#0000\narchive container with no inline member support\n"));
+            return Ok(format!("[{relative}#0000]\narchive container with no inline member support\n"));
         }
-        return read_text(path, relative, selector);
+        return read_text(store, path, relative, selector, offset, limit);
     }
     Err(format!("read failed for '{relative}': not a regular file or directory"))
 }
@@ -137,27 +165,22 @@ fn read_directory(path: &Path, relative: &str) -> Result<String, String> {
     let mut rows: Vec<(String, bool, u64)> = Vec::new();
     for entry in entries {
         let entry = entry.map_err(|error| format!("read failed for '{relative}': {error}"))?;
-        let metadata = entry.metadata().ok();
-        let is_dir = metadata.as_ref().map(|meta| meta.is_dir()).unwrap_or(false);
-        let size = metadata.as_ref().map(|meta| meta.len()).unwrap_or(0);
+        let meta = entry.metadata().ok();
+        let is_dir = meta.as_ref().map(|item| item.is_dir()).unwrap_or(false);
+        let size = meta.as_ref().map(|item| item.len()).unwrap_or(0);
         rows.push((entry.file_name().to_string_lossy().into_owned(), is_dir, size));
     }
     rows.sort_by(|left, right| left.0.cmp(&right.0));
-    let output = format!("¶{relative}#0000\n");
+    let mut output = format!("[{relative}#0000]\n");
     let shown = rows.len().min(MAX_DIR_ENTRIES);
-    let mut lines = output;
     for (name, is_dir, size) in rows.iter().take(shown) {
-        let suffix = if *is_dir {
-            "/"
-        } else {
-            ""
-        };
-        lines.push_str(&format!("{}{} ({})\n", name, suffix, format_size(*size)));
+        let suffix = if *is_dir { "/" } else { "" };
+        output.push_str(&format!("{name}{suffix} ({})\n", format_size(*size)));
     }
     if shown < rows.len() {
-        lines.push_str(&format!("... {} more entries elided\n", rows.len() - shown));
+        output.push_str(&format!("... {} more entries elided\n", rows.len() - shown));
     }
-    Ok(lines)
+    Ok(output)
 }
 
 /// Render one byte count in a short human form.
@@ -171,67 +194,70 @@ fn format_size(size: u64) -> String {
     }
 }
 
-/// Read a text file and emit the hashline format with elided ranges.
-fn read_text(path: &Path, relative: &str, selector: &str) -> Result<String, String> {
+/// Read a text file and emit the hashline format with the requested window.
+///
+/// The whole file is recorded in the snapshot store (oh-my-pi contract: the
+/// snapshot is edit safety, not a read cache); only the requested window is
+/// displayed, and the displayed lines feed `seen_lines` provenance.
+fn read_text(
+    store: &Arc<dyn oxi_hashline::SnapshotStore>,
+    path: &Path,
+    relative: &str,
+    selector: &str,
+    offset: usize,
+    limit: usize,
+) -> Result<String, String> {
     let bytes = read(path).map_err(|error| format!("read failed for '{relative}': {error}"))?;
-    if bytes.len() > MAX_BYTES * 4 {
-        return Ok(format!("¶{relative}#0000\nfile exceeds the 200KiB hard cap and is not read\n"));
+    if bytes.len() > HARD_BYTES {
+        return Ok(format!("[{relative}#0000]\nfile exceeds the 200KiB hard cap and is not read\n"));
     }
     let text = String::from_utf8_lossy(&bytes).into_owned();
-    let all = text.lines().collect::<Vec<_>>();
     if selector == "raw" {
-        return Ok(format!("¶{relative}#0000\n{text}"));
+        return Ok(format!("[{relative}#0000]\n{text}"));
     }
     let windows = parse_ranges(selector)?;
-    let mut output = format!("¶{relative}#0000\n");
+    let all: Vec<&str> = text.lines().collect();
+    let total = all.len().max(1);
+    let tag = store.record(relative, &text, None);
+    let mut output = format!("[{relative}#{tag}]\n");
     let mut emitted = 0usize;
-    if windows.is_empty() {
-        let end = all.len().max(1);
-        let mut one_based = 1usize;
-        while one_based <= end && emitted < MAX_LINES {
-            if let Some(line) = all.get(one_based - 1) {
-                output.push_str(&format!("{one_based}:{line}\n"));
-                emitted += 1;
-            }
-            one_based += 1;
-        }
-        if end > MAX_LINES {
-            output.push_str(&format!("... lines {} to {} elided ({} lines)\n", MAX_LINES + 1, end, end - MAX_LINES));
-        }
-        let total_bytes = text.len();
-        if total_bytes > MAX_BYTES {
-            output.push_str(&format!("... output truncated at {MAX_BYTES} bytes\n"));
-        }
-        return Ok(output);
-    }
     let mut last_emitted = 0usize;
-    for (start, end) in windows {
+    let mut shown_lines: Vec<u32> = Vec::new();
+    // No selector: one window at `offset` of length `limit`.
+    let plan: Vec<(usize, usize)> = if windows.is_empty() {
+        vec![(offset, offset.saturating_add(limit).saturating_sub(1))]
+    } else {
+        windows
+    };
+    for (start, end) in plan {
         let lo = start.max(1);
-        let hi = end.min(all.len().max(1)).max(lo);
+        let hi = end.min(total).max(lo);
         if last_emitted > 0 && lo > last_emitted + 1 {
             output.push_str(&format!("... lines {} to {} elided\n", last_emitted + 1, lo - 1));
         }
         let mut one_based = lo;
-        while one_based <= hi && emitted < MAX_LINES {
+        while one_based <= hi && emitted < limit {
             if let Some(line) = all.get(one_based - 1) {
                 output.push_str(&format!("{one_based}:{line}\n"));
+                shown_lines.push(one_based as u32);
                 emitted += 1;
             }
             one_based += 1;
         }
         last_emitted = hi;
-        if emitted >= MAX_LINES {
+        if emitted >= limit {
             break;
         }
     }
-    if last_emitted < all.len().max(1) {
+    if last_emitted < total {
         output.push_str(&format!(
             "... lines {} to {} elided ({} total lines)\n",
             last_emitted + 1,
-            all.len(),
-            all.len()
+            total,
+            total
         ));
     }
+    store.record_seen_lines(relative, &tag, &shown_lines);
     Ok(output)
 }
 
@@ -243,58 +269,79 @@ fn parse_ranges(selector: &str) -> Result<Vec<(usize, usize)>, String> {
     }
     for part in selector.split(',') {
         let part = part.trim();
-        if part.is_empty() {
+        if let Some(rest) = part.strip_suffix('+') {
+            let start: usize = rest.parse().map_err(|_| format!("bad selector '{part}'"))?;
+            windows.push((start, usize::MAX));
             continue;
         }
-        if let Some(minus) = part.find('-') {
-            let start: usize = part[..minus].trim().parse().map_err(|_| format!("bad line selector '{part}'"))?;
-            let end: usize = part[minus + 1..].trim().parse().map_err(|_| format!("bad line selector '{part}'"))?;
-            if end < start {
-                return Err(format!("line selector '{part}' has end before start"));
-            }
-            windows.push((start, end));
-        } else if let Some(plus) = part.find('+') {
-            let start: usize = part[..plus].trim().parse().map_err(|_| format!("bad line selector '{part}'"))?;
-            let count: usize = part[plus + 1..].trim().parse().map_err(|_| format!("bad line selector '{part}'"))?;
-            windows.push((start, start.saturating_add(count).saturating_sub(1)));
-        } else {
-            let start: usize = part.parse().map_err(|_| format!("bad line selector '{part}'"))?;
-            windows.push((start, start));
+        if let Some((start_text, end_text)) = part.split_once('-') {
+            let start: usize = start_text.parse().map_err(|_| format!("bad selector '{part}'"))?;
+            let end: usize = end_text.parse().map_err(|_| format!("bad selector '{part}'"))?;
+            windows.push((start, end.max(start)));
+            continue;
         }
+        let one: usize = part.parse().map_err(|_| format!("bad selector '{part}'"))?;
+        windows.push((one, one));
     }
     Ok(windows)
 }
 
 /// Read one SQLite database: table list, one table, or a custom query.
 fn read_sqlite(path: &Path, relative: &str, selector: &str) -> Result<String, String> {
-    let connection = rusqlite::Connection::open_with_flags(path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
-        .map_err(|error| format!("sqlite open failed for '{relative}': {error}"))?;
+    let connection = rusqlite::Connection::open(path)
+        .map_err(|error| format!("read failed for '{relative}': {error}"))?;
     if selector.is_empty() {
         return sqlite_tables(&connection, relative);
     }
-    let (table, key) = match selector.split_once(':') {
-        Some((table, key)) => (table, Some(key)),
-        None => (selector, None),
-    };
-    match key {
-        None => sqlite_rows(&connection, relative, table, None),
-        Some(key) => sqlite_rows(&connection, relative, table, Some(key)),
+    if let Some(table) = selector.strip_prefix("q=") {
+        return sqlite_query(&connection, relative, table);
     }
+    sqlite_rows(&connection, relative, selector, None)
 }
 
 /// Emit one table list for the database.
 fn sqlite_tables(connection: &rusqlite::Connection, relative: &str) -> Result<String, String> {
     let mut statement = connection
-        .prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
-        .map_err(|error| format!("sqlite query failed for '{relative}': {error}"))?;
-    let names: Vec<String> = statement
+        .prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
+        .map_err(|error| format!("read failed for '{relative}': {error}"))?;
+    let names = statement
         .query_map([], |row| row.get::<_, String>(0))
-        .map_err(|error| format!("sqlite query failed for '{relative}': {error}"))?
-        .filter_map(Result::ok)
-        .collect();
-    let mut output = format!("¶{relative}#0000\n");
+        .map_err(|error| format!("read failed for '{relative}': {error}"))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|error| format!("read failed for '{relative}': {error}"))?;
+    let mut output = format!("[{relative}#0000]\n");
     for name in names {
         output.push_str(&format!("{name}\n"));
+    }
+    Ok(output)
+}
+
+/// Run one custom query and render its rows.
+fn sqlite_query(connection: &rusqlite::Connection, relative: &str, query: &str) -> Result<String, String> {
+    let mut statement = connection
+        .prepare(query)
+        .map_err(|error| format!("read failed for '{relative}': {error}"))?;
+    let columns: Vec<String> = statement
+        .column_names()
+        .into_iter()
+        .map(str::to_owned)
+        .collect();
+    let rows = statement
+        .query_map([], |row| {
+            let mut values = Vec::with_capacity(columns.len());
+            for index in 0..columns.len() {
+                values.push(format_sql_value(&row.get(index).unwrap_or(rusqlite::types::Value::Null)));
+            }
+            Ok(values.join(" | "))
+        })
+        .map_err(|error| format!("read failed for '{relative}': {error}"))?;
+    let mut output = format!("[{relative}#0000]\n");
+    for (index, row) in rows.enumerate() {
+        if index >= MAX_TABLE_ROWS {
+            output.push_str(&format!("... rows beyond {MAX_TABLE_ROWS} elided\n"));
+            break;
+        }
+        output.push_str(&format!("{}:{}\n", index + 1, row.map_err(|e| e.to_string())?));
     }
     Ok(output)
 }
@@ -306,58 +353,55 @@ fn sqlite_rows(
     table: &str,
     key: Option<&str>,
 ) -> Result<String, String> {
-    let safe_table = table.replace('\'', "''");
     let sql = match key {
-        Some(_) => format!("SELECT * FROM '{safe_table}' WHERE rowid = ?1 LIMIT 1"),
-        None => format!("SELECT * FROM '{safe_table}' LIMIT {MAX_TABLE_ROWS}"),
+        Some(_) => format!("SELECT rowid, * FROM \"{table}\" WHERE rowid = ?1"),
+        None => format!("SELECT rowid, * FROM \"{table}\" LIMIT {MAX_TABLE_ROWS}"),
     };
-    let mut statement =
-        connection.prepare(&sql).map_err(|error| format!("sqlite query failed for '{relative}': {error}"))?;
-    let column_names: Vec<String> = statement.column_names().iter().map(|name| name.to_string()).collect();
-    let mut rows: Vec<Vec<String>> = Vec::new();
-    let mapped = statement.query_map(rusqlite_params(key), |row| {
-        let mut cells: Vec<String> = Vec::with_capacity(column_names.len());
-        for index in 0..column_names.len() {
-            let value: rusqlite::types::Value = row.get(index).unwrap_or(rusqlite::types::Value::Null);
-            cells.push(format_sql_value(&value));
+    let mut statement = connection
+        .prepare(&sql)
+        .map_err(|error| format!("read failed for '{relative}': {error}"))?;
+    let params = rusqlite::params![key.and_then(|k| k.parse::<i64>().ok()).unwrap_or(0)];
+    let rows = statement
+        .query_map(params, |row| {
+            let columns = row.as_ref().column_count();
+            let mut values = Vec::with_capacity(columns);
+            for index in 0..columns {
+                values.push(format_sql_value(&row.get(index).unwrap_or(rusqlite::types::Value::Null)));
+            }
+            Ok(values.join(" | "))
+        })
+        .map_err(|error| format!("read failed for '{relative}': {error}"))?;
+    let mut output = format!("[{relative}#0000]\n");
+    for (index, row) in rows.enumerate() {
+        if index >= MAX_TABLE_ROWS {
+            output.push_str(&format!("... rows beyond {MAX_TABLE_ROWS} elided\n"));
+            break;
         }
-        Ok(cells)
-    });
-    let mapped = mapped.map_err(|error| format!("sqlite query failed for '{relative}': {error}"))?;
-    for row in mapped {
-        let row = row.map_err(|error| format!("sqlite query failed for '{relative}': {error}"))?;
-        rows.push(row);
-    }
-    let mut output = format!("¶{relative}#0000\n");
-    output.push_str(&column_names.join(" | "));
-    output.push('\n');
-    for row in rows {
-        output.push_str(&row.join(" | "));
-        output.push('\n');
+        output.push_str(&format!("{}:{}\n", index + 1, row.map_err(|e| e.to_string())?));
     }
     Ok(output)
-}
-
-/// Map an optional primary key to the rusqlite params list.
-fn rusqlite_params(key: Option<&str>) -> [rusqlite::types::Value; 1] {
-    match key {
-        Some(value) => [rusqlite::types::Value::Text(value.to_string())],
-        None => [rusqlite::types::Value::Integer(0)],
-    }
 }
 
 /// Render one SQLite cell value as short text.
 fn format_sql_value(value: &rusqlite::types::Value) -> String {
     match value {
         rusqlite::types::Value::Null => "NULL".to_owned(),
-        rusqlite::types::Value::Integer(number) => number.to_string(),
-        rusqlite::types::Value::Real(number) => number.to_string(),
-        rusqlite::types::Value::Text(text) => text.clone(),
-        rusqlite::types::Value::Blob(bytes) => format!("<{} bytes>", bytes.len()),
+        rusqlite::types::Value::Integer(v) => v.to_string(),
+        rusqlite::types::Value::Real(v) => v.to_string(),
+        rusqlite::types::Value::Text(v) => v.clone(),
+        rusqlite::types::Value::Blob(v) => format!("<{} bytes>", v.len()),
     }
 }
 
 /// Fetch one URL and return cleaned text or raw HTML.
 async fn read_url(raw: &str) -> Result<String, ToolExecutionError> {
-    Err(ToolExecutionError::other(format!("read does not fetch remote URLs in this build: {raw}")))
+    Err(ToolExecutionError::other(format!(
+        "read does not fetch remote URLs in this build: {raw}"
+    )))
+}
+
+/// Split text into lines without line terminators (used by tests).
+#[cfg(test)]
+pub(crate) fn split_lines(text: &str) -> Vec<String> {
+    text.split('\n').map(|line| line.to_owned()).collect()
 }

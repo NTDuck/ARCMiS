@@ -13,8 +13,8 @@ use std::sync::Arc;
 pub struct Search {
     /// Root directory. Tool paths resolve inside it.
     pub root: PathBuf,
-    /// Shared snapshot cache. Search records snapshots for edited files.
-    pub snapshots: Arc<crate::util::snapshots::SnapshotStore>,
+    /// Shared snapshot store. Search records snapshots for edited files.
+    pub snapshots: Arc<dyn oxi_hashline::SnapshotStore>,
 }
 
 impl Tool for Search {
@@ -109,7 +109,7 @@ fn search_root(root: &Path, sandbox: &Path, matcher: &grep_regex::RegexMatcher) 
     Ok(output)
 }
 
-/// Search one file and return its `¶PATH#TAG` section with context lines.
+/// Search one file and return its `[PATH#TAG]` section with context lines.
 fn search_file(path: &Path, relative: &str, matcher: &grep_regex::RegexMatcher) -> Result<String, String> {
     let content = match read(path) {
         Ok(content) => content,
@@ -126,9 +126,9 @@ fn search_file(path: &Path, relative: &str, matcher: &grep_regex::RegexMatcher) 
     if matched_rows.is_empty() {
         return Ok(String::new());
     }
-    let snapshot = crate::util::snapshots::SnapshotStore::new();
-    let tag = snapshot.mint(relative, &text);
-    let mut output = format!("¶{relative}#{tag}\n");
+    let snapshot = oxi_hashline::InMemorySnapshotStore::new();
+    let tag = oxi_hashline::SnapshotStore::record(&snapshot, relative, &text, None);
+    let mut output = format!("[{relative}#{tag}]\n");
     let mut last_end: Option<usize> = None;
     for matched in matched_rows {
         let start = matched.saturating_sub(BEFORE_CONTEXT);
