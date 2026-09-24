@@ -158,7 +158,26 @@ impl ManagerLoop {
             "{task}\n\nRun phase: {:?}. Guard: edit only inside target/ (tool paths resolve from the workspace root). When the task's deliverable is written, stop and summarize what you did; do not re-read your own output.",
             state.phase
         );
-        let output = prompt_with_retries(agent, &instruction, self.max_retries).await?;
+        let output = match prompt_with_retries(agent, &instruction, self.max_retries).await {
+            Ok(output) => output,
+            // A spent turn budget is a failed delegation, not a dead run: the
+            // work up to the cap persists (tool writes already landed), the
+            // judge marks the task blocked, and the manager re-delegates.
+            Err(error) => {
+                self.ledger.append_failure(&blackboard::Failure {
+                    at: now(),
+                    phase: format!("{:?}", state.phase),
+                    category: "budget".into(),
+                    root_cause: format!("{}: {error}", role.name()),
+                    suggested_action: "split the task or re-delegate the remainder".into(),
+                })?;
+                return Ok(RoundOutcome::Delegated {
+                    role,
+                    task: task.to_owned(),
+                    output: format!("DELEGATION FAILED: {error}"),
+                });
+            },
+        };
 
         // Judge the output by the role's contract line.
         let verdict = judge_output(role, &output);
@@ -287,6 +306,11 @@ fn parse_decision(answer: &str) -> Option<DecisionVerb> {
 
 /// Judge a specialist's final text by its contract line.
 fn judge_output(role: Role, output: &str) -> Judged {
+    // A delegation that never returned (budget spent, model failure) fails its
+    // task regardless of role contract: the deliverable is unverified.
+    if let Some(rest) = output.strip_prefix("DELEGATION FAILED: ") {
+        return Judged::Fail(rest.to_owned());
+    }
     match role {
         Role::Validator => match judges::parse_verdict(output, "VALIDATION") {
             Some((true, _)) => Judged::Pass,
