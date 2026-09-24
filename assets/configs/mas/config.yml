@@ -1,0 +1,46 @@
+# MAS migration run configuration, GildedRose-Refactoring-Kata.
+# The agent reads tool logs. The agent does not hardcode anything from this
+# file; every value here reaches the run through the config loader.
+
+run:
+  # Provider: ollama (native protocol) or netmind (OpenAI-compatible).
+  provider: ollama
+  model: qwen3.8:27b-mtp-q4_K_M
+  max_turns: 14
+  num_ctx: 16384
+  max_output_tokens: 4096
+  max_retries: 1
+  think: true
+  temperature: 0.2
+
+output:
+  dir: .artifacts/GildedRose-Refactoring-Kata/Rust
+
+source:
+  language: c
+  root: assets/GildedRose-Refactoring-Kata/C
+  target:
+    language: rust
+    test_command: cargo test
+
+# MAS method configuration. Ignored by the other methods.
+mas:
+  # Manager-loop round ceiling across the whole run.
+  max_rounds: 60
+  # Manager turn budget per round.
+  manager_turns: 20
+  # Specialist turn budget per delegation.
+  worker_turns: 40
+  # Repair attempts per diagnosed failure before escalation.
+  max_repairs: 2
+  # Consecutive rounds with no completed task before the manager escalates.
+  stagnation_rounds: 3
+  # plan.md and notes.md character caps (GVS5H working-file discipline).
+  plan_cap: 4000
+  notes_cap: 8000
+  # Model ladder, weakest first. The fleet analyst promotes along this list.
+  model_ladder:
+    - qwen3.8:8b
+    - qwen3.8:27b-mtp-q4_K_M
+  # Characterization tests the tester may write per module.
+  max_generated_tests_per_module: 4
