@@ -63,6 +63,9 @@ impl ManagerLoop {
         self.round += 1;
         let state = blackboard::state::read(&self.run_dir)?
             .ok_or_else(|| anyhow::anyhow!("run state missing; preflight must write it"))?;
+        // Mirror the blackboard into workspace/meta so every role reads the
+        // run state through its sandbox; run/ itself is outside the tool root.
+        self.mirror_blackboard()?;
         let prompt = self.manager_prompt(&state)?;
         let manager = self.agents.agent(Role::Manager).ok_or_else(|| anyhow::anyhow!("manager agent missing"))?;
 
@@ -403,6 +406,44 @@ fn time_now() -> String {
 /// Load the state fresh for a phase transition write.
 fn snapshot_phase(run_dir: &std::path::Path) -> anyhow::Result<blackboard::State> {
     blackboard::state::read(run_dir)?.ok_or_else(|| anyhow::anyhow!("state missing in {run_dir:?}"))
+}
+
+impl ManagerLoop {
+    /// Harvest agent-written files from `workspace/meta/` into the run
+    /// blackboard, then mirror the run state back. The run/ dir stays the
+    /// source of truth; meta/ is the sandbox-visible read/write view.
+    fn mirror_blackboard(&self) -> anyhow::Result<()> {
+        let meta = self.workspace.root().join("meta");
+        std::fs::create_dir_all(&meta)?;
+        // Harvest: files specialists write through their sandbox.
+        for (from, to) in [
+            (meta.join("notes.md"), self.run_dir.join("notes.md")),
+            (meta.join("plan.md"), self.run_dir.join("plan.md")),
+        ] {
+            if from.is_file() {
+                std::fs::copy(&from, &to)?;
+            }
+        }
+        // Mirror: run-state files agents must read.
+        for (from, to) in [
+            (self.run_dir.join("state.json"), meta.join("state.json")),
+            (self.run_dir.join("tasks.json"), meta.join("tasks.json")),
+            (self.run_dir.join("plan.md"), meta.join("plan.md")),
+            (
+                self.run_dir.join("ledgers/decisions.jsonl"),
+                meta.join("decisions.jsonl"),
+            ),
+            (
+                self.run_dir.join("ledgers/failures.jsonl"),
+                meta.join("failures.jsonl"),
+            ),
+        ] {
+            if from.is_file() {
+                std::fs::copy(&from, &to)?;
+            }
+        }
+        Ok(())
+    }
 }
 
 /// Task status alias for the judge module.
