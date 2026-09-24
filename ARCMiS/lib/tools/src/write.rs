@@ -1,9 +1,13 @@
 //! `write` creates or overwrites one file inside the sandbox root.
 
-use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
-use serde::Deserialize;
 use std::path::PathBuf;
 use std::sync::Arc;
+
+use rig::tool::Tool;
+use rig::tool::ToolContext;
+use rig::tool::ToolExecutionError;
+use rig::tool::ToolOutput;
+use serde::Deserialize;
 
 /// `write` writes one file under the root and returns a fresh hashline tag.
 pub struct Write {
@@ -27,10 +31,11 @@ impl Write {
 }
 
 impl Tool for Write {
-    const NAME: &'static str = "write";
-    type Error = ToolExecutionError;
     type Args = WriteArgs;
+    type Error = ToolExecutionError;
     type Output = ToolOutput;
+
+    const NAME: &'static str = "write";
 
     fn description(&self) -> String {
         "Create or overwrite one file inside the sandbox root.".to_owned()

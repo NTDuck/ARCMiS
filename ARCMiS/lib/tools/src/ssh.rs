@@ -12,10 +12,14 @@ use std::fs::read_to_string;
 use std::path::Path;
 use std::path::PathBuf;
 
-use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
-
-use crate::util::proc::{capture, clamp_seconds};
+use rig::tool::Tool;
+use rig::tool::ToolContext;
+use rig::tool::ToolExecutionError;
+use rig::tool::ToolOutput;
 use serde::Deserialize;
+
+use crate::util::proc::capture;
+use crate::util::proc::clamp_seconds;
 
 /// `ssh` runs one command on a configured remote host and returns its output.
 pub struct Ssh {
@@ -36,10 +40,11 @@ impl Ssh {
 }
 
 impl Tool for Ssh {
-    const NAME: &'static str = "ssh";
-    type Error = ToolExecutionError;
     type Args = SshArgs;
+    type Error = ToolExecutionError;
     type Output = ToolOutput;
+
+    const NAME: &'static str = "ssh";
 
     fn description(&self) -> String {
         "Run one command on a configured remote host over ssh.".to_owned()

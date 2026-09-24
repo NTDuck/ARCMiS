@@ -1,13 +1,19 @@
 //! `search` finds regex matches across files and directories.
 
-use crate::util::paths::{relative_path, resolve_roots};
-use grep_matcher::Matcher as _;
-use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
-use serde::Deserialize;
 use std::fs::read;
 use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Arc;
+
+use grep_matcher::Matcher as _;
+use rig::tool::Tool;
+use rig::tool::ToolContext;
+use rig::tool::ToolExecutionError;
+use rig::tool::ToolOutput;
+use serde::Deserialize;
+
+use crate::util::paths::relative_path;
+use crate::util::paths::resolve_roots;
 
 /// `search` finds regex matches and returns hashline-tagged context.
 pub struct Search {
@@ -30,10 +36,11 @@ impl Search {
 }
 
 impl Tool for Search {
-    const NAME: &'static str = "search";
-    type Error = ToolExecutionError;
     type Args = SearchArgs;
+    type Error = ToolExecutionError;
     type Output = ToolOutput;
+
+    const NAME: &'static str = "search";
 
     fn description(&self) -> String {
         "Search files under the sandbox root for one regex and return matches with context.".to_owned()

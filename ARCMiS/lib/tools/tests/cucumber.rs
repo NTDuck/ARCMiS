@@ -1,7 +1,11 @@
 //! Cucumber suite for the tool catalog.
 
-use cucumber::{given, then, when, World};
-use tools::{Catalog, Tool};
+use cucumber::given;
+use cucumber::then;
+use cucumber::when;
+use cucumber::World;
+use tools::Catalog;
+use tools::Tool;
 
 #[derive(Debug, Default)]
 #[derive(cucumber::World)]

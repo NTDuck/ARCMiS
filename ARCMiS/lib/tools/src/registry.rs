@@ -7,13 +7,14 @@
 //! Execution stays with the concrete tool instances the host wires into each
 //! agent builder.
 
+use std::collections::BTreeMap;
+use std::marker::PhantomData;
+use std::sync::Arc;
+
 use crate::envelope::AnyTool;
 use crate::envelope::ToolCategory;
 use crate::envelope::ToolEnvelope;
 use crate::envelope::ToolMetadata;
-use std::collections::BTreeMap;
-use std::marker::PhantomData;
-use std::sync::Arc;
 
 /// Registry of envelope-addressable tools.
 #[derive(Clone, Default)]

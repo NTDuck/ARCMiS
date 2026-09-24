@@ -4,13 +4,14 @@
 //! merge into one text block under a timeout, and a timeout kill is
 //! distinguishable from a spawn failure.
 
-use rig::tool::ToolExecutionError;
 use std::collections::HashMap;
 use std::fmt;
 use std::path::Path;
 use std::pin::pin;
 use std::process::Stdio;
 use std::time::Duration;
+
+use rig::tool::ToolExecutionError;
 
 /// Output size kept before truncation.
 pub const OUTPUT_LIMIT: usize = 50 * 1024;
@@ -48,9 +49,8 @@ impl ProcError {
 impl fmt::Display for ProcError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ProcError::Spawn(message) | ProcError::Timeout(message) | ProcError::Status(message) => {
-                formatter.write_str(message)
-            },
+            ProcError::Spawn(message) | ProcError::Timeout(message) | ProcError::Status(message) =>
+                formatter.write_str(message),
         }
     }
 }

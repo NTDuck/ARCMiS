@@ -1,8 +1,9 @@
 //! Sandbox path helpers shared by the search tools.
 
-use crate::util::path::path_sanitize;
 use std::path::Path;
 use std::path::PathBuf;
+
+use crate::util::path::path_sanitize;
 
 /// Resolve requested root paths under the sandbox root. An absent or empty
 /// list resolves to the root itself.

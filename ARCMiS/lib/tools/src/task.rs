@@ -5,12 +5,16 @@
 //! execution lands when the runtime grows a spawner. Until then no job ever
 //! completes, and the job tool keeps reporting it as running.
 
-use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
-use serde::Deserialize;
 use std::collections::BTreeSet;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::MutexGuard;
+
+use rig::tool::Tool;
+use rig::tool::ToolContext;
+use rig::tool::ToolExecutionError;
+use rig::tool::ToolOutput;
+use serde::Deserialize;
 
 /// `task` validates and queues task definitions as registry jobs.
 pub struct Task {
@@ -31,10 +35,11 @@ impl Task {
 }
 
 impl Tool for Task {
-    const NAME: &'static str = "task";
-    type Error = ToolExecutionError;
     type Args = TaskArgs;
+    type Error = ToolExecutionError;
     type Output = ToolOutput;
+
+    const NAME: &'static str = "task";
 
     fn description(&self) -> String {
         "Validate task definitions and queue them as background jobs.".to_owned()

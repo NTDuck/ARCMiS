@@ -5,11 +5,15 @@
 //! the returned tree. `init` replaces the whole list. `start` marks one item
 //! in progress and demotes every other in-progress item to pending.
 
-use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
-use serde::Deserialize;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::MutexGuard;
+
+use rig::tool::Tool;
+use rig::tool::ToolContext;
+use rig::tool::ToolExecutionError;
+use rig::tool::ToolOutput;
+use serde::Deserialize;
 
 /// `todo` applies list edits and returns the tree summary.
 pub struct Todo {
@@ -30,10 +34,11 @@ impl Todo {
 }
 
 impl Tool for Todo {
-    const NAME: &'static str = "todo";
-    type Error = ToolExecutionError;
     type Args = TodoArgs;
+    type Error = ToolExecutionError;
     type Output = ToolOutput;
+
+    const NAME: &'static str = "todo";
 
     fn description(&self) -> String {
         "Apply edits to the phased task list and return the tree summary.".to_owned()
@@ -161,7 +166,7 @@ fn op_start(phases: &mut Vec<TodoPhase>, step: &TodoOp, errors: &mut Vec<String>
     let target = step.task.as_deref().unwrap_or_default();
     match find_mut(phases, target) {
         None => errors.push(format!("task \"{target}\" not found")),
-        Some(_) => {
+        Some(_) =>
             for phase in phases.iter_mut() {
                 for item in phase.tasks.iter_mut() {
                     if item.content == target {
@@ -170,8 +175,7 @@ fn op_start(phases: &mut Vec<TodoPhase>, step: &TodoOp, errors: &mut Vec<String>
                         item.status = String::from("pending");
                     }
                 }
-            }
-        },
+            },
     }
 }
 
@@ -203,7 +207,7 @@ fn op_settle(phases: &mut Vec<TodoPhase>, step: &TodoOp, errors: &mut Vec<String
     let phase_name = step.phase.as_deref();
     match find_mut_scoped(phases, phase_name, target) {
         None => errors.push(format!("task \"{target}\" not found")),
-        Some(_) => {
+        Some(_) =>
             for phase in phases.iter_mut() {
                 if let Some(name) = phase_name {
                     if phase.name != name {
@@ -221,12 +225,12 @@ fn op_settle(phases: &mut Vec<TodoPhase>, step: &TodoOp, errors: &mut Vec<String
                     item.status = String::from(new_status);
                     true
                 });
-            }
-        },
+            },
     }
 }
 
-/// Append one task. The tool creates the phase when it misses it. The tool rejects duplicates.
+/// Append one task. The tool creates the phase when it misses it. The tool
+/// rejects duplicates.
 fn op_append(phases: &mut Vec<TodoPhase>, step: &TodoOp, errors: &mut Vec<String>) {
     let target = step.task.as_deref().unwrap_or_default();
     if target.is_empty() {
@@ -267,7 +271,8 @@ fn find_mut<'list>(phases: &'list mut [TodoPhase], target: &str) -> Option<&'lis
     phases.iter_mut().flat_map(|phase| phase.tasks.iter_mut()).find(|item| item.content == target)
 }
 
-/// Find one item. When the caller passes a phase name, the tool searches only that phase.
+/// Find one item. When the caller passes a phase name, the tool searches only
+/// that phase.
 fn find_mut_scoped<'list>(
     phases: &'list mut [TodoPhase],
     phase_name: Option<&str>,

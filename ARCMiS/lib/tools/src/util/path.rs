@@ -1,7 +1,6 @@
 //! Path helpers shared by tools.
 
 use std::path::Component;
-
 /// Normalize a tool-supplied path under `root`. Reject absolute paths and
 /// `..` components so writes cannot escape the sandbox. Return the joined
 /// path or an error message for the model.
