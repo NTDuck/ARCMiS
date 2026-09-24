@@ -154,7 +154,10 @@ impl ManagerLoop {
 
         // Run the specialist with its turn budget.
         let agent = self.agents.agent(role).ok_or_else(|| anyhow::anyhow!("agent for {} missing", role.name()))?;
-        let instruction = format!("{task}\n\nRun phase: {:?}. Guard: edit only inside workspace/target/.", state.phase);
+        let instruction = format!(
+            "{task}\n\nRun phase: {:?}. Guard: edit only inside workspace/target/. When the task's deliverable is written, stop and summarize what you did; do not re-read your own output.",
+            state.phase
+        );
         let output = prompt_with_retries(agent, &instruction, self.max_retries).await?;
 
         // Judge the output by the role's contract line.
