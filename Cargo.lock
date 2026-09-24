@@ -33,6 +33,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "ARCMiS-orchestrator"
+version = "0.1.0"
+dependencies = [
+ "ARCMiS-agents",
+ "ARCMiS-blackboard",
+ "ARCMiS-tools",
+ "anyhow",
+ "rig",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.20",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "ARCMiS-snapcompact"
 version = "0.1.0"
 dependencies = [

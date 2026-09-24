@@ -1,0 +1,32 @@
+[package]
+name = "ARCMiS-orchestrator"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "MAS run orchestrator: state machine, manager loop, guard, judges, circuit breaker."
+
+[lib]
+name = "orchestrator"
+
+[dependencies]
+anyhow.workspace = true
+ARCMiS-agents = { path = "../agents" }
+ARCMiS-blackboard = { path = "../blackboard" }
+ARCMiS-tools = { path = "../tools" }
+rig = "0.42.0"
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+
+[dev-dependencies]
+tempfile = "3"
+
+[lints.rust]
+non_snake_case = "allow"
+
+[lints.clippy]
+let_and_return = "allow"
+too_many_arguments = "allow"
