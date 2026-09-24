@@ -11,13 +11,8 @@ use std::collections::BTreeMap;
 fn registry_module_is_reachable() {
     // The real client construction runs in the harness binary; here we pin
     // that the public build symbol resolves with the right bounds.
-    let _build_fn: fn(
-        &rig::providers::ollama::Client,
-        &Fleet,
-        &Run,
-    ) -> anyhow::Result<agents::MasAgents> = |_client, _fleet, _run| {
-        unreachable!("construction requires a live client; covered by the e2e run")
-    };
+    let _build_fn: fn(&rig::providers::ollama::Client, &Fleet, &Run) -> anyhow::Result<agents::MasAgents> =
+        |_client, _fleet, _run| unreachable!("construction requires a live client; covered by the e2e run");
     let _ = _build_fn;
 }
 
@@ -27,12 +22,7 @@ fn role_catalog_is_complete_and_prompted() {
     assert_eq!(Role::ALL.len(), 11);
     for role in Role::ALL {
         let text = agents::mas::roles::prompt_text(role).expect("prompt file");
-        assert!(
-            text.len() > 200,
-            "prompt for {} suspiciously short: {} bytes",
-            role.name(),
-            text.len()
-        );
+        assert!(text.len() > 200, "prompt for {} suspiciously short: {} bytes", role.name(), text.len());
         assert_eq!(Role::from_name(role.name()), Some(role));
     }
     assert_eq!(Role::from_name("failure-analyst"), Some(Role::FailureAnalyst));
@@ -44,19 +34,11 @@ fn tool_allowlists_partition_read_and_write() {
     // Judges never get write tools; the analyst and movers do.
     for role in [Role::Validator, Role::Critic, Role::FleetAnalyst] {
         let tools = role.allowed_tools();
-        assert!(
-            !tools.contains(&"edit") && !tools.contains(&"write"),
-            "{} must be read-only",
-            role.name()
-        );
+        assert!(!tools.contains(&"edit") && !tools.contains(&"write"), "{} must be read-only", role.name());
     }
     for role in [Role::Analyst, Role::Translator, Role::Repairer, Role::Tester] {
         let tools = role.allowed_tools();
-        assert!(
-            tools.contains(&"edit") || tools.contains(&"write"),
-            "{} must be able to write",
-            role.name()
-        );
+        assert!(tools.contains(&"edit") || tools.contains(&"write"), "{} must be able to write", role.name());
     }
 }
 
@@ -70,10 +52,7 @@ fn fleet_ladder_promotes_and_demotes() {
     // Default assignment: weakest rung.
     assert_eq!(fleet.model_for(Role::Translator), "qwen3:4b");
     // Promote one rung at a time; stop at the top.
-    assert_eq!(
-        fleet.promote(Role::Translator),
-        Some("qwen3:8b".to_owned())
-    );
+    assert_eq!(fleet.promote(Role::Translator), Some("qwen3:8b".to_owned()));
     assert_eq!(fleet.model_for(Role::Translator), "qwen3:8b");
     fleet.promote(Role::Translator).expect("second promote");
     assert_eq!(fleet.promote(Role::Translator), None, "top of ladder");

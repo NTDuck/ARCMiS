@@ -34,12 +34,7 @@ impl MasAgents {
 /// `tools_for_role` supplies the portable tool adapters for one role; each
 /// adapter is registered on that role's agent only, so the model sees
 /// exactly its allowlist.
-pub fn build<C, F>(
-    client: &C,
-    fleet: &Fleet,
-    run: &Run,
-    tools_for_role: F,
-) -> anyhow::Result<MasAgents>
+pub fn build<C, F>(client: &C, fleet: &Fleet, run: &Run, tools_for_role: F) -> anyhow::Result<MasAgents>
 where
     C: CompletionClient,
     C::CompletionModel: 'static,
@@ -59,16 +54,20 @@ where
             builder = builder.additional_params(params);
         }
         // Fold the adapters through the public portable_dynamic_tool; the
-        // first call transitions the builder into the tools state.
+        // first call transitions the builder into the tools state. A role
+        // with an empty allowlist builds tool-free (the manager).
         let mut adapters = tools_for_role(role).into_iter();
-        let mut with_tools = match adapters.next() {
-            Some(first) => builder.portable_dynamic_tool(first.tool),
-            None => anyhow::bail!("role {} has no tools", role.name()),
+        let agent = match adapters.next() {
+            Some(first) => {
+                let mut with_tools = builder.portable_dynamic_tool(first.tool);
+                for named in adapters {
+                    with_tools = with_tools.portable_dynamic_tool(named.tool);
+                }
+                with_tools.build()
+            },
+            None => builder.build(),
         };
-        for named in adapters {
-            with_tools = with_tools.portable_dynamic_tool(named.tool);
-        }
-        agents.insert(role.name(), with_tools.build());
+        agents.insert(role.name(), agent);
     }
     Ok(MasAgents {
         agents: Arc::new(agents),

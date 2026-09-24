@@ -5,11 +5,8 @@ use agents::util::config::Config;
 
 #[test]
 fn mas_config_yml_parses() {
-    let text = std::fs::read_to_string(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../../../assets/configs/mas/config.yml"
-    ))
-    .expect("config file");
+    let text = std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../assets/configs/mas/config.yml"))
+        .expect("config file");
     let config: Config = serde_yaml::from_str(&text).expect("parse");
     assert_eq!(config.run.provider, "ollama");
     assert_eq!(config.run.model, "qwen3.8:27b-mtp-q4_K_M");

@@ -65,23 +65,20 @@ impl Role {
     /// Resolve a role from the router's one-word answer.
     #[must_use]
     pub fn from_name(name: &str) -> Option<Self> {
-        Role::ALL
-            .into_iter()
-            .find(|role| role.name() == name.trim().to_ascii_lowercase())
+        Role::ALL.into_iter().find(|role| role.name() == name.trim().to_ascii_lowercase())
     }
 
     /// Tool names this role may call. The guard consults this list.
     #[must_use]
     pub fn allowed_tools(self) -> &'static [&'static str] {
         match self {
-            // The manager reads state and writes plans/tasks/notes through
-            // the blackboard files, not through code tools.
-            Role::Manager => &["read", "search", "find", "ask"],
+            // The manager decides from the round prompt; tools only let it
+            // loop reading files instead of answering (observed: 40 reads of
+            // plan.md). The round prompt carries plan, notes, tasks, ledger.
+            Role::Manager => &[],
             // Analysts write artifacts (source map, graphs); judges read only.
             Role::Analyst => &["read", "write", "search", "find", "ast_grep"],
-            Role::Validator | Role::Critic | Role::FleetAnalyst => {
-                &["read", "search", "find", "ast_grep"]
-            },
+            Role::Validator | Role::Critic | Role::FleetAnalyst => &["read", "search", "find", "ast_grep"],
             // The planner reads artifacts and writes plan.json through write.
             Role::Planner => &["read", "search", "find", "write"],
             // Movers touch the target tree.
@@ -89,9 +86,7 @@ impl Role {
                 &["read", "write", "edit", "search", "find", "ast_grep", "ast_edit", "bash"]
             },
             // The tester also runs the test command through bash.
-            Role::Tester => {
-                &["read", "write", "edit", "search", "find", "ast_grep", "bash"]
-            },
+            Role::Tester => &["read", "write", "edit", "search", "find", "ast_grep", "bash"],
             // The failure analyst reads logs and code only.
             Role::FailureAnalyst => &["read", "search", "find", "bash"],
             Role::Architect => &["read", "search", "find", "write"],
@@ -103,7 +98,6 @@ impl Role {
 /// same text the prompts directory carries.
 pub fn prompt_text(role: Role) -> anyhow::Result<String> {
     let file = format!("{}/prompts/{}.md", env!("CARGO_MANIFEST_DIR"), role.name());
-    let text = std::fs::read_to_string(&file)
-        .map_err(|error| anyhow::anyhow!("read prompt {file}: {error}"))?;
+    let text = std::fs::read_to_string(&file).map_err(|error| anyhow::anyhow!("read prompt {file}: {error}"))?;
     Ok(text)
 }

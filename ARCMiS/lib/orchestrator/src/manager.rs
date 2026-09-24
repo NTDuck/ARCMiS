@@ -362,8 +362,7 @@ fn is_transient(error: &rig::completion::PromptError) -> bool {
             // deterministic failures (budget exhaustion, malformed output);
             // retrying one restarts the conversation from scratch and burns
             // the same budget again.
-            rig::completion::CompletionError::HttpError(_)
-            | rig::completion::CompletionError::ProviderError(_) => true,
+            rig::completion::CompletionError::HttpError(_) | rig::completion::CompletionError::ProviderError(_) => true,
             _ => false,
         },
         _ => false,
@@ -432,14 +431,8 @@ impl ManagerLoop {
             (self.run_dir.join("state.json"), meta.join("state.json")),
             (self.run_dir.join("tasks.json"), meta.join("tasks.json")),
             (self.run_dir.join("plan.md"), meta.join("plan.md")),
-            (
-                self.run_dir.join("ledgers/decisions.jsonl"),
-                meta.join("decisions.jsonl"),
-            ),
-            (
-                self.run_dir.join("ledgers/failures.jsonl"),
-                meta.join("failures.jsonl"),
-            ),
+            (self.run_dir.join("ledgers/decisions.jsonl"), meta.join("decisions.jsonl")),
+            (self.run_dir.join("ledgers/failures.jsonl"), meta.join("failures.jsonl")),
         ] {
             if from.is_file() {
                 std::fs::copy(&from, &to)?;
