@@ -64,18 +64,18 @@ impl ManagerLoop {
         let state = blackboard::state::read(&self.run_dir)?
             .ok_or_else(|| anyhow::anyhow!("run state missing; preflight must write it"))?;
         let prompt = self.manager_prompt(&state)?;
-        let manager = self
-            .agents
-            .agent(Role::Manager)
-            .ok_or_else(|| anyhow::anyhow!("manager agent missing"))?;
+        let manager = self.agents.agent(Role::Manager).ok_or_else(|| anyhow::anyhow!("manager agent missing"))?;
 
         // The manager answers with one verb line: `DECISION: <verb> [args]`.
         let answer = prompt_with_retries(manager, &prompt, self.max_retries).await?;
-        let decision = parse_decision(&answer)
-            .ok_or_else(|| anyhow::anyhow!("manager gave no DECISION line: {answer:?}"))?;
+        let decision =
+            parse_decision(&answer).ok_or_else(|| anyhow::anyhow!("manager gave no DECISION line: {answer:?}"))?;
 
         match decision {
-            DecisionVerb::Delegate { role, task } => {
+            DecisionVerb::Delegate {
+                role,
+                task,
+            } => {
                 // Every delegation runs under a tracked task; the task list
                 // is the progress signal the breaker reads.
                 let tasks = TaskList::new(&self.run_dir);
@@ -83,39 +83,50 @@ impl ManagerLoop {
                 self.execute_delegation(role, &task, &task_id).await
             },
             DecisionVerb::Replan => {
-                self.ledger
-                    .append_decision(&Decision {
-                        at: now(),
-                        phase: format!("{:?}", state.phase),
-                        action: "replan".into(),
-                        detail: serde_json::json!({"round": self.round}),
-                        reasoning: "manager rewrote the plan".into(),
-                    })?;
+                self.ledger.append_decision(&Decision {
+                    at: now(),
+                    phase: format!("{:?}", state.phase),
+                    action: "replan".into(),
+                    detail: serde_json::json!({"round": self.round}),
+                    reasoning: "manager rewrote the plan".into(),
+                })?;
                 Ok(RoundOutcome::Replanned)
             },
-            DecisionVerb::Escalate { reason } => {
-                self.ledger
-                    .append_decision(&Decision {
-                        at: now(),
-                        phase: format!("{:?}", state.phase),
-                        action: "escalate".into(),
-                        detail: serde_json::json!({"round": self.round}),
-                        reasoning: reason.clone(),
-                    })?;
+            DecisionVerb::Escalate {
+                reason,
+            } => {
+                self.ledger.append_decision(&Decision {
+                    at: now(),
+                    phase: format!("{:?}", state.phase),
+                    action: "escalate".into(),
+                    detail: serde_json::json!({"round": self.round}),
+                    reasoning: reason.clone(),
+                })?;
                 Ok(RoundOutcome::Escalated(reason))
             },
             DecisionVerb::Done => {
-                let record =
-                    state_machine::apply(&mut snapshot_phase(&self.run_dir)?, state.phase, "phase exit condition holds")?;
+                // Advance to the successor phase, not a self-transition:
+                // only Pilot/Migration/Integration may self-transition.
+                let next = state_machine::next(state.phase);
+                let mut current = snapshot_phase(&self.run_dir)?;
+                let record = state_machine::apply(&mut current, next, "phase exit condition holds")?;
+                blackboard::state::write(&self.run_dir, &current)?;
                 tracing::info!(from = ?record.from, to = ?record.to, "phase transition");
                 Ok(RoundOutcome::PhaseDone(record.to))
             },
-            DecisionVerb::Finish { reason } => Ok(RoundOutcome::Finished(reason)),
+            DecisionVerb::Finish {
+                reason,
+            } => Ok(RoundOutcome::Finished(reason)),
         }
     }
 
     /// Delegate one task: route, build the guard, run the specialist, judge.
-    async fn execute_delegation(&mut self, role_hint: Option<String>, task: &str, task_id: &str) -> anyhow::Result<RoundOutcome> {
+    async fn execute_delegation(
+        &mut self,
+        role_hint: Option<String>,
+        task: &str,
+        task_id: &str,
+    ) -> anyhow::Result<RoundOutcome> {
         let state = blackboard::state::read(&self.run_dir)?.expect("state read above");
         // Route: keyword pass first, model fallback.
         let role = role_hint
@@ -130,20 +141,16 @@ impl ManagerLoop {
         let _guard = Arc::new(Guard::new(role.allowed_tools().to_vec(), self.workspace.clone()));
 
         // Append the delegation decision.
-        self.ledger
-            .append_decision(&Decision {
-                at: now(),
-                phase: format!("{:?}", state.phase),
-                action: "delegate".into(),
-                detail: serde_json::json!({"role": role.name(), "task": task}),
-                reasoning: "manager round".into(),
-            })?;
+        self.ledger.append_decision(&Decision {
+            at: now(),
+            phase: format!("{:?}", state.phase),
+            action: "delegate".into(),
+            detail: serde_json::json!({"role": role.name(), "task": task}),
+            reasoning: "manager round".into(),
+        })?;
 
         // Run the specialist with its turn budget.
-        let agent = self
-            .agents
-            .agent(role)
-            .ok_or_else(|| anyhow::anyhow!("agent for {} missing", role.name()))?;
+        let agent = self.agents.agent(role).ok_or_else(|| anyhow::anyhow!("agent for {} missing", role.name()))?;
         let instruction = format!("{task}\n\nRun phase: {:?}. Guard: edit only inside workspace/target/.", state.phase);
         let output = prompt_with_retries(agent, &instruction, self.max_retries).await?;
 
@@ -154,12 +161,11 @@ impl ManagerLoop {
             Judged::Pass => {
                 let tasks = TaskList::new(&self.run_dir);
                 tasks.set_status(task_id, TaskStatus::Done)?;
-                self.ledger
-                    .append_observation(&blackboard::Observation {
-                        at: now(),
-                        kind: "delegation_pass".into(),
-                        detail: serde_json::json!({"role": role.name(), "task": task_id}),
-                    })?;
+                self.ledger.append_observation(&blackboard::Observation {
+                    at: now(),
+                    kind: "delegation_pass".into(),
+                    detail: serde_json::json!({"role": role.name(), "task": task_id}),
+                })?;
                 Ok(RoundOutcome::Delegated {
                     role,
                     task: task.to_owned(),
@@ -169,14 +175,13 @@ impl ManagerLoop {
             Judged::Fail(reason) => {
                 let tasks = TaskList::new(&self.run_dir);
                 tasks.set_status(task_id, TaskStatus::Blocked)?;
-                self.ledger
-                    .append_failure(&blackboard::Failure {
-                        at: now(),
-                        phase: format!("{:?}", state.phase),
-                        category: "model".into(),
-                        root_cause: reason.clone(),
-                        suggested_action: "re-delegate with a tighter instruction".into(),
-                    })?;
+                self.ledger.append_failure(&blackboard::Failure {
+                    at: now(),
+                    phase: format!("{:?}", state.phase),
+                    category: "model".into(),
+                    root_cause: reason.clone(),
+                    suggested_action: "re-delegate with a tighter instruction".into(),
+                })?;
                 Ok(RoundOutcome::Delegated {
                     role,
                     task: task.to_owned(),
@@ -231,19 +236,20 @@ enum DecisionVerb {
     /// Rewrite the plan.
     Replan,
     /// Escalate a repeated failure.
-    Escalate { reason: String },
+    Escalate {
+        reason: String,
+    },
     /// Declare the phase done.
     Done,
     /// Stop the run.
-    Finish { reason: String },
+    Finish {
+        reason: String,
+    },
 }
 
 /// Parse the manager's `DECISION:` line.
 fn parse_decision(answer: &str) -> Option<DecisionVerb> {
-    let line = answer
-        .lines()
-        .rev()
-        .find(|line| line.trim_start().to_ascii_uppercase().starts_with("DECISION:"))?;
+    let line = answer.lines().rev().find(|line| line.trim_start().to_ascii_uppercase().starts_with("DECISION:"))?;
     let body = line.trim_start()["DECISION:".len()..].trim();
     let (verb, rest) = body.split_once(char::is_whitespace).unwrap_or((body, ""));
     match verb.to_ascii_lowercase().as_str() {
@@ -321,11 +327,7 @@ enum Judged {
 /// times. Transport- and server-side failures (HTTP 4xx/5xx wrapped in
 /// `HttpError`, provider 500s) are retryable; a run that exhausted its budget
 /// or was cancelled is not.
-async fn prompt_with_retries(
-    agent: &rig::agent::Agent,
-    prompt: &str,
-    max_retries: u32,
-) -> anyhow::Result<String> {
+async fn prompt_with_retries(agent: &rig::agent::Agent, prompt: &str, max_retries: u32) -> anyhow::Result<String> {
     use rig::completion::Prompt as _;
     let mut attempt = 0;
     loop {
@@ -397,8 +399,7 @@ fn time_now() -> String {
 
 /// Load the state fresh for a phase transition write.
 fn snapshot_phase(run_dir: &std::path::Path) -> anyhow::Result<blackboard::State> {
-    blackboard::state::read(run_dir)?
-        .ok_or_else(|| anyhow::anyhow!("state missing in {run_dir:?}"))
+    blackboard::state::read(run_dir)?.ok_or_else(|| anyhow::anyhow!("state missing in {run_dir:?}"))
 }
 
 /// Task status alias for the judge module.

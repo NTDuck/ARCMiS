@@ -45,14 +45,8 @@ pub fn snapshot(run_dir: &std::path::Path) -> anyhow::Result<Progress> {
         phase_index: crate::state_machine::progress(state.phase),
         total_tasks: tasks.len(),
         done_tasks: tasks.iter().filter(|task| task.status == TaskStatus::Done).count(),
-        in_progress_tasks: tasks
-            .iter()
-            .filter(|task| task.status == TaskStatus::InProgress)
-            .count(),
-        blocked_tasks: tasks
-            .iter()
-            .filter(|task| task.status == TaskStatus::Blocked)
-            .count(),
+        in_progress_tasks: tasks.iter().filter(|task| task.status == TaskStatus::InProgress).count(),
+        blocked_tasks: tasks.iter().filter(|task| task.status == TaskStatus::Blocked).count(),
         batches_done,
         batches_total,
     })
@@ -77,10 +71,7 @@ fn count_batches(plan_json: &str, tasks: &[blackboard::Task]) -> (usize, usize) 
         .batches
         .iter()
         .filter(|batch| {
-            tasks.iter().any(|task| {
-                task.status == TaskStatus::Done
-                    && task.description.contains(&batch.id)
-            })
+            tasks.iter().any(|task| task.status == TaskStatus::Done && task.description.contains(&batch.id))
         })
         .count();
     (done, total)

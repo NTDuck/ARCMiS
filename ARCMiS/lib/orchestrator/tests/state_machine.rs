@@ -1,8 +1,8 @@
 //! State machine test: legal forward walks, legal regressions, illegal
 //! jumps, progress ordering, and breaker trips.
 
-use agents::Role;
 use agents::util::config::MasConfig;
+use agents::Role;
 use blackboard::Phase;
 use blackboard::State;
 use orchestrator::breaker::Breaker;
@@ -27,12 +27,7 @@ fn state_at(phase: Phase) -> State {
 fn forward_walk_is_legal_step_by_step() {
     let order = state_machine::forward_order();
     for window in order.windows(2) {
-        assert!(
-            is_legal(window[0], window[1]),
-            "forward step {:?} -> {:?} must be legal",
-            window[0],
-            window[1]
-        );
+        assert!(is_legal(window[0], window[1]), "forward step {:?} -> {:?} must be legal", window[0], window[1]);
     }
     // Skipping one phase is illegal.
     assert!(!is_legal(Phase::Preflight, Phase::Planning));
@@ -52,8 +47,7 @@ fn regressions_and_self_loops_are_legal() {
     assert!(is_legal(Phase::Pilot, Phase::Pilot));
     // Regression application mutates the state and records the reason.
     let mut state = state_at(Phase::Integration);
-    let record = state_machine::apply(&mut state, Phase::Migration, "tests failed")
-        .expect("legal regression");
+    let record = state_machine::apply(&mut state, Phase::Migration, "tests failed").expect("legal regression");
     assert_eq!(record.from, Phase::Integration);
     assert_eq!(record.to, Phase::Migration);
     assert_eq!(state.phase, Phase::Migration);
@@ -121,11 +115,7 @@ fn router_keyword_pass_covers_role_verbs() {
         ("add characterization tests and run the test command", Role::Tester),
     ];
     for (description, expected) in cases {
-        assert_eq!(
-            router::route_by_keywords(description),
-            Some(expected),
-            "routing {description:?}"
-        );
+        assert_eq!(router::route_by_keywords(description), Some(expected), "routing {description:?}");
     }
     // Unroutable text falls through to None.
     assert_eq!(router::route_by_keywords("do the thing"), None);
@@ -145,12 +135,12 @@ fn judge_parsers_accept_contract_lines() {
     assert!(judges::parse_diagnosis("DIAGNOSIS: bogus | x | y").is_none());
 
     // Verdicts.
-    let (passed, reason) = judges::parse_verdict("notes...\nVALIDATION: pass | contracts hold", "VALIDATION")
-        .expect("verdict");
+    let (passed, reason) =
+        judges::parse_verdict("notes...\nVALIDATION: pass | contracts hold", "VALIDATION").expect("verdict");
     assert!(passed);
     assert!(reason.contains("contracts"));
-    let (passed, _) = judges::parse_verdict("CRITIQUE: fail | silent behavior change in parser", "CRITIQUE")
-        .expect("verdict");
+    let (passed, _) =
+        judges::parse_verdict("CRITIQUE: fail | silent behavior change in parser", "CRITIQUE").expect("verdict");
     assert!(!passed);
 
     // Repair.
@@ -160,4 +150,26 @@ fn judge_parsers_accept_contract_lines() {
     assert_eq!(word, "conflict");
     let (word, _) = judges::parse_repair("REPAIR: failed | action did not fix it").expect("repair");
     assert_eq!(word, "failed");
+}
+
+#[test]
+fn next_walks_forward_and_stops_at_done() {
+    use blackboard::Phase;
+    use orchestrator::state_machine::next;
+    assert_eq!(next(Phase::Preflight), Phase::Discovery);
+    assert_eq!(next(Phase::Discovery), Phase::Contract);
+    assert_eq!(next(Phase::Planning), Phase::Pilot);
+    assert_eq!(next(Phase::FinalValidation), Phase::Done);
+    assert_eq!(next(Phase::Done), Phase::Done);
+}
+
+#[test]
+fn done_from_discovery_advances_not_self_transitions() {
+    use blackboard::Phase;
+    use orchestrator::state_machine;
+    let mut state = state_at(Phase::Discovery);
+    let next_phase = state_machine::next(state.phase);
+    let record = state_machine::apply(&mut state, next_phase, "phase exit condition holds").expect("legal");
+    assert_eq!(record.from, Phase::Discovery);
+    assert_eq!(record.to, Phase::Contract);
 }

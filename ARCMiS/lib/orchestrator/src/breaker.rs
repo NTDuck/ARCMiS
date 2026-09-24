@@ -2,8 +2,8 @@
 //! tokens burn without progress. The breaker is deterministic and
 //! config-driven; it never consults a model.
 
-use blackboard::Phase;
 use agents::util::config::MasConfig;
+use blackboard::Phase;
 
 /// Breaker verdict.
 #[derive(Debug, Clone, PartialEq, Eq)]

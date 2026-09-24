@@ -17,7 +17,10 @@ impl Guard {
     /// Build a guard for one role.
     #[must_use]
     pub fn new(allowed: Vec<&'static str>, workspace: Workspace) -> Self {
-        Self { allowed, workspace }
+        Self {
+            allowed,
+            workspace,
+        }
     }
 
     /// Whether the role may call this tool at all.
@@ -29,10 +32,7 @@ impl Guard {
     /// Whether the role may write this path. Read-only tools pass; write
     /// tools must target outside `source/`.
     pub fn permits_path(&self, tool_name: &str, path: &std::path::Path) -> anyhow::Result<()> {
-        anyhow::ensure!(
-            self.permits_tool(tool_name),
-            "tool '{tool_name}' is not allowed for this role"
-        );
+        anyhow::ensure!(self.permits_tool(tool_name), "tool '{tool_name}' is not allowed for this role");
         self.workspace.assert_source_readonly(path)
     }
 }
@@ -90,11 +90,7 @@ where
         self.inner.parameters()
     }
 
-    async fn call(
-        &self,
-        context: &mut rig::tool::ToolContext,
-        args: Self::Args,
-    ) -> Result<Self::Output, Self::Error> {
+    async fn call(&self, context: &mut rig::tool::ToolContext, args: Self::Args) -> Result<Self::Output, Self::Error> {
         // Path checks need the path out of the args; every write-capable tool
         // in this crate carries `path` or `file` as its target argument.
         if let Some(path) = arg_path(&args) {
@@ -124,9 +120,6 @@ impl ToolGuardError {
 /// path-shaped target return `None` and skip the path check.
 fn arg_path<T: serde::de::DeserializeOwned + serde::Serialize>(args: &T) -> Option<std::path::PathBuf> {
     let value = serde_json::to_value(args).ok()?;
-    let path = value
-        .get("path")
-        .or_else(|| value.get("file"))?
-        .as_str()?;
+    let path = value.get("path").or_else(|| value.get("file"))?.as_str()?;
     Some(std::path::PathBuf::from(path))
 }

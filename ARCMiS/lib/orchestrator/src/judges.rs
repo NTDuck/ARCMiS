@@ -34,15 +34,9 @@ pub struct Diagnosis {
 /// `DIAGNOSIS: <category> | <root cause> | <action>`.
 #[must_use]
 pub fn parse_diagnosis(text: &str) -> Option<Diagnosis> {
-    let line = text.lines().rev().find(|line| {
-        line.trim_start().to_ascii_uppercase().starts_with("DIAGNOSIS:")
-    })?;
+    let line = text.lines().rev().find(|line| line.trim_start().to_ascii_uppercase().starts_with("DIAGNOSIS:"))?;
     let body = line.trim();
-    let body = body
-        .split_once(':')
-        .map(|(_, rest)| rest)
-        .unwrap_or(body)
-        .trim();
+    let body = body.split_once(':').map(|(_, rest)| rest).unwrap_or(body).trim();
     let mut parts = body.split('|').map(str::trim);
     let category_raw = parts.next()?;
     let root_cause = parts.next().unwrap_or("unspecified").to_owned();
@@ -67,9 +61,10 @@ pub fn parse_diagnosis(text: &str) -> Option<Diagnosis> {
 #[must_use]
 pub fn parse_verdict(text: &str, keyword: &str) -> Option<(bool, String)> {
     let prefix = format!("{keyword}:");
-    let line = text.lines().rev().find(|line| {
-        line.trim_start().to_ascii_uppercase().starts_with(&prefix.to_ascii_uppercase())
-    })?;
+    let line = text
+        .lines()
+        .rev()
+        .find(|line| line.trim_start().to_ascii_uppercase().starts_with(&prefix.to_ascii_uppercase()))?;
     let body = line.trim_start()[prefix.len()..].trim();
     let mut parts = body.splitn(2, '|');
     let verdict = parts.next()?.trim().to_ascii_lowercase();
@@ -84,10 +79,7 @@ pub fn parse_verdict(text: &str, keyword: &str) -> Option<(bool, String)> {
 /// Parse the repairer's line: `REPAIR: applied|conflict|failed | <text>`.
 #[must_use]
 pub fn parse_repair(text: &str) -> Option<(&'static str, String)> {
-    let line = text
-        .lines()
-        .rev()
-        .find(|line| line.trim_start().to_ascii_uppercase().starts_with("REPAIR:"))?;
+    let line = text.lines().rev().find(|line| line.trim_start().to_ascii_uppercase().starts_with("REPAIR:"))?;
     let body = line.trim_start()["REPAIR:".len()..].trim();
     let mut parts = body.splitn(2, '|');
     let verdict = parts.next()?.trim().to_ascii_lowercase();

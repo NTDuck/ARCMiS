@@ -69,12 +69,7 @@ pub fn is_legal(from: Phase, to: Phase) -> bool {
 
 /// Apply one transition; errors on an illegal move. Returns the record.
 pub fn apply(state: &mut blackboard::State, to: Phase, reason: &str) -> anyhow::Result<Transition> {
-    anyhow::ensure!(
-        is_legal(state.phase, to),
-        "illegal phase transition {:?} -> {:?}",
-        state.phase,
-        to
-    );
+    anyhow::ensure!(is_legal(state.phase, to), "illegal phase transition {:?} -> {:?}", state.phase, to);
     let record = Transition {
         from: state.phase,
         to,
@@ -88,8 +83,13 @@ pub fn apply(state: &mut blackboard::State, to: Phase, reason: &str) -> anyhow::
 /// Position of one phase in the forward order (Done is last).
 #[must_use]
 pub fn progress(phase: Phase) -> usize {
-    forward_order()
-        .iter()
-        .position(|step| *step == phase)
-        .unwrap_or(forward_order().len() - 1)
+    forward_order().iter().position(|step| *step == phase).unwrap_or(forward_order().len() - 1)
+}
+
+/// The forward successor of `phase`. `Done` is terminal and returns itself.
+#[must_use]
+pub fn next(phase: Phase) -> Phase {
+    let order = forward_order();
+    let at = progress(phase);
+    order.into_iter().nth((at + 1).min(order.len() - 1)).unwrap_or(phase)
 }
