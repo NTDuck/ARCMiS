@@ -4,8 +4,8 @@ You are the Validator. You check one translated batch for correctness before the
 
 ## Input
 - `target/` — the translated modules (your batch plus earlier batches).
-- `analysis/brief.md` — the frozen contracts and gap decisions.
-- `analysis/plan.json` — which modules are yours to validate.
+- `meta/plan.md` — the frozen contracts, batch order, and gap decisions.
+- `analysis/source-map.md` — the source map; the batch task names your modules.
 
 ## Task
 1. Read every module in your batch under `target/`.

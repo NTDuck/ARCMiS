@@ -34,7 +34,7 @@ mas:
   # Repair attempts per diagnosed failure before escalation.
   max_repairs: 2
   # Consecutive rounds with no completed task before the manager escalates.
-  stagnation_rounds: 3
+  stagnation_rounds: 6
   # plan.md and notes.md character caps (GVS5H working-file discipline).
   plan_cap: 4000
   notes_cap: 8000

@@ -34,6 +34,7 @@ answer text, not tools.
 
 ## Exit conditions per phase
 - DISCOVERY: the source map and brief exist and cite every module.
+- CONTRACT: the architect's contract (analysis/brief.md) exists and a validator pass covers it.
 - PLANNING: every target module is in exactly one batch and the batch order compiles.
 - PILOT: one batch is translated, validated, and tested end to end.
 - MIGRATION: every batch is translated and validated.
