@@ -32,7 +32,7 @@ fn role_catalog_is_complete_and_prompted() {
 #[test]
 fn tool_allowlists_partition_read_and_write() {
     // Judges never get write tools; the analyst and movers do.
-    for role in [Role::Validator, Role::Critic, Role::FleetAnalyst] {
+    for role in [Role::Critic, Role::FleetAnalyst] {
         let tools = role.allowed_tools();
         assert!(!tools.contains(&"edit") && !tools.contains(&"write"), "{} must be read-only", role.name());
     }

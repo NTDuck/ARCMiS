@@ -78,7 +78,11 @@ impl Role {
             Role::Manager => &[],
             // Analysts write artifacts (source map, graphs); judges read only.
             Role::Analyst => &["read", "write", "search", "find", "ast_grep"],
-            Role::Validator | Role::Critic | Role::FleetAnalyst => &["read", "search", "find", "ast_grep"],
+            // The validator re-runs the test suite itself (the manager asks
+            // for 'cargo test' evidence); the critic and fleet analyst
+            // judge from reading only.
+            Role::Validator => &["read", "search", "find", "ast_grep", "bash"],
+            Role::Critic | Role::FleetAnalyst => &["read", "search", "find", "ast_grep"],
             // The planner reads artifacts and writes plan.json through write.
             Role::Planner => &["read", "search", "find", "write"],
             // Movers touch the target tree.

@@ -22,6 +22,8 @@ VALIDATION: pass|fail | <one-sentence reason>
 ```
 
 ## Rules
-- Do not edit any file. You read and judge only.
+- Do not edit any file. You read, run, and judge only.  is for running the
+  declared test/build commands, not for changing files.
+- Read each file at most once. At most 12 tool calls total; then write the verdict.
 - Cite file and line for every claim.
 - Fail the batch on any stub, contract break, or unauthorized surface change. Cosmetic issues are notes, not failures.
