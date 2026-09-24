@@ -1,0 +1,11 @@
+[package]
+name = "chtrie"
+version = "0.1.0"
+edition = "2021"
+description = "Coordinate hash trie (Rust port of the C chtrie library)"
+license = "BSD-3-Clause"
+
+# Keep this crate standalone (the repo root has its own Cargo workspace).
+[workspace]
+
+[dependencies]

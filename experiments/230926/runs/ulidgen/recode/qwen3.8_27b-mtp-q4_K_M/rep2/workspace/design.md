@@ -1,73 +1,79 @@
 # ulidgen — C → Rust Translation Design
 
-## 1. Source project overview
+## 1. Source project analysis
 
-`ulidgen` is a tiny public-domain C utility (by Leah Neukirchen) that generates
-ULIDs (Universally Unique Lexicographically Sortable Identifiers) or prefixes
-stdin lines with them.
+**Project:** `ulidgen` — a small public-domain CLI tool that generates ULIDs
+(Universally Unique Lexicographically Sortable Identifiers) or prefixes stdin
+lines with them. Author: Leah Neukirchen (Void Linux).
 
 ### Files
 
 | File | Role |
 |---|---|
-| `src/ulid.h` | One declaration: `void ulidgen_r(char[27]);` |
-| `src/ulid.c` | Core: fills a 27-byte buffer (26 chars + NUL) with a ULID |
-| `src/ulidgen.c` | CLI: `ulidgen [-n N] [-t]` |
-| `tests/test.c` | 4 tests (length, structure, uniqueness, sortability); structure test is commented out in `main` |
-| `Makefile` | Builds `ulid.o`, compiles+runs `test_1` via `gcc`, installs binary + man page |
-| `README` | Generated man page (ulidgen.1) |
+| `src/ulid.c` / `src/ulid.h` | Core library: `void ulidgen_r(char ulid[27])` — fills a 27-byte buffer (26 chars + NUL) with a ULID |
+| `src/ulidgen.c` | CLI entry point: `ulidgen [-n N \| -t]` |
+| `tests/test.c` | 4 tests: length, structure (commented out in main), uniqueness, sortability |
+| `Makefile` | Builds `ulid.o` and a `test_1` binary; coverage flags; install to `/usr/local` |
+| `README` | Man-page text (ulidgen.1 rendered) |
 
 ### Core algorithm (`ulidgen_r`)
 
 1. `clock_gettime(CLOCK_REALTIME)` → millisecond timestamp `t`.
-2. Encode the 10 most significant base-32 digits (Crockford alphabet
-   `0123456789ABCDEFGHJKMNPQRSTVWXYZ`) into `ulid[0..10]`, dividing `t` by 32
-   each step. If **every** digit already matched the previous value in the
-   buffer, `same` stays 1.
-3. If `same` (same millisecond as the previous call, buffer was reused by the
-   caller): increment the 16-char random part in place, right to left, wrapping
-   `'Z'` → `'0'`. If all 16 chars were `'Z'`, sleep 1.234567 ms and recurse.
-   If any random char is not in the alphabet (corrupt buffer), fall through to
-   full re-randomization.
-4. Otherwise: `getentropy(rnd, 16)` (abort on failure), then
-   `buf[i] = alphabet[rnd[i] % 32]` for i in 0..16 (note: deliberate `% 32`
-   modulo bias — keep it for fidelity).
+2. Encode the 40-bit timestamp into the first 10 chars using repeated
+   `t % 32` / `t /= 32` over the Crockford base32 alphabet
+   `"0123456789ABCDEFGHJKMNPQRSTVWXYZ"` (no I, L, O, U).
+3. Track `same`: whether all 10 timestamp chars are unchanged from the
+   previous call (i.e. same millisecond).
+4. If `same`: increment the 16-char random part (indices 10..25) in place:
+   - scan from index 25 down while char == 'Z', setting to '0';
+   - if all wrapped (i < 0): `nanosleep(1234567 ns)` and **recurse**;
+   - if the char is in the alphabet: advance to the next alphabet char;
+   - if the char is *not* in the alphabet (corrupt buffer): fall through and
+     re-randomize.
+5. Otherwise: `getentropy(rnd, 16)` (abort on failure) and encode each byte
+   as `b32alphabet[rnd[i] % 32]`.
 
-Key subtlety: **uniqueness within the same millisecond relies on the caller
-reusing the same buffer** so the function can detect "same timestamp" and
-increment. The Rust port must preserve this buffer-reuse contract.
+### CLI behavior (`main`)
 
-### CLI behavior (`ulidgen.c`)
+- `getopt` with `"n:t"`: `-n N` (default 1, `atol`), `-t` flag.
+- `-t`: `setvbuf(stdout, 0, _IOLBF, 0)` (line-buffered), then
+  `getdelim` loop printing `"%s %s"` (ULID, space, line — line keeps its
+  trailing newline).
+- default: print `n` ULIDs, one per line (`puts`).
+- Exit status: `exit(!!ferror(stdout))` — non-zero if a write error occurred.
 
-- `getopt("n:t")`: `-n N` (default 1), `-t` tag mode.
-- `-t`: `setvbuf(stdout, _IOLBF)` (line-buffered), `getdelim` loop,
-  `printf("%s %s", ulid, line)` — line includes its trailing newline.
-- default: loop `n` times, `puts(ulid)`.
-- Exit status: `exit(!!ferror(stdout))` — 0 on success, 1 on write error.
-
-### Tests (`tests/test.c`)
+### Tests
 
 - `test_ulid_length`: strlen == 26.
-- `test_ulid_structure`: all chars in Crockford alphabet (commented out in main, but present).
+- `test_ulid_structure`: all chars in Crockford alphabet (defined but not
+  called from main — we will enable it in the Rust port).
 - `test_ulid_uniqueness`: two consecutive ULIDs differ.
-- `test_ulid_sortability`: ULID after a 1.5 ms sleep sorts after the first.
+- `test_ulid_sortability`: after a 1.5 ms `nanosleep`, second ULID sorts
+  after the first (lexicographic `<`).
+
+### Build/test setup
+
+Plain `Makefile`, no package manager, no third-party dependencies — pure
+POSIX libc (`getopt`, `getdelim`, `getentropy`, `clock_gettime`,
+`nanosleep`). Test command for the target: `cargo test`.
 
 ## 2. Dependency mapping (C → Rust)
 
-| C source facility | Rust counterpart | Notes |
-|---|---|---|
-| `getentropy(2)` (unistd.h) | **`getrandom` crate** (v0.3.x) | Direct syscall wrapper, `getrandom::getrandom(&mut buf)`. Alternative: `rand` crate, but `getrandom` is the idiomatic 1:1 counterpart. |
-| `clock_gettime(CLOCK_REALTIME)` | `std::time::SystemTime::now()` | No crate needed. Convert to ms since UNIX epoch via `Duration::as_millis()`. |
-| `nanosleep` | `std::thread::sleep(Duration)` | No crate needed. |
-| `getopt` (unistd.h) | **`getopts` crate** (v0.5.x) | Direct POSIX-getopt counterpart (`getopts::Options`, `optopt("n")`, `optflag("t")`). Alternative: `clap` (heavier, different UX). Manual parsing is also acceptable; `getopts` is the idiomatic match. |
-| `getdelim` | `std::io::BufRead::read_line` | Std. |
-| `setvbuf(_IOLBF)` | `std::io::LineWriter` | Std. |
-| `atol` | `str::parse::<i64>()` | Std. |
-| `ferror`/`exit` | check `io::Result` of writes; `std::process::exit(1)` on error | Std. |
-| `assert.h` tests | `assert!` / `assert_eq!` in `#[test]` fns | Std. |
+The C project has **zero third-party dependencies**; every capability comes
+from libc. Mapping to idiomatic Rust:
 
-**Cargo.toml dependencies:** `getrandom = "0.3"` (with `std` feature),
-`getopts = "0.5"`. Everything else is std.
+| C capability | Source | Rust counterpart | Notes |
+|---|---|---|---|
+| `getentropy(2)` | `src/ulid.c` | **`getrandom`** crate (`getrandom::getrandom(&mut buf)`) | `std` does not expose `getentropy`; `getrandom` is the idiomatic, zero-alloc, no-OS-alloc crate. Alternative: `rand::rngs::OsRng`. We choose `getrandom` for minimalism. |
+| `clock_gettime(CLOCK_REALTIME)` | `src/ulid.c` | `std::time::SystemTime::now()` + `Duration::duration_since(UNIX_EPOCH)` | std only; millisecond precision is sufficient. |
+| `nanosleep` | `src/ulid.c`, `tests/test.c` | `std::thread::sleep(Duration)` | std only. |
+| `getopt` | `src/ulidgen.c` | **`clap`** (derive API) | Idiomatic CLI parsing. `-n N` (default 1), `-t` flag. (Could be done with `std::env::args`, but clap is the idiomatic choice and matches the man-page interface exactly.) |
+| `getdelim` / `setvbuf(_IOLBF)` | `src/ulidgen.c` | `std::io::BufRead::lines()` on `stdin.lock()`; per-line `flush()` | Line buffering achieved by flushing after each printed line. |
+| `exit(!!ferror(stdout))` | `src/ulidgen.c` | propagate `io::Result`; `std::process::exit(1)` on write error | Rust: check `flush()`/write results and exit non-zero. |
+| `assert` | `tests/test.c` | `assert!` / `assert_eq!` in `#[test]` fns | Direct port. |
+
+**Cargo.toml dependencies:** `clap` (with `derive` feature), `getrandom`.
+Both are stable, widely used crates.
 
 ## 3. Target project structure
 
@@ -75,67 +81,53 @@ increment. The Rust port must preserve this buffer-reuse contract.
 ulidgen/
 ├── Cargo.toml
 ├── src/
-│   ├── lib.rs        # pub mod ulid;  (exposes ulidgen_r for tests)
-│   ├── ulid.rs       # core ULID generation (port of src/ulid.c)
+│   ├── lib.rs        # ulidgen_r() core (port of src/ulid.c) + tests module
 │   └── main.rs       # CLI (port of src/ulidgen.c)
 └── tests/
-    └── test.rs       # port of tests/test.c
+    └── ulid.rs       # integration tests (port of tests/test.c)
 ```
 
-### `src/ulid.rs` — API
+### `src/lib.rs`
 
-Preserve the C contract (caller reuses the buffer so same-ms increment works):
+- `const B32_ALPHABET: [u8; 32]` — Crockford alphabet bytes.
+- `pub fn ulidgen_r(buf: &mut [u8; 27])` — faithful port of the C function:
+  - `buf[26] = 0` (NUL terminator, kept for API fidelity).
+  - Millisecond timestamp via `SystemTime`.
+  - Timestamp encoding loop `i in (0..10).rev()`, tracking `same`.
+  - In-place increment of `buf[10..26]` with the same 'Z'→'0' carry logic;
+    overflow → `thread::sleep(Duration::from_nanos(1_234_567))` and recurse
+    (or loop; recursion depth is bounded by the 16-char counter, keep
+    recursion for fidelity).
+  - Re-randomize path: `getrandom(&mut rnd)` (16 bytes), map
+    `rnd[i] % 32` → alphabet byte.
+- Convenience wrapper `pub fn ulid() -> String` (26 chars) for the CLI/tests.
+- `#[cfg(test)] mod tests` — unit tests ported from `tests/test.c`:
+  - `test_ulid_length` (26 chars),
+  - `test_ulid_structure` (all chars in alphabet — **enabled**, it was
+    commented out in the C main),
+  - `test_ulid_uniqueness`,
+  - `test_ulid_sortability` (1.5 ms sleep between generations).
 
-```rust
-pub const B32_ALPHABET: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+### `src/main.rs`
 
-/// Fill `ulid` (26 chars + NUL, mirroring the C char[27]) with a new ULID.
-/// The previous contents are used to detect a same-millisecond repeat and
-/// to increment the random part in place, exactly like the C original.
-pub fn ulidgen_r(ulid: &mut [u8; 27])
-```
+- `clap::Parser` struct:
+  - `-n, --count <N>`: `u64`, default 1 (C used `atol`; we use `u64` and
+    treat 0 as zero output — matches `for (i=0; i<n; i++)`).
+  - `-t, --tag`: `bool` flag.
+- `-t` mode: read `stdin` lines with `BufRead::lines()`, print
+  `"{ulid} {line}\n"` (note: `lines()` strips the newline, so re-append
+  `'\n'` to preserve the C `getdelim` semantics where the line keeps its
+  trailing newline), flush after each line (line-buffering equivalent).
+- Default mode: print `n` ULIDs, one per line.
+- Error handling: on any stdout write/flush error, `eprintln!` and
+  `std::process::exit(1)` (equivalent of `exit(!!ferror(stdout))`).
 
-Implementation notes:
-- `ulid[26] = 0` (NUL) as in C.
-- Timestamp: `SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as u64`.
-- Timestamp loop: `for i in (0..10).rev() { if ulid[i] != alphabet[(t % 32) as usize] { ulid[i] = ...; same = false; } t /= 32; }` — careful to mirror C's `same` flag semantics (starts `true`, cleared on any mismatch).
-- Same-ms branch: walk `buf[15..0]`; while `buf[i] == b'Z'` set `b'0'`; if `i` underflows (all Z), `thread::sleep(Duration::from_nanos(1_234_567))` and recurse `ulidgen_r(ulid)`.
-- Increment: find position of `buf[i]` in the alphabet; if found, set to next char; if not found (invalid char), fall through to re-randomize.
-- Random: `let mut rnd = [0u8; 16]; getrandom(&mut rnd).unwrap_or_else(|_| std::process::abort());` then `buf[i] = alphabet[rnd[i] as usize % 32]` — **keep the `% 32` bias** for behavioral fidelity.
+### `tests/ulid.rs`
 
-### `src/main.rs` — CLI
-
-- Parse with `getopts`: option `n` (takes value, default 1), flag `t`.
-- Keep a `let mut ulid = [0u8; 27];` buffer reused across calls (critical for
-  same-ms uniqueness).
-- `-t` mode: wrap stdout in `LineWriter`; loop `stdin.lock().read_line(&mut line)`;
-  print `ulid[..26] as str` + b" " + line (line keeps its `\n`).
-- Default mode: `n` iterations, print `ulid` + newline.
-- On any write error: `eprintln!` optional, `std::process::exit(1)` (mirrors
-  `exit(!!ferror(stdout))`).
-- Convert bytes to `str` safely: the buffer only ever contains alphabet chars
-  and NUL, so `std::str::from_utf8(&ulid[..26]).unwrap()` is fine.
-
-### `tests/test.rs`
-
-Port all four tests (including the commented-out structure test — enable it,
-it passes):
-
-```rust
-use ulidgen::ulidgen_r;
-
-fn is_valid_ulid(ulid: &str) -> bool { /* len 26, all chars in alphabet */ }
-
-#[test] fn test_ulid_length() { let mut u = [0u8; 27]; ulidgen_r(&mut u); assert_eq!(std::str::from_utf8(&u[..26]).unwrap().len(), 26); }
-#[test] fn test_ulid_structure() { ... assert!(is_valid_ulid(...)); }
-#[test] fn test_ulid_uniqueness() { /* two consecutive calls differ */ }
-#[test] fn test_ulid_sortability() { /* sleep 1.5 ms between calls; assert u1 < u2 */ }
-```
-
-Note: `cargo test` runs tests in parallel threads by default; each test uses
-its own buffer, so there is no cross-test interference. The sortability test
-needs `std::thread::sleep(Duration::from_millis(1))` + a small extra margin
-(the C test sleeps 1.5 ms; use `Duration::from_micros(1_500)` to match).
+Integration tests mirroring `tests/test.c` against the public API
+(`ulidgen::ulid()` / `ulidgen_r`): length, structure, uniqueness,
+sortability. This keeps `cargo test` running both unit and integration
+tests.
 
 ### Cargo.toml
 
@@ -146,39 +138,44 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-getrandom = "0.3"
-getopts = "0.5"
+clap = { version = "4", features = ["derive"] }
+getrandom = "0.2"
 ```
 
-## 4. Risks & mitigations
+## 4. Translation risks
 
-1. **Buffer-reuse contract** — the biggest semantic risk. If the Rust port
-   returns a fresh `String` each call, same-millisecond uniqueness breaks
-   (the `test_ulid_uniqueness` test would be flaky). Mitigation: keep the
-   `&mut [u8; 27]` in-out API exactly like C.
-2. **`same` flag edge case** — C sets `same = 0` only when a digit *differs*;
-   a fresh zeroed buffer has all digits differing, so `same` is 0 and the
-   random path is taken. The Rust port must initialize `same = true` and clear
-   on mismatch, not on match.
-3. **All-'Z' wraparound recursion** — must recurse after the 1.234567 ms
-   sleep, not loop; recursion depth is bounded in practice.
-4. **Invalid-char fallthrough** — if the random part contains a char outside
-   the alphabet, C re-randomizes instead of incrementing. Preserve this branch.
-5. **Modulo bias (`rnd[i] % 32`)** — deliberately non-uniform; do not "fix"
-   it with rejection sampling, or behavior diverges from the reference.
-6. **Exit status** — C exits 1 only on stdout write error. Rust panics on
-   `unwrap` would exit 101; handle write errors explicitly with `exit(1)`.
-7. **Line handling in `-t` mode** — `getdelim` keeps the trailing newline and
-   handles a final line without newline; `read_line` behaves the same. Print
-   the line verbatim after `ulid + " "`.
-8. **`getrandom` failure** — C calls `abort()`; mirror with
-   `unwrap_or_else(|_| std::process::abort())`.
-9. **Parallel test execution** — tests are independent (own buffers), but the
-   sortability test relies on wall-clock ordering; 1.5 ms sleep is the same
-   margin as the C test, acceptable.
+1. **`getentropy` → `getrandom`:** `getrandom` returns `Result`; the C code
+   calls `abort()` on failure. Rust: `expect("getrandom failed")` or
+   `unwrap()` preserves the abort-on-failure semantics.
+2. **In-place buffer mutation:** C mutates a caller-owned 27-byte buffer and
+   relies on prior contents for the "same millisecond" detection. Rust's
+   `&mut [u8; 27]` preserves this exactly; the CLI must keep a persistent
+   buffer across calls (as C's `main` does with `char ulid[27]`).
+   **Do not** regenerate a fresh buffer per call in the CLI, or the
+   increment-on-same-ms path never triggers.
+3. **`rnd[i] % 32` modulo bias:** the C code uses `byte % 32`, which is
+   slightly biased (256 % 32 == 0, so actually *unbiased* — 256 is a multiple
+   of 32; no risk, keep the same expression for fidelity).
+4. **Line semantics in `-t` mode:** C's `getdelim` keeps the trailing
+   newline; Rust's `lines()` strips it. Must re-append `'\n'` to match
+   output byte-for-byte. Also C prints `"%s %s"` — ULID, single space, line.
+5. **Sortability test flakiness:** relies on a 1.5 ms sleep guaranteeing a
+   different millisecond. Same risk in Rust; keep the 1.5 ms sleep.
+   (If the two calls land in the same ms, the increment path still makes
+   the second ULID larger, so the test is actually robust either way.)
+6. **Exit status:** C exits `1` only on stdout write error. Rust must not
+   let clap's own error paths change the contract; clap already exits 2 on
+   usage errors, which is acceptable (C's getopt also exits non-zero on
+   usage errors).
+7. **Recursion on counter overflow:** bounded (max 16 levels of 'Z' wrap),
+   safe to port as recursion; alternatively convert to a loop.
+8. **`atol` vs typed parsing:** C silently accepts garbage for `-n`; clap
+   will reject non-numeric input with an error. This is a behavior
+   improvement, not a regression.
 
-## 5. Build & test
+## 5. Verification
 
-- Build: `cargo build`
-- Test: `cargo test` (required test command)
-- Run: `cargo run -- -n 3`, `echo hi | cargo run -- -t`
+- `cargo test` runs unit tests (lib.rs) + integration tests (tests/ulid.rs).
+- Manual smoke: `cargo run -- -n 3` prints 3 ULIDs;
+  `echo hello | cargo run -- -t` prints `<ULID> hello`.
+- Output format: 26 Crockford-base32 chars, lexicographically sortable.

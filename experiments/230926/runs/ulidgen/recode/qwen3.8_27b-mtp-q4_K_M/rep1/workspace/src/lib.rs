@@ -1,99 +1,82 @@
-//! Core ULID generation — faithful port of `src/ulid.c`.
+//! ulidgen — generate ULIDs (Universally Unique Lexicographically Sortable
+//! Identifiers).
 //!
-//! A ULID is a 26-character Crockford base32 string: 48-bit millisecond
-//! timestamp (10 chars) + 80 random bits (16 chars). The function is
-//! stateful via its argument buffer: it reads the previous ULID to detect
-//! the same-millisecond case and increment the random part in place.
+//! Port of the public-domain C `ulidgen_r` (src/ulid.c).
+//!
+//! To the extent possible under law, Leah Neukirchen <leah@vuxu.org>
+//! has waived all copyright and related or neighboring rights to this work.
+//! http://creativecommons.org/publicdomain/zero/1.0/
 
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::Duration;
 
-/// Crockford base32 alphabet (no I, L, O, U).
-pub const B32_ALPHABET: &str = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+/// Crockford Base32 alphabet (32 chars, no I, L, O, U).
+/// Port of the static `b32alphabet` in src/ulid.c.
+pub const B32_ALPHABET: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
-/// Generate a ULID into `ulid` (26 chars + NUL terminator), exactly like the
-/// C `ulidgen_r(char[27])`.
+/// Port of C `ulidgen_r(char ulid[27])`.
 ///
-/// Reads the previous contents of `ulid` to detect the same-millisecond case
-/// and increment the random part in place (with sleep + recursion on
-/// Z-carry overflow); otherwise fills the random part via `getentropy`.
+/// `ulid` must hold the previously generated ULID (26 bytes) or be zeroed;
+/// on return it holds a new 26-byte ULID. The 27th byte (`ulid[26]`) is a
+/// sentinel mirroring the C NUL terminator and stays `0`.
+///
+/// Behavior mirrors the C source 1:1:
+/// - encode the current millisecond timestamp into `ulid[0..10]`;
+/// - if the timestamp part is unchanged (same millisecond, caller reused the
+///   buffer), increment the 16-char random part in place; if it wraps from
+///   all-'Z', sleep ~1.23 ms and recurse;
+/// - otherwise fill `ulid[10..26]` from `getrandom::fill` (abort on failure).
 pub fn ulidgen_r(ulid: &mut [u8; 27]) {
-    let alphabet = B32_ALPHABET.as_bytes();
-
-    // Get current time in milliseconds
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system clock before UNIX epoch");
-    let mut t = now.as_secs() as u64 * 1000 + now.subsec_nanos() as u64 / 1_000_000;
-
-    // Encode the 48-bit timestamp into the first 10 chars
-    let mut same = true;
-    for i in (0..10).rev() {
-        let c = alphabet[(t % 32) as usize];
-        if ulid[i] != c {
-            same = false;
-        }
-        ulid[i] = c;
-        t /= 32;
-    }
-
-    if same {
-        // Same millisecond: increment the random part in place
-        let mut all_z = true;
-        let mut invalid = false;
-        for j in (0..16).rev() {
-            let pos = 10 + j;
-            if ulid[pos] == b'Z' {
-                ulid[pos] = b'0';
-            } else if alphabet.contains(&ulid[pos]) {
-                let idx = alphabet.iter().position(|&c| c == ulid[pos]).unwrap();
-                ulid[pos] = alphabet[idx + 1];
-                all_z = false;
-                break;
-            } else {
-                invalid = true;
-                break;
-            }
-        }
-
-        if invalid {
-            // Invalid character: fall through to full re-randomization
-            let mut rnd = [0u8; 16];
-            if std::os::unix::fs::getentropy(&mut rnd).is_err() {
-                std::process::abort();
-            }
-            for i in 0..16 {
-                ulid[10 + i] = alphabet[rnd[i] as usize % 32];
-            }
-            ulid[26] = 0;
-            return;
-        }
-
-        if all_z {
-            // Carry overflow: sleep and recurse
-            std::thread::sleep(std::time::Duration::from_nanos(1_234_567));
-            ulidgen_r(ulid);
-            return;
-        }
-    } else {
-        // Fill random part with entropy
-        let mut rnd = [0u8; 16];
-        if std::os::unix::fs::getentropy(&mut rnd).is_err() {
-            std::process::abort();
-        }
-        for i in 0..16 {
-            ulid[10 + i] = alphabet[rnd[i] as usize % 32];
-        }
-    }
-
-    ulid[26] = 0;
+    // TODO: implement (see design.md section 3, src/lib.rs)
+    let _ = (ulid, B32_ALPHABET, Duration::from_nanos(1_234_567));
+    todo!("ulidgen_r not yet implemented")
 }
 
-/// Ergonomic wrapper: generate one ULID and return it as a 26-char String.
-///
-/// Generates into a zeroed `[0u8; 27]` buffer via [`ulidgen_r`] and returns
-/// the first 26 bytes as a String.
+/// Convenience: generate a fresh ULID as a `String` (no prior state).
+/// Starts from a zeroed buffer, so the first call always randomizes —
+/// same as C's zero-initialized `char ulid[27] = { 0 }`.
 pub fn ulid() -> String {
+    // TODO: implement
     let mut buf = [0u8; 27];
     ulidgen_r(&mut buf);
-    String::from_utf8_lossy(&buf[..26]).into_owned()
+    String::from_utf8(buf[..26].to_vec()).expect("ULID is always valid UTF-8")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn alphabet_is_32_chars() {
+        // TODO: implement
+        assert_eq!(B32_ALPHABET.len(), 32);
+    }
+
+    #[test]
+    fn ulid_length() {
+        // TODO: implement
+        let u = ulid();
+        assert_eq!(u.len(), 26);
+    }
+
+    #[test]
+    fn ulid_structure() {
+        // TODO: implement
+        let u = ulid();
+        assert!(u.bytes().all(|b| B32_ALPHABET.contains(&b)));
+    }
+
+    #[test]
+    fn ulid_uniqueness() {
+        // TODO: implement
+        assert_ne!(ulid(), ulid());
+    }
+
+    #[test]
+    fn ulid_sortability() {
+        // TODO: implement
+        let a = ulid();
+        std::thread::sleep(Duration::from_millis(2));
+        let b = ulid();
+        assert!(a < b);
+    }
 }

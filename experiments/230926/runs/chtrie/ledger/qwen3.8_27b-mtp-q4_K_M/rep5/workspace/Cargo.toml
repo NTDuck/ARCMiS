@@ -1,0 +1,11 @@
+[package]
+name = "chtrie"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "chtrie"
+path = "src/lib.rs"
+
+# Keep this crate out of any enclosing workspace.
+[workspace]

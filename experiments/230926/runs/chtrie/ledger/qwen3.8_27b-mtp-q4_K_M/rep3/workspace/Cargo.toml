@@ -1,0 +1,11 @@
+[package]
+name = "chtrie"
+version = "0.1.0"
+edition = "2021"
+description = "Compressed hash trie (CH-Trie), Rust port of the C chtrie library"
+
+[lib]
+name = "chtrie"
+path = "src/lib.rs"
+
+[workspace]

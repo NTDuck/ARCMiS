@@ -1,20 +1,22 @@
-# AMP — C → Rust Translation Design
+# AMP → Rust Translation Design
 
 ## 1. Source Project Research
 
-### What it is
-`amp` is a tiny C library implementing the "Abstract Message Protocol"
-(AMP), originally from `node-amp`. It encodes an argv-style message into a
-binary buffer and decodes it back. MIT licensed, ~100 lines of C.
+### Overview
+AMP is a tiny C implementation of the "Abstract Message Protocol" (originally
+`node-amp` by TJ Holowaychuk). It encodes an argv-style message into a binary
+buffer and decodes it back. MIT licensed, distributed as a clibs package
+(`package.json`, repo `clibs/amp`, version 0.0.1).
 
 ### File inventory
 | File | Role |
 |---|---|
-| `src/amp.h` | Public API: `AMP_VERSION` (1), `amp_t` struct, prototypes |
-| `src/amp.c` | Implementation: u32be read/write, `amp_decode`, `amp_decode_arg`, `amp_encode` |
-| `tests/test.c` | Single test: encode 3 args, decode header + args, assert values |
-| `Makefile` | gcc build with coverage flags; `make test` runs the binary |
+| `src/amp.h` | Public API: `AMP_VERSION` (1), `amp_t` struct, 3 function prototypes |
+| `src/amp.c` | Implementation: u32be read/write, `amp_encode`, `amp_decode`, `amp_decode_arg` |
+| `tests/test.c` | Single test: encode 3 args, decode header, decode each arg, assert equality |
+| `Makefile` | gcc build with `-fprofile-arcs -ftest-coverage`; `make` builds `test.out` and runs it |
 | `package.json` | clibs metadata (name `amp`, src `amp.c`/`amp.h`) |
+| `Readme.md` | Usage example + protocol description |
 
 ### Public API (C)
 ```c
@@ -23,53 +25,50 @@ binary buffer and decodes it back. MIT licensed, ~100 lines of C.
 typedef struct { short version; short argc; char *buf; } amp_t;
 
 char *amp_encode(char **argv, int argc);   // malloc'd buffer, caller frees
-void  amp_decode(amp_t *msg, char *buf);   // parses 1-byte header, sets msg->buf cursor
-char *amp_decode_arg(amp_t *msg);          // reads u32be len + data, malloc'd copy, advances cursor
+void  amp_decode(amp_t *msg, char *buf);   // parses 1-byte header, advances msg->buf
+char *amp_decode_arg(amp_t *msg);          // malloc'd copy of next arg, advances cursor
 ```
 
 ### Wire format
 ```
-------------+------------+------------+ ...
-| <ver/argc> | <length>   | <data>     | additional args
-| 1 byte     | 4 bytes BE | len bytes  |
-------------+------------+------------+
+------------+----------+------------+ ...
+| <ver/argc> | <length> | <data>     | additional arguments
+------------+----------+------------+
 ```
-- Byte 0: high nibble = protocol version (1), low nibble = argc (0–15).
-- Each argument: 4-byte big-endian length followed by raw bytes.
+- Byte 0: version in high nibble (`buf[0] >> 4`), argc in low nibble (`buf[0] & 0xf`).
+- Each argument: 4-byte **big-endian** length, then that many raw bytes.
+- Arguments are length-prefixed, **not** NUL-terminated — they may contain arbitrary bytes.
+- argc is limited to 15 by the 4-bit field (the C code does not validate this).
 
-### Behavioral notes / edge cases
-- `argc` is limited to 4 bits (0–15); the C code does not validate this.
-- `amp_decode_arg` does no bounds checking (reads past buffer on malformed input).
-- `amp_encode`/`amp_decode_arg` return `NULL` on allocation failure.
-- Decoded args are raw byte copies (not NUL-terminated); length comes from the header.
-- No third-party dependencies — pure C standard library (`string.h`, `stdlib.h`, `stdint.h`).
+### Build/test setup
+- `make` → compiles `tests/test.c` + `src/amp.c` into `test.out`, runs it; prints `ok` on success.
+- No external dependencies; libc only (`string.h`, `stdlib.h`, `stdint.h`).
 
 ## 2. Third-Party Library Analysis
 
-The source project has **zero third-party dependencies** (only libc).
-Therefore the Rust translation needs **no external crates** — everything is
-covered by the standard library:
+The C project has **zero third-party dependencies** (libc only). Therefore the
+Rust port needs **no external crates** — everything is expressible with `std`:
 
-| C dependency | Rust counterpart |
-|---|---|
-| `string.h` (`strlen`, `memcpy`) | `str::len`, `slice::copy_from_slice` (std) |
-| `stdlib.h` (`malloc`) | `Vec<u8>` / `Box<[u8]>` (std) |
-| `stdint.h` (u32be helpers) | `u32::from_be_bytes` / `u32::to_be_bytes` (std) |
-| `assert.h` (tests) | `assert!` / `cargo test` (std) |
+| C dependency | Rust counterpart | Notes |
+|---|---|---|
+| `string.h` (`strlen`, `memcpy`) | `std::slice` / `Vec::extend_from_slice` | Lengths come from the protocol, not NUL termination |
+| `stdlib.h` (`malloc`) | `Vec<u8>` / `Box<[u8]>` | Ownership replaces manual free |
+| `stdint.h` (`uint32_t`) | `u32` | Use `u32::to_be_bytes` / `u32::from_be_bytes` instead of manual shifts |
+| `assert.h` (tests) | `assert!` / `assert_eq!` | Built into std |
 
 ## 3. Target Project Design (Rust)
 
-### Crate layout
+### Layout
 ```
 amp/
-├── Cargo.toml          # name = "amp", edition 2021, no dependencies
+├── Cargo.toml
 ├── src/
 │   └── lib.rs          # the whole library (small enough for one file)
 └── tests/
-    └── test.rs         # port of tests/test.c (integration test)
+    └── test.rs         # integration test mirroring tests/test.c
 ```
 
-### `Cargo.toml`
+### Cargo.toml
 ```toml
 [package]
 name = "amp"
@@ -77,89 +76,97 @@ version = "0.0.1"
 edition = "2021"
 description = "Abstract Message Protocol"
 license = "MIT"
+keywords = ["amp", "tcp", "udp", "message", "protocol", "encode", "decode"]
 
 [dependencies]
-# none
 ```
 
-### Public API (Rust)
-Idiomatic translation: slices instead of `char*`, `Vec<u8>` instead of
-malloc'd buffers, `Option`/`Result` instead of `NULL`.
-
+### API design (idiomatic Rust)
 ```rust
 pub const VERSION: u8 = 1;
 
-/// A decoded AMP message with a cursor over the remaining argument bytes.
+/// Decoded AMP message header with a cursor into the payload.
 pub struct AmpMessage {
     pub version: u8,
     pub argc: u8,
-    buf: &[u8],   // cursor: remaining undecoded argument bytes
-}
-
-impl AmpMessage {
-    /// Decode the 1-byte header in `buf`, leaving the cursor at the args.
-    pub fn decode(buf: &[u8]) -> Option<AmpMessage>;
-
-    /// Decode the next argument (u32be length + data), advancing the cursor.
-    /// Returns None if the buffer is truncated.
-    pub fn decode_arg(&mut self) -> Option<Vec<u8>>;
+    buf: &[u8],   // remaining payload; advanced by decode_arg
 }
 
 /// Encode an argv into an AMP message buffer.
-/// Returns None if argc > 15 (does not fit in the header nibble).
-pub fn encode(argv: &[&[u8]]) -> Option<Vec<u8>>;
+pub fn encode(argv: &[&[u8]]) -> Vec<u8>;
+
+/// Parse the 1-byte header of `buf` into `msg`.
+/// Returns Err if the buffer is shorter than 1 byte.
+pub fn decode(msg: &mut AmpMessage, buf: &[u8]) -> Result<(), AmpError>;
+
+/// Decode the next argument, advancing the cursor.
+/// Returns Err if the buffer is truncated (bad length or missing data).
+pub fn decode_arg(msg: &mut AmpMessage) -> Result<Vec<u8>, AmpError>;
 ```
 
 Design decisions:
-- **`encode(argv: &[&[u8]])`** — generic over bytes, works for `&str`
-  (via `.as_bytes()`) and arbitrary binary args, matching the C API which
-  copies raw bytes. `Option<Vec<u8>>` for the argc>15 case (C silently
-  truncated; we reject).
-- **`AmpMessage::decode(buf: &[u8]) -> Option<AmpMessage>`** — takes a
-  borrow, no ownership transfer (C's `amp_t` just held a pointer).
-- **`decode_arg(&mut self) -> Option<Vec<u8>>`** — returns an owned
-  `Vec<u8>` (equivalent of the C malloc'd copy), advances the cursor.
-  Bounds-checked: returns `None` on truncated input instead of UB.
-- **u32be** via `u32::from_be_bytes` / `u32::to_be_bytes` — replaces the
-  hand-rolled `read_u32_be`/`write_u32_be`.
-- `version`/`argc` are `u8` (C used `short`; values fit in a byte).
+- **Bytes, not strings**: arguments are length-prefixed binary, so the API
+  takes/returns `&[u8]` / `Vec<u8>`. A convenience `encode_str(argv: &[&str])`
+  can be added, but the core stays byte-oriented (matches C semantics exactly).
+- **Borrowed cursor**: `AmpMessage` holds a `&[u8]` slice (not an owned copy),
+  so `decode_arg` can return `Result<&[u8], _>` borrowing from the message —
+  no per-argument allocation, unlike the C `malloc` per arg. We can expose
+  `decode_arg` returning `Result<&[u8], AmpError>` (zero-copy) — this is the
+  idiomatic improvement over C.
+- **Errors**: C signals failure with `NULL`; Rust uses a small
+  `AmpError` (e.g. `Truncated`, `InvalidArgc`) or simply `std::io::Error`-style
+  enum. `encode` can't fail (no fallible allocation in safe Rust), so it
+  returns `Vec<u8>` directly.
+- **Validation**: `encode` should reject `argc > 15` (the 4-bit field) — the
+  C code silently corrupts the header for argc ≥ 16; returning an error or
+  panicking is safer. `decode` should validate `buf.len() >= 1`.
+- **Big-endian I/O**: use `u32::to_be_bytes` / `u32::from_be_bytes` instead of
+  the manual shift code in `amp.c`.
+- **Types**: C `short` → `u8` (both fields fit in 4 bits anyway).
 
 ### Tests
-- `tests/test.rs`: direct port of `tests/test.c` — encode
-  `["some", "stuff", "here"]`, decode header (assert version == 1,
-  argc == 3), decode the three args and assert their values.
-- Additional unit tests in `lib.rs` (`#[cfg(test)]`):
-  - round-trip with 0 args (argc = 0),
-  - round-trip with 15 args (max),
-  - `encode` with 16 args returns `None`,
-  - `decode_arg` on a truncated buffer returns `None`,
-  - binary (non-UTF8) argument round-trip,
-  - empty-string argument round-trip.
+`tests/test.rs` mirrors `tests/test.c`:
+```rust
+use amp::{encode, decode, decode_arg, AmpMessage, VERSION};
 
-### Build / test
-- `cargo build` compiles the library.
-- `cargo test` runs both the integration test (`tests/test.rs`) and the
-  unit tests — replaces `make test`.
+#[test]
+fn roundtrip() {
+    let args: Vec<&[u8]> = ["some", "stuff", "here"].iter().map(|s| s.as_bytes()).collect();
+    let buf = encode(&args);
+    let mut msg = AmpMessage::default();
+    decode(&mut msg, &buf).unwrap();
+    assert_eq!(msg.version, VERSION);
+    assert_eq!(msg.argc, 3);
+    for expected in ["some", "stuff", "here"] {
+        let arg = decode_arg(&mut msg).unwrap();
+        assert_eq!(arg, expected.as_bytes());
+    }
+}
+```
+Plus unit tests in `lib.rs` (`#[cfg(test)]`): empty argv, single arg,
+binary argument containing NUL bytes, truncated-buffer errors, argc > 15
+rejection.
+
+Test command: `cargo test` (runs both unit and integration tests).
 
 ## 4. Translation Risks
 
-1. **argc overflow**: C silently packs `argc` into 4 bits (values > 15
-   corrupt the version nibble). Rust version returns `None` — a behavior
-   change, but strictly safer. Documented in the API.
-2. **NULL vs Option**: C callers check for `NULL`; Rust callers match on
-   `Option`. Any FFI consumer would need adaptation, but the target is a
-   native Rust crate, so this is fine.
-3. **Bounds checking**: C `amp_decode_arg` reads past the buffer on
-   malformed input (UB). Rust returns `None` — tests must not assume the
-   C behavior on truncated input.
-4. **Ownership model**: C transfers ownership of malloc'd buffers to the
-   caller (who must `free`). Rust `Vec<u8>` is RAII — no leak risk, but
-   the "free by user" contract disappears; `decode_arg` returns a fresh
-   `Vec<u8>` each call, matching the C copy semantics.
-5. **NUL termination**: C args are raw byte copies (not C strings); the
-   Rust `Vec<u8>` preserves this exactly — no `String` conversion, so no
-   UTF-8 assumption is introduced.
-6. **Coverage flags**: the Makefile's `-fprofile-arcs -ftest-coverage`
-   have no direct `cargo test` equivalent; if coverage is needed,
-   `cargo-llvm-cov` (dev-only tool, not a dependency) is the idiomatic
-   choice. Not required for the translation.
+1. **argc overflow**: C packs argc into 4 bits without checking; a Rust port
+   must decide the behavior for `argc > 15` (error vs. panic). Choose `Result`
+   or `debug_assert` + documented limit.
+2. **NUL-termination assumption**: naive translation might use `str`/`CString`;
+   the protocol is length-prefixed and allows NUL bytes — must stay byte-based.
+3. **Ownership model**: C returns `malloc`'d buffers the caller must free;
+   Rust's zero-copy slice-based `decode_arg` changes the API shape (borrow
+   lifetime tied to the message). This is an improvement but a semantic
+   difference to document.
+4. **Error propagation**: C uses `NULL` returns; Rust must thread `Result`s
+   through `decode`/`decode_arg`, which changes the call-site ergonomics.
+5. **Endianness**: must remain big-endian on the wire regardless of host
+   architecture — `to_be_bytes`/`from_be_bytes` handle this correctly.
+6. **Length type**: C uses `uint32_t` for lengths; keep `u32` (not `usize`)
+   for wire fidelity, converting to slice indices carefully (lengths > buffer
+   size must be rejected, not wrapped).
+7. **Coverage flags**: the Makefile's gcov instrumentation has no direct
+   `cargo test` equivalent; not required for the port (use `cargo-llvm-cov`
+   optionally, but no dependency is added).

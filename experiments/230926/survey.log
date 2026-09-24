@@ -126,3 +126,306 @@ skip amp recode qwen3.8_27b-mtp-q4_K_M rep2 (done)
 {"project":"amp","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":3,"rc":1,"wall_s":443,"turns":11}
 === amp recode qwen3.8_27b-mtp-q4_K_M rep3 rc=1 wall=443s turns=11 2026-09-23T16:33:45+07:00
 === amp recode qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-23T16:33:46+07:00
+{"project":"amp","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":4,"rc":0,"wall_s":390,"turns":13}
+=== amp recode qwen3.8_27b-mtp-q4_K_M rep4 rc=0 wall=390s turns=13 2026-09-23T16:40:16+07:00
+=== amp recode qwen3.8_27b-mtp-q4_K_M rep5 start 2026-09-23T16:40:16+07:00
+{"project":"amp","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":5,"rc":0,"wall_s":823,"turns":15}
+=== amp recode qwen3.8_27b-mtp-q4_K_M rep5 rc=0 wall=823s turns=15 2026-09-23T16:53:59+07:00
+skip ulidgen monolith qwen3.8_27b-mtp-q4_K_M rep1 (done)
+skip ulidgen monolith qwen3.8_27b-mtp-q4_K_M rep2 (done)
+skip ulidgen monolith qwen3.8_27b-mtp-q4_K_M rep3 (done)
+skip ulidgen monolith qwen3.8_27b-mtp-q4_K_M rep4 (done)
+skip ulidgen monolith qwen3.8_27b-mtp-q4_K_M rep5 (done)
+skip ulidgen ledger qwen3.8_27b-mtp-q4_K_M rep1 (done)
+skip ulidgen ledger qwen3.8_27b-mtp-q4_K_M rep2 (done)
+skip ulidgen ledger qwen3.8_27b-mtp-q4_K_M rep3 (done)
+skip ulidgen ledger qwen3.8_27b-mtp-q4_K_M rep4 (done)
+skip ulidgen ledger qwen3.8_27b-mtp-q4_K_M rep5 (done)
+=== ulidgen recode qwen3.8_27b-mtp-q4_K_M rep1 start 2026-09-23T16:53:59+07:00
+{"project":"ulidgen","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":1,"rc":1,"wall_s":776,"turns":16}
+=== ulidgen recode qwen3.8_27b-mtp-q4_K_M rep1 rc=1 wall=776s turns=16 2026-09-23T17:06:55+07:00
+=== ulidgen recode qwen3.8_27b-mtp-q4_K_M rep2 start 2026-09-23T17:06:55+07:00
+{"project":"ulidgen","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":2,"rc":0,"wall_s":770,"turns":12}
+=== ulidgen recode qwen3.8_27b-mtp-q4_K_M rep2 rc=0 wall=770s turns=12 2026-09-23T17:19:46+07:00
+=== ulidgen recode qwen3.8_27b-mtp-q4_K_M rep3 start 2026-09-23T17:19:46+07:00
+{"project":"ulidgen","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":3,"rc":0,"wall_s":840,"turns":15}
+=== ulidgen recode qwen3.8_27b-mtp-q4_K_M rep3 rc=0 wall=840s turns=15 2026-09-23T17:33:47+07:00
+=== ulidgen recode qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-23T17:33:47+07:00
+{"project":"ulidgen","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":4,"rc":0,"wall_s":828,"turns":13}
+=== ulidgen recode qwen3.8_27b-mtp-q4_K_M rep4 rc=0 wall=828s turns=13 2026-09-23T17:47:35+07:00
+=== ulidgen recode qwen3.8_27b-mtp-q4_K_M rep5 start 2026-09-23T17:47:35+07:00
+{"project":"ulidgen","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":5,"rc":0,"wall_s":650,"turns":14}
+=== ulidgen recode qwen3.8_27b-mtp-q4_K_M rep5 rc=0 wall=650s turns=14 2026-09-23T17:58:26+07:00
+skip chtrie monolith qwen3.8_27b-mtp-q4_K_M rep1 (done)
+=== chtrie monolith qwen3.8_27b-mtp-q4_K_M rep2 start 2026-09-23T17:58:26+07:00
+{"project":"chtrie","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":2,"rc":1,"wall_s":1057,"turns":11}
+=== chtrie monolith qwen3.8_27b-mtp-q4_K_M rep2 rc=1 wall=1057s turns=11 2026-09-23T18:16:03+07:00
+=== chtrie monolith qwen3.8_27b-mtp-q4_K_M rep3 start 2026-09-23T18:16:03+07:00
+{"project":"chtrie","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":3,"rc":1,"wall_s":781,"turns":7}
+=== chtrie monolith qwen3.8_27b-mtp-q4_K_M rep3 rc=1 wall=781s turns=7 2026-09-23T18:29:05+07:00
+=== chtrie monolith qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-23T18:29:05+07:00
+{"project":"chtrie","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":4,"rc":1,"wall_s":363,"turns":6}
+=== chtrie monolith qwen3.8_27b-mtp-q4_K_M rep4 rc=1 wall=363s turns=6 2026-09-23T18:35:09+07:00
+=== chtrie monolith qwen3.8_27b-mtp-q4_K_M rep5 start 2026-09-23T18:35:09+07:00
+{"project":"chtrie","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":5,"rc":1,"wall_s":579,"turns":8}
+=== chtrie monolith qwen3.8_27b-mtp-q4_K_M rep5 rc=1 wall=579s turns=8 2026-09-23T18:44:48+07:00
+=== chtrie ledger qwen3.8_27b-mtp-q4_K_M rep1 start 2026-09-23T18:44:48+07:00
+{"project":"chtrie","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":1,"rc":0,"wall_s":1040,"turns":7}
+=== chtrie ledger qwen3.8_27b-mtp-q4_K_M rep1 rc=0 wall=1040s turns=7 2026-09-23T19:02:08+07:00
+=== chtrie ledger qwen3.8_27b-mtp-q4_K_M rep2 start 2026-09-23T19:02:08+07:00
+{"project":"chtrie","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":2,"rc":0,"wall_s":1189,"turns":8}
+=== chtrie ledger qwen3.8_27b-mtp-q4_K_M rep2 rc=0 wall=1189s turns=8 2026-09-23T19:21:57+07:00
+=== chtrie ledger qwen3.8_27b-mtp-q4_K_M rep3 start 2026-09-23T19:21:57+07:00
+{"project":"chtrie","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":3,"rc":0,"wall_s":844,"turns":6}
+=== chtrie ledger qwen3.8_27b-mtp-q4_K_M rep3 rc=0 wall=844s turns=6 2026-09-23T19:36:02+07:00
+=== chtrie ledger qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-23T19:36:02+07:00
+survey 230926 start 2026-09-23T21:13:54+07:00
+skip amp monolith qwen3.8_27b-mtp-q4_K_M rep1 (done)
+skip amp monolith qwen3.8_27b-mtp-q4_K_M rep2 (done)
+skip amp monolith qwen3.8_27b-mtp-q4_K_M rep3 (done)
+skip amp monolith qwen3.8_27b-mtp-q4_K_M rep4 (done)
+skip amp monolith qwen3.8_27b-mtp-q4_K_M rep5 (done)
+skip amp ledger qwen3.8_27b-mtp-q4_K_M rep1 (done)
+skip amp ledger qwen3.8_27b-mtp-q4_K_M rep2 (done)
+skip amp ledger qwen3.8_27b-mtp-q4_K_M rep3 (done)
+skip amp ledger qwen3.8_27b-mtp-q4_K_M rep4 (done)
+skip amp ledger qwen3.8_27b-mtp-q4_K_M rep5 (done)
+skip amp recode qwen3.8_27b-mtp-q4_K_M rep1 (done)
+skip amp recode qwen3.8_27b-mtp-q4_K_M rep2 (done)
+skip amp recode qwen3.8_27b-mtp-q4_K_M rep3 (done)
+skip amp recode qwen3.8_27b-mtp-q4_K_M rep4 (done)
+skip amp recode qwen3.8_27b-mtp-q4_K_M rep5 (done)
+skip ulidgen monolith qwen3.8_27b-mtp-q4_K_M rep1 (done)
+skip ulidgen monolith qwen3.8_27b-mtp-q4_K_M rep2 (done)
+skip ulidgen monolith qwen3.8_27b-mtp-q4_K_M rep3 (done)
+skip ulidgen monolith qwen3.8_27b-mtp-q4_K_M rep4 (done)
+skip ulidgen monolith qwen3.8_27b-mtp-q4_K_M rep5 (done)
+skip ulidgen ledger qwen3.8_27b-mtp-q4_K_M rep1 (done)
+skip ulidgen ledger qwen3.8_27b-mtp-q4_K_M rep2 (done)
+skip ulidgen ledger qwen3.8_27b-mtp-q4_K_M rep3 (done)
+skip ulidgen ledger qwen3.8_27b-mtp-q4_K_M rep4 (done)
+skip ulidgen ledger qwen3.8_27b-mtp-q4_K_M rep5 (done)
+skip ulidgen recode qwen3.8_27b-mtp-q4_K_M rep1 (done)
+skip ulidgen recode qwen3.8_27b-mtp-q4_K_M rep2 (done)
+skip ulidgen recode qwen3.8_27b-mtp-q4_K_M rep3 (done)
+skip ulidgen recode qwen3.8_27b-mtp-q4_K_M rep4 (done)
+skip ulidgen recode qwen3.8_27b-mtp-q4_K_M rep5 (done)
+skip chtrie monolith qwen3.8_27b-mtp-q4_K_M rep1 (done)
+skip chtrie monolith qwen3.8_27b-mtp-q4_K_M rep2 (done)
+skip chtrie monolith qwen3.8_27b-mtp-q4_K_M rep3 (done)
+skip chtrie monolith qwen3.8_27b-mtp-q4_K_M rep4 (done)
+skip chtrie monolith qwen3.8_27b-mtp-q4_K_M rep5 (done)
+skip chtrie ledger qwen3.8_27b-mtp-q4_K_M rep1 (done)
+skip chtrie ledger qwen3.8_27b-mtp-q4_K_M rep2 (done)
+skip chtrie ledger qwen3.8_27b-mtp-q4_K_M rep3 (done)
+=== chtrie ledger qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-23T21:13:54+07:00
+{"project":"chtrie","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":4,"rc":0,"wall_s":1038,"turns":7}
+=== chtrie ledger qwen3.8_27b-mtp-q4_K_M rep4 rc=0 wall=1038s turns=7 2026-09-23T21:31:12+07:00
+=== chtrie ledger qwen3.8_27b-mtp-q4_K_M rep5 start 2026-09-23T21:31:12+07:00
+{"project":"chtrie","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":5,"rc":0,"wall_s":1180,"turns":6}
+=== chtrie ledger qwen3.8_27b-mtp-q4_K_M rep5 rc=0 wall=1180s turns=6 2026-09-23T21:50:52+07:00
+=== chtrie recode qwen3.8_27b-mtp-q4_K_M rep1 start 2026-09-23T21:50:52+07:00
+{"project":"chtrie","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":1,"rc":1,"wall_s":445,"turns":7}
+=== chtrie recode qwen3.8_27b-mtp-q4_K_M rep1 rc=1 wall=445s turns=7 2026-09-23T21:58:17+07:00
+=== chtrie recode qwen3.8_27b-mtp-q4_K_M rep2 start 2026-09-23T21:58:17+07:00
+{"project":"chtrie","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":2,"rc":1,"wall_s":378,"turns":7}
+=== chtrie recode qwen3.8_27b-mtp-q4_K_M rep2 rc=1 wall=378s turns=7 2026-09-23T22:04:36+07:00
+=== chtrie recode qwen3.8_27b-mtp-q4_K_M rep3 start 2026-09-23T22:04:36+07:00
+{"project":"chtrie","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":3,"rc":1,"wall_s":253,"turns":10}
+=== chtrie recode qwen3.8_27b-mtp-q4_K_M rep3 rc=1 wall=253s turns=10 2026-09-23T22:08:50+07:00
+=== chtrie recode qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-23T22:08:50+07:00
+{"project":"chtrie","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":4,"rc":1,"wall_s":653,"turns":16}
+=== chtrie recode qwen3.8_27b-mtp-q4_K_M rep4 rc=1 wall=653s turns=16 2026-09-23T22:19:43+07:00
+=== chtrie recode qwen3.8_27b-mtp-q4_K_M rep5 start 2026-09-23T22:19:43+07:00
+{"project":"chtrie","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":5,"rc":1,"wall_s":963,"turns":12}
+=== chtrie recode qwen3.8_27b-mtp-q4_K_M rep5 rc=1 wall=963s turns=12 2026-09-23T22:35:47+07:00
+=== murmurhash_c monolith qwen3.8_27b-mtp-q4_K_M rep1 start 2026-09-23T22:35:47+07:00
+{"project":"murmurhash_c","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":1,"rc":0,"wall_s":159,"turns":10}
+=== murmurhash_c monolith qwen3.8_27b-mtp-q4_K_M rep1 rc=0 wall=159s turns=10 2026-09-23T22:38:26+07:00
+=== murmurhash_c monolith qwen3.8_27b-mtp-q4_K_M rep2 start 2026-09-23T22:38:26+07:00
+{"project":"murmurhash_c","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":2,"rc":0,"wall_s":256,"turns":7}
+=== murmurhash_c monolith qwen3.8_27b-mtp-q4_K_M rep2 rc=0 wall=256s turns=7 2026-09-23T22:42:43+07:00
+=== murmurhash_c monolith qwen3.8_27b-mtp-q4_K_M rep3 start 2026-09-23T22:42:43+07:00
+{"project":"murmurhash_c","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":3,"rc":0,"wall_s":248,"turns":16}
+=== murmurhash_c monolith qwen3.8_27b-mtp-q4_K_M rep3 rc=0 wall=248s turns=16 2026-09-23T22:46:52+07:00
+=== murmurhash_c monolith qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-23T22:46:52+07:00
+{"project":"murmurhash_c","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":4,"rc":0,"wall_s":163,"turns":12}
+=== murmurhash_c monolith qwen3.8_27b-mtp-q4_K_M rep4 rc=0 wall=163s turns=12 2026-09-23T22:49:36+07:00
+=== murmurhash_c monolith qwen3.8_27b-mtp-q4_K_M rep5 start 2026-09-23T22:49:36+07:00
+{"project":"murmurhash_c","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":5,"rc":0,"wall_s":323,"turns":13}
+=== murmurhash_c monolith qwen3.8_27b-mtp-q4_K_M rep5 rc=0 wall=323s turns=13 2026-09-23T22:54:59+07:00
+=== murmurhash_c ledger qwen3.8_27b-mtp-q4_K_M rep1 start 2026-09-23T22:54:59+07:00
+{"project":"murmurhash_c","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":1,"rc":1,"wall_s":425,"turns":3}
+=== murmurhash_c ledger qwen3.8_27b-mtp-q4_K_M rep1 rc=1 wall=425s turns=3 2026-09-23T23:02:04+07:00
+=== murmurhash_c ledger qwen3.8_27b-mtp-q4_K_M rep2 start 2026-09-23T23:02:04+07:00
+{"project":"murmurhash_c","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":2,"rc":1,"wall_s":0,"turns":0}
+=== murmurhash_c ledger qwen3.8_27b-mtp-q4_K_M rep2 rc=1 wall=0s turns=0 2026-09-23T23:02:04+07:00
+=== murmurhash_c ledger qwen3.8_27b-mtp-q4_K_M rep3 start 2026-09-23T23:02:04+07:00
+{"project":"murmurhash_c","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":3,"rc":1,"wall_s":0,"turns":0}
+=== murmurhash_c ledger qwen3.8_27b-mtp-q4_K_M rep3 rc=1 wall=0s turns=0 2026-09-23T23:02:04+07:00
+=== murmurhash_c ledger qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-23T23:02:04+07:00
+{"project":"murmurhash_c","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":4,"rc":1,"wall_s":0,"turns":0}
+=== murmurhash_c ledger qwen3.8_27b-mtp-q4_K_M rep4 rc=1 wall=0s turns=0 2026-09-23T23:02:04+07:00
+=== murmurhash_c ledger qwen3.8_27b-mtp-q4_K_M rep5 start 2026-09-23T23:02:04+07:00
+{"project":"murmurhash_c","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":5,"rc":1,"wall_s":0,"turns":0}
+=== murmurhash_c ledger qwen3.8_27b-mtp-q4_K_M rep5 rc=1 wall=0s turns=0 2026-09-23T23:02:04+07:00
+=== murmurhash_c recode qwen3.8_27b-mtp-q4_K_M rep1 start 2026-09-23T23:02:04+07:00
+{"project":"murmurhash_c","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":1,"rc":1,"wall_s":0,"turns":0}
+=== murmurhash_c recode qwen3.8_27b-mtp-q4_K_M rep1 rc=1 wall=0s turns=0 2026-09-23T23:02:04+07:00
+=== murmurhash_c recode qwen3.8_27b-mtp-q4_K_M rep2 start 2026-09-23T23:02:04+07:00
+{"project":"murmurhash_c","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":2,"rc":1,"wall_s":0,"turns":0}
+=== murmurhash_c recode qwen3.8_27b-mtp-q4_K_M rep2 rc=1 wall=0s turns=0 2026-09-23T23:02:04+07:00
+=== murmurhash_c recode qwen3.8_27b-mtp-q4_K_M rep3 start 2026-09-23T23:02:04+07:00
+{"project":"murmurhash_c","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":3,"rc":1,"wall_s":0,"turns":0}
+=== murmurhash_c recode qwen3.8_27b-mtp-q4_K_M rep3 rc=1 wall=0s turns=0 2026-09-23T23:02:04+07:00
+=== murmurhash_c recode qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-23T23:02:04+07:00
+{"project":"murmurhash_c","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":4,"rc":1,"wall_s":0,"turns":0}
+=== murmurhash_c recode qwen3.8_27b-mtp-q4_K_M rep4 rc=1 wall=0s turns=0 2026-09-23T23:02:04+07:00
+=== murmurhash_c recode qwen3.8_27b-mtp-q4_K_M rep5 start 2026-09-23T23:02:04+07:00
+{"project":"murmurhash_c","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":5,"rc":1,"wall_s":0,"turns":0}
+=== murmurhash_c recode qwen3.8_27b-mtp-q4_K_M rep5 rc=1 wall=0s turns=0 2026-09-23T23:02:04+07:00
+=== gorilla-paper-encode monolith qwen3.8_27b-mtp-q4_K_M rep1 start 2026-09-23T23:02:04+07:00
+{"project":"gorilla-paper-encode","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":1,"rc":1,"wall_s":0,"turns":0}
+=== gorilla-paper-encode monolith qwen3.8_27b-mtp-q4_K_M rep1 rc=1 wall=0s turns=0 2026-09-23T23:02:04+07:00
+=== gorilla-paper-encode monolith qwen3.8_27b-mtp-q4_K_M rep2 start 2026-09-23T23:02:04+07:00
+{"project":"gorilla-paper-encode","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":2,"rc":1,"wall_s":0,"turns":0}
+=== gorilla-paper-encode monolith qwen3.8_27b-mtp-q4_K_M rep2 rc=1 wall=0s turns=0 2026-09-23T23:02:04+07:00
+=== gorilla-paper-encode monolith qwen3.8_27b-mtp-q4_K_M rep3 start 2026-09-23T23:02:04+07:00
+{"project":"gorilla-paper-encode","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":3,"rc":1,"wall_s":0,"turns":0}
+=== gorilla-paper-encode monolith qwen3.8_27b-mtp-q4_K_M rep3 rc=1 wall=0s turns=0 2026-09-23T23:02:04+07:00
+=== gorilla-paper-encode monolith qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-23T23:02:04+07:00
+{"project":"gorilla-paper-encode","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":4,"rc":1,"wall_s":0,"turns":0}
+=== gorilla-paper-encode monolith qwen3.8_27b-mtp-q4_K_M rep4 rc=1 wall=0s turns=0 2026-09-23T23:02:04+07:00
+=== gorilla-paper-encode monolith qwen3.8_27b-mtp-q4_K_M rep5 start 2026-09-23T23:02:04+07:00
+{"project":"gorilla-paper-encode","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":5,"rc":1,"wall_s":0,"turns":0}
+=== gorilla-paper-encode monolith qwen3.8_27b-mtp-q4_K_M rep5 rc=1 wall=0s turns=0 2026-09-23T23:02:04+07:00
+=== gorilla-paper-encode ledger qwen3.8_27b-mtp-q4_K_M rep1 start 2026-09-23T23:02:04+07:00
+{"project":"gorilla-paper-encode","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":1,"rc":1,"wall_s":0,"turns":0}
+=== gorilla-paper-encode ledger qwen3.8_27b-mtp-q4_K_M rep1 rc=1 wall=0s turns=0 2026-09-23T23:02:04+07:00
+=== gorilla-paper-encode ledger qwen3.8_27b-mtp-q4_K_M rep2 start 2026-09-23T23:02:05+07:00
+{"project":"gorilla-paper-encode","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":2,"rc":1,"wall_s":0,"turns":0}
+=== gorilla-paper-encode ledger qwen3.8_27b-mtp-q4_K_M rep2 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== gorilla-paper-encode ledger qwen3.8_27b-mtp-q4_K_M rep3 start 2026-09-23T23:02:05+07:00
+{"project":"gorilla-paper-encode","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":3,"rc":1,"wall_s":0,"turns":0}
+=== gorilla-paper-encode ledger qwen3.8_27b-mtp-q4_K_M rep3 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== gorilla-paper-encode ledger qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-23T23:02:05+07:00
+{"project":"gorilla-paper-encode","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":4,"rc":1,"wall_s":0,"turns":0}
+=== gorilla-paper-encode ledger qwen3.8_27b-mtp-q4_K_M rep4 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== gorilla-paper-encode ledger qwen3.8_27b-mtp-q4_K_M rep5 start 2026-09-23T23:02:05+07:00
+{"project":"gorilla-paper-encode","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":5,"rc":1,"wall_s":0,"turns":0}
+=== gorilla-paper-encode ledger qwen3.8_27b-mtp-q4_K_M rep5 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== gorilla-paper-encode recode qwen3.8_27b-mtp-q4_K_M rep1 start 2026-09-23T23:02:05+07:00
+{"project":"gorilla-paper-encode","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":1,"rc":1,"wall_s":0,"turns":0}
+=== gorilla-paper-encode recode qwen3.8_27b-mtp-q4_K_M rep1 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== gorilla-paper-encode recode qwen3.8_27b-mtp-q4_K_M rep2 start 2026-09-23T23:02:05+07:00
+{"project":"gorilla-paper-encode","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":2,"rc":1,"wall_s":0,"turns":0}
+=== gorilla-paper-encode recode qwen3.8_27b-mtp-q4_K_M rep2 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== gorilla-paper-encode recode qwen3.8_27b-mtp-q4_K_M rep3 start 2026-09-23T23:02:05+07:00
+{"project":"gorilla-paper-encode","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":3,"rc":1,"wall_s":0,"turns":0}
+=== gorilla-paper-encode recode qwen3.8_27b-mtp-q4_K_M rep3 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== gorilla-paper-encode recode qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-23T23:02:05+07:00
+{"project":"gorilla-paper-encode","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":4,"rc":1,"wall_s":0,"turns":0}
+=== gorilla-paper-encode recode qwen3.8_27b-mtp-q4_K_M rep4 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== gorilla-paper-encode recode qwen3.8_27b-mtp-q4_K_M rep5 start 2026-09-23T23:02:05+07:00
+{"project":"gorilla-paper-encode","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":5,"rc":1,"wall_s":0,"turns":0}
+=== gorilla-paper-encode recode qwen3.8_27b-mtp-q4_K_M rep5 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== approxidate monolith qwen3.8_27b-mtp-q4_K_M rep1 start 2026-09-23T23:02:05+07:00
+{"project":"approxidate","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":1,"rc":1,"wall_s":0,"turns":0}
+=== approxidate monolith qwen3.8_27b-mtp-q4_K_M rep1 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== approxidate monolith qwen3.8_27b-mtp-q4_K_M rep2 start 2026-09-23T23:02:05+07:00
+{"project":"approxidate","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":2,"rc":1,"wall_s":0,"turns":0}
+=== approxidate monolith qwen3.8_27b-mtp-q4_K_M rep2 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== approxidate monolith qwen3.8_27b-mtp-q4_K_M rep3 start 2026-09-23T23:02:05+07:00
+{"project":"approxidate","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":3,"rc":1,"wall_s":0,"turns":0}
+=== approxidate monolith qwen3.8_27b-mtp-q4_K_M rep3 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== approxidate monolith qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-23T23:02:05+07:00
+{"project":"approxidate","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":4,"rc":1,"wall_s":0,"turns":0}
+=== approxidate monolith qwen3.8_27b-mtp-q4_K_M rep4 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== approxidate monolith qwen3.8_27b-mtp-q4_K_M rep5 start 2026-09-23T23:02:05+07:00
+{"project":"approxidate","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":5,"rc":1,"wall_s":0,"turns":0}
+=== approxidate monolith qwen3.8_27b-mtp-q4_K_M rep5 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== approxidate ledger qwen3.8_27b-mtp-q4_K_M rep1 start 2026-09-23T23:02:05+07:00
+{"project":"approxidate","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":1,"rc":1,"wall_s":0,"turns":0}
+=== approxidate ledger qwen3.8_27b-mtp-q4_K_M rep1 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== approxidate ledger qwen3.8_27b-mtp-q4_K_M rep2 start 2026-09-23T23:02:05+07:00
+{"project":"approxidate","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":2,"rc":1,"wall_s":0,"turns":0}
+=== approxidate ledger qwen3.8_27b-mtp-q4_K_M rep2 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== approxidate ledger qwen3.8_27b-mtp-q4_K_M rep3 start 2026-09-23T23:02:05+07:00
+{"project":"approxidate","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":3,"rc":1,"wall_s":0,"turns":0}
+=== approxidate ledger qwen3.8_27b-mtp-q4_K_M rep3 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== approxidate ledger qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-23T23:02:05+07:00
+{"project":"approxidate","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":4,"rc":1,"wall_s":0,"turns":0}
+=== approxidate ledger qwen3.8_27b-mtp-q4_K_M rep4 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== approxidate ledger qwen3.8_27b-mtp-q4_K_M rep5 start 2026-09-23T23:02:05+07:00
+{"project":"approxidate","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":5,"rc":1,"wall_s":0,"turns":0}
+=== approxidate ledger qwen3.8_27b-mtp-q4_K_M rep5 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== approxidate recode qwen3.8_27b-mtp-q4_K_M rep1 start 2026-09-23T23:02:05+07:00
+{"project":"approxidate","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":1,"rc":1,"wall_s":0,"turns":0}
+=== approxidate recode qwen3.8_27b-mtp-q4_K_M rep1 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== approxidate recode qwen3.8_27b-mtp-q4_K_M rep2 start 2026-09-23T23:02:05+07:00
+{"project":"approxidate","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":2,"rc":1,"wall_s":0,"turns":0}
+=== approxidate recode qwen3.8_27b-mtp-q4_K_M rep2 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== approxidate recode qwen3.8_27b-mtp-q4_K_M rep3 start 2026-09-23T23:02:05+07:00
+{"project":"approxidate","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":3,"rc":1,"wall_s":0,"turns":0}
+=== approxidate recode qwen3.8_27b-mtp-q4_K_M rep3 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== approxidate recode qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-23T23:02:05+07:00
+{"project":"approxidate","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":4,"rc":1,"wall_s":0,"turns":0}
+=== approxidate recode qwen3.8_27b-mtp-q4_K_M rep4 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== approxidate recode qwen3.8_27b-mtp-q4_K_M rep5 start 2026-09-23T23:02:05+07:00
+{"project":"approxidate","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":5,"rc":1,"wall_s":0,"turns":0}
+=== approxidate recode qwen3.8_27b-mtp-q4_K_M rep5 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== xopt monolith qwen3.8_27b-mtp-q4_K_M rep1 start 2026-09-23T23:02:05+07:00
+{"project":"xopt","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":1,"rc":1,"wall_s":0,"turns":0}
+=== xopt monolith qwen3.8_27b-mtp-q4_K_M rep1 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== xopt monolith qwen3.8_27b-mtp-q4_K_M rep2 start 2026-09-23T23:02:05+07:00
+{"project":"xopt","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":2,"rc":1,"wall_s":0,"turns":0}
+=== xopt monolith qwen3.8_27b-mtp-q4_K_M rep2 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== xopt monolith qwen3.8_27b-mtp-q4_K_M rep3 start 2026-09-23T23:02:05+07:00
+{"project":"xopt","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":3,"rc":1,"wall_s":0,"turns":0}
+=== xopt monolith qwen3.8_27b-mtp-q4_K_M rep3 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== xopt monolith qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-23T23:02:05+07:00
+{"project":"xopt","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":4,"rc":1,"wall_s":0,"turns":0}
+=== xopt monolith qwen3.8_27b-mtp-q4_K_M rep4 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== xopt monolith qwen3.8_27b-mtp-q4_K_M rep5 start 2026-09-23T23:02:05+07:00
+{"project":"xopt","method":"monolith","model":"qwen3.8_27b-mtp-q4_K_M","rep":5,"rc":1,"wall_s":0,"turns":0}
+=== xopt monolith qwen3.8_27b-mtp-q4_K_M rep5 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== xopt ledger qwen3.8_27b-mtp-q4_K_M rep1 start 2026-09-23T23:02:05+07:00
+{"project":"xopt","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":1,"rc":1,"wall_s":0,"turns":0}
+=== xopt ledger qwen3.8_27b-mtp-q4_K_M rep1 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== xopt ledger qwen3.8_27b-mtp-q4_K_M rep2 start 2026-09-23T23:02:05+07:00
+{"project":"xopt","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":2,"rc":1,"wall_s":0,"turns":0}
+=== xopt ledger qwen3.8_27b-mtp-q4_K_M rep2 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== xopt ledger qwen3.8_27b-mtp-q4_K_M rep3 start 2026-09-23T23:02:05+07:00
+{"project":"xopt","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":3,"rc":1,"wall_s":0,"turns":0}
+=== xopt ledger qwen3.8_27b-mtp-q4_K_M rep3 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== xopt ledger qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-23T23:02:05+07:00
+{"project":"xopt","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":4,"rc":1,"wall_s":0,"turns":0}
+=== xopt ledger qwen3.8_27b-mtp-q4_K_M rep4 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== xopt ledger qwen3.8_27b-mtp-q4_K_M rep5 start 2026-09-23T23:02:05+07:00
+{"project":"xopt","method":"ledger","model":"qwen3.8_27b-mtp-q4_K_M","rep":5,"rc":1,"wall_s":0,"turns":0}
+=== xopt ledger qwen3.8_27b-mtp-q4_K_M rep5 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== xopt recode qwen3.8_27b-mtp-q4_K_M rep1 start 2026-09-23T23:02:05+07:00
+{"project":"xopt","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":1,"rc":1,"wall_s":0,"turns":0}
+=== xopt recode qwen3.8_27b-mtp-q4_K_M rep1 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== xopt recode qwen3.8_27b-mtp-q4_K_M rep2 start 2026-09-23T23:02:05+07:00
+{"project":"xopt","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":2,"rc":1,"wall_s":0,"turns":0}
+=== xopt recode qwen3.8_27b-mtp-q4_K_M rep2 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== xopt recode qwen3.8_27b-mtp-q4_K_M rep3 start 2026-09-23T23:02:05+07:00
+{"project":"xopt","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":3,"rc":1,"wall_s":0,"turns":0}
+=== xopt recode qwen3.8_27b-mtp-q4_K_M rep3 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== xopt recode qwen3.8_27b-mtp-q4_K_M rep4 start 2026-09-23T23:02:05+07:00
+{"project":"xopt","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":4,"rc":1,"wall_s":0,"turns":0}
+=== xopt recode qwen3.8_27b-mtp-q4_K_M rep4 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== xopt recode qwen3.8_27b-mtp-q4_K_M rep5 start 2026-09-23T23:02:05+07:00
+{"project":"xopt","method":"recode","model":"qwen3.8_27b-mtp-q4_K_M","rep":5,"rc":1,"wall_s":0,"turns":0}
+=== xopt recode qwen3.8_27b-mtp-q4_K_M rep5 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== amp monolith smtek_Swift-Qwen3.8-27B_dflash2 rep1 start 2026-09-23T23:02:05+07:00
+{"project":"amp","method":"monolith","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":1,"rc":1,"wall_s":0,"turns":0}
+=== amp monolith smtek_Swift-Qwen3.8-27B_dflash2 rep1 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== amp monolith smtek_Swift-Qwen3.8-27B_dflash2 rep2 start 2026-09-23T23:02:05+07:00
+{"project":"amp","method":"monolith","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":2,"rc":1,"wall_s":0,"turns":0}
+=== amp monolith smtek_Swift-Qwen3.8-27B_dflash2 rep2 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== amp monolith smtek_Swift-Qwen3.8-27B_dflash2 rep3 start 2026-09-23T23:02:05+07:00
+{"project":"amp","method":"monolith","model":"smtek_Swift-Qwen3.8-27B_dflash2","rep":3,"rc":1,"wall_s":0,"turns":0}
+=== amp monolith smtek_Swift-Qwen3.8-27B_dflash2 rep3 rc=1 wall=0s turns=0 2026-09-23T23:02:05+07:00
+=== amp monolith smtek_Swift-Qwen3.8-27B_dflash2 rep4 start 2026-09-23T23:02:05+07:00

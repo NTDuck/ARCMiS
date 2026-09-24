@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Survey 230926 — methods × models</title>
+<style>
+
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body { font: 15px/1.55 -apple-system, "Segoe UI", Roboto, sans-serif; margin: 0; background: #f6f7f9; color: #1e293b; }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 32px 24px 64px; }
+h1 { font-size: 26px; margin: 0 0 4px; }
+h2 { font-size: 19px; margin: 36px 0 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; }
+.sub { color: #64748b; margin: 0 0 24px; }
+.cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 20px 0; }
+.card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; }
+.card .n { font-size: 26px; font-weight: 650; }
+.card .l { color: #64748b; font-size: 12.5px; margin-top: 2px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+.panel { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; }
+.panel h3 { margin: 0 0 10px; font-size: 14.5px; color: #475569; font-weight: 600; }
+canvas { max-width: 100%; }
+table { border-collapse: collapse; width: 100%; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+th, td { padding: 8px 12px; text-align: left; font-size: 13.5px; border-bottom: 1px solid #f1f5f9; }
+th { background: #f8fafc; color: #475569; font-weight: 600; font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.03em; }
+tr:last-child td { border-bottom: none; }
+td.ratio { font-variant-numeric: tabular-nums; font-weight: 600; }
+td.fails { color: #64748b; font-size: 12.5px; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
+.note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 12px 16px; margin: 16px 0; font-size: 13.5px; }
+.note b { color: #92400e; }
+footer { margin-top: 40px; color: #94a3b8; font-size: 12.5px; }
+
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <h1>Survey 230926 — methodology × model sweep</h1>
+  <p class="sub">7 projects × 3 methods × 3 model(s) × 5 reps · ollama · C → Rust · toolchain-scored only</p>
+
+  <div class="cards">
+    <div class="card"><div class="n">109</div><div class="l">runs</div></div>
+    <div class="card"><div class="n">48</div><div class="l">compiled workspaces</div></div>
+    <div class="card"><div class="n">39</div><div class="l">toolchain-verified passes</div></div>
+    <div class="card"><div class="n">35.8%</div><div class="l">end-to-end success rate</div></div>
+  </div>
+
+  <div class="note"><b>Scoring rule.</b> A run counts only when the evaluator's own rerun of
+  <code>cargo build</code> and <code>cargo test</code> inside the produced workspace passed. One monolith run scored a pass from a workspace nested one level below the root; the evaluator's build/test rerun verified it there, so it counts. The 57 preflight offload aborts against a dead ollama daemon are infrastructure failures, not model failures.</div>
+
+  <h2>Charts</h2>
+  <div class="grid2">
+    <div class="panel"><h3>Verified successes by method × model</h3><canvas id="c1"></canvas></div>
+    <div class="panel"><h3>Compiled workspaces by method × model</h3><canvas id="c2"></canvas></div>
+  </div>
+  <div class="grid2" style="margin-top:20px">
+    <div class="panel"><h3>Run outcomes</h3><canvas id="c3"></canvas></div>
+    <div class="panel"><h3>Verified successes by project × method</h3><canvas id="c4"></canvas></div>
+  </div>
+  <div class="grid2" style="margin-top:20px">
+    <div class="panel"><h3>Mean wall time by project</h3><canvas id="c5"></canvas></div>
+    <div class="panel"><h3>Verified passes per project (stacked by method)</h3><canvas id="c6"></canvas></div>
+  </div>
+
+  <h2>By project</h2>
+  <table>
+    <tr><th>Project</th><th>Size</th><th>Compiled</th><th>Verified</th><th>Mean wall</th></tr>
+    <tr><td>amp</td><td>185 LOC</td><td class='ratio'>15/19</td><td class='ratio'>14/19</td><td>135 s</td></tr>
+<tr><td>approxidate</td><td>1151 LOC</td><td class='ratio'>0/15</td><td class='ratio'>0/15</td><td>0 s</td></tr>
+<tr><td>chtrie</td><td>258 LOC</td><td class='ratio'>12/15</td><td class='ratio'>6/15</td><td>606 s</td></tr>
+<tr><td>gorilla-paper-encode</td><td>635 LOC</td><td class='ratio'>0/15</td><td class='ratio'>0/15</td><td>0 s</td></tr>
+<tr><td>murmurhash_c</td><td>324 LOC</td><td class='ratio'>6/15</td><td class='ratio'>5/15</td><td>230 s</td></tr>
+<tr><td>ulidgen</td><td>186 LOC</td><td class='ratio'>15/15</td><td class='ratio'>14/15</td><td>247 s</td></tr>
+<tr><td>xopt</td><td>3087 LOC</td><td class='ratio'>0/15</td><td class='ratio'>0/15</td><td>0 s</td></tr>
+
+  </table>
+
+  <h2>By method</h2>
+  <table>
+    <tr><th>Method</th><th>Compiled</th><th>Verified</th><th>Pass rate</th><th>Mean wall</th></tr>
+    <tr><td><span class='dot' style='background:#3b82f6'></span>monolith</td><td class='ratio'>20/39</td><td class='ratio'>16/39</td><td>0.95 ± 0.20</td><td>158 s</td></tr>
+<tr><td><span class='dot' style='background:#f59e0b'></span>ledger</td><td class='ratio'>16/35</td><td class='ratio'>15/35</td><td>1.00 ± 0.00</td><td>180 s</td></tr>
+<tr><td><span class='dot' style='background:#10b981'></span>recode</td><td class='ratio'>12/35</td><td class='ratio'>8/35</td><td>0.98 ± 0.04</td><td>180 s</td></tr>
+
+  </table>
+
+  <h2>By model</h2>
+  <table>
+    <tr><th></th><th>Model</th><th>Compiled</th><th>Verified</th><th>Mean wall</th></tr>
+    <tr><td style='color:#6366f1'>&#9632.</td><td>qwen3.8 27b-mtp-q4_K_M</td><td class='ratio'>48/105</td><td class='ratio'>39/105</td><td>180 s</td></tr>
+<tr><td style='color:#8b5cf6'>&#9632.</td><td>Swift-Qwen3.8-27B dflash2</td><td class='ratio'>0/3</td><td class='ratio'>0/3</td><td>0 s</td></tr>
+<tr><td style='color:#94a3b8'>&#9632.</td><td>smtek_Swift-Qwen3.8-27B_dflash2</td><td class='ratio'>0/1</td><td class='ratio'>0/1</td><td>nan s</td></tr>
+
+  </table>
+
+  <h2>Per-cell detail</h2>
+  <table>
+    <tr><th>Project</th><th>Method</th><th>Model</th><th>Compiled</th><th>Verified</th><th>Pass rate</th><th>Mean wall</th><th>Failures</th></tr>
+    <tr><td>amp</td><td>ledger</td><td>qwen3.8 27b-mtp-q4_K_M</td><td class='ratio'>5/5</td><td class='ratio'>5/5</td><td>1.00 ± 0.00</td><td>180 s</td><td class='fails'>-</td></tr>
+<tr><td>amp</td><td>monolith</td><td>qwen3.8 27b-mtp-q4_K_M</td><td class='ratio'>5/5</td><td class='ratio'>5/5</td><td>1.00 ± 0.00</td><td>180 s</td><td class='fails'>-</td></tr>
+<tr><td>amp</td><td>monolith</td><td>Swift-Qwen3.8-27B dflash2</td><td class='ratio'>0/3</td><td class='ratio'>0/3</td><td>n/a</td><td>0 s</td><td class='fails'>infra_offload 3</td></tr>
+<tr><td>amp</td><td>monolith</td><td>smtek_Swift-Qwen3.8-27B_dflash2</td><td class='ratio'>0/1</td><td class='ratio'>0/1</td><td>n/a</td><td>n/a</td><td class='fails'>other 1</td></tr>
+<tr><td>amp</td><td>recode</td><td>qwen3.8 27b-mtp-q4_K_M</td><td class='ratio'>5/5</td><td class='ratio'>4/5</td><td>1.00 ± 0.00</td><td>180 s</td><td class='fails'>task_retries 1</td></tr>
+<tr><td>approxidate</td><td>ledger</td><td>qwen3.8 27b-mtp-q4_K_M</td><td class='ratio'>0/5</td><td class='ratio'>0/5</td><td>n/a</td><td>0 s</td><td class='fails'>infra_offload 5</td></tr>
+<tr><td>approxidate</td><td>monolith</td><td>qwen3.8 27b-mtp-q4_K_M</td><td class='ratio'>0/5</td><td class='ratio'>0/5</td><td>n/a</td><td>0 s</td><td class='fails'>infra_offload 5</td></tr>
+<tr><td>approxidate</td><td>recode</td><td>qwen3.8 27b-mtp-q4_K_M</td><td class='ratio'>0/5</td><td class='ratio'>0/5</td><td>n/a</td><td>0 s</td><td class='fails'>infra_offload 5</td></tr>
+<tr><td>chtrie</td><td>ledger</td><td>qwen3.8 27b-mtp-q4_K_M</td><td class='ratio'>5/5</td><td class='ratio'>5/5</td><td>1.00 ± 0.00</td><td>606 s</td><td class='fails'>-</td></tr>
+<tr><td>chtrie</td><td>monolith</td><td>qwen3.8 27b-mtp-q4_K_M</td><td class='ratio'>5/5</td><td class='ratio'>1/5</td><td>1.00 ± 0.00</td><td>606 s</td><td class='fails'>output_budget 4</td></tr>
+<tr><td>chtrie</td><td>recode</td><td>qwen3.8 27b-mtp-q4_K_M</td><td class='ratio'>2/5</td><td class='ratio'>0/5</td><td>n/a</td><td>606 s</td><td class='fails'>invalid_tool_args 1, output_budget 4</td></tr>
+<tr><td>gorilla-paper-encode</td><td>ledger</td><td>qwen3.8 27b-mtp-q4_K_M</td><td class='ratio'>0/5</td><td class='ratio'>0/5</td><td>n/a</td><td>0 s</td><td class='fails'>infra_offload 5</td></tr>
+<tr><td>gorilla-paper-encode</td><td>monolith</td><td>qwen3.8 27b-mtp-q4_K_M</td><td class='ratio'>0/5</td><td class='ratio'>0/5</td><td>n/a</td><td>0 s</td><td class='fails'>infra_offload 5</td></tr>
+<tr><td>gorilla-paper-encode</td><td>recode</td><td>qwen3.8 27b-mtp-q4_K_M</td><td class='ratio'>0/5</td><td class='ratio'>0/5</td><td>n/a</td><td>0 s</td><td class='fails'>infra_offload 5</td></tr>
+<tr><td>murmurhash_c</td><td>ledger</td><td>qwen3.8 27b-mtp-q4_K_M</td><td class='ratio'>1/5</td><td class='ratio'>0/5</td><td>n/a</td><td>230 s</td><td class='fails'>daemon_conn 1, infra_offload 4</td></tr>
+<tr><td>murmurhash_c</td><td>monolith</td><td>qwen3.8 27b-mtp-q4_K_M</td><td class='ratio'>5/5</td><td class='ratio'>5/5</td><td>0.80 ± 0.40</td><td>230 s</td><td class='fails'>-</td></tr>
+<tr><td>murmurhash_c</td><td>recode</td><td>qwen3.8 27b-mtp-q4_K_M</td><td class='ratio'>0/5</td><td class='ratio'>0/5</td><td>n/a</td><td>230 s</td><td class='fails'>infra_offload 5</td></tr>
+<tr><td>ulidgen</td><td>ledger</td><td>qwen3.8 27b-mtp-q4_K_M</td><td class='ratio'>5/5</td><td class='ratio'>5/5</td><td>1.00 ± 0.00</td><td>247 s</td><td class='fails'>-</td></tr>
+<tr><td>ulidgen</td><td>monolith</td><td>qwen3.8 27b-mtp-q4_K_M</td><td class='ratio'>5/5</td><td class='ratio'>5/5</td><td>1.00 ± 0.00</td><td>247 s</td><td class='fails'>-</td></tr>
+<tr><td>ulidgen</td><td>recode</td><td>qwen3.8 27b-mtp-q4_K_M</td><td class='ratio'>5/5</td><td class='ratio'>4/5</td><td>0.97 ± 0.05</td><td>247 s</td><td class='fails'>output_budget 1, tests_failed 1</td></tr>
+<tr><td>xopt</td><td>ledger</td><td>qwen3.8 27b-mtp-q4_K_M</td><td class='ratio'>0/5</td><td class='ratio'>0/5</td><td>n/a</td><td>0 s</td><td class='fails'>infra_offload 5</td></tr>
+<tr><td>xopt</td><td>monolith</td><td>qwen3.8 27b-mtp-q4_K_M</td><td class='ratio'>0/5</td><td class='ratio'>0/5</td><td>n/a</td><td>0 s</td><td class='fails'>infra_offload 5</td></tr>
+<tr><td>xopt</td><td>recode</td><td>qwen3.8 27b-mtp-q4_K_M</td><td class='ratio'>0/5</td><td class='ratio'>0/5</td><td>n/a</td><td>0 s</td><td class='fails'>infra_offload 5</td></tr>
+
+  </table>
+
+  <footer>
+    Compiled = produced workspace has a valid Cargo manifest. Verified = the evaluator reran
+    cargo build + cargo test and all problems passed. Pass rate = mean over verified reps of
+    passed / (passed + failed), ± population std. Wall = driver-logged seconds per cell mean.
+    Artifacts. experiments/230926/runs/PROJECT/METHOD/MODEL/rep-N/.
+  </footer>
+</div>
+
+<script src="chart.umd.min.js"></script>
+<script>
+const CHARTS_PAYLOAD = {}; // {"models": ["qwen3.8 27b-mtp-q4_K_M", "Swift-Qwen3.8-27B dflash2", "smtek_Swift-Qwen3.8-27B_dflash2"], "modelColors": {"qwen3.8 27b-mtp-q4_K_M": "#6366f1", "Swift-Qwen3.8-27B dflash2": "#8b5cf6", "smtek_Swift-Qwen3.8-27B_dflash2": "#94a3b8"}, "methods": ["monolith", "ledger", "recode"], "palette": {"monolith": "#3b82f6", "ledger": "#f59e0b", "recode": "#10b981"}, "projects": ["amp", "approxidate", "chtrie", "gorilla-paper-encode", "murmurhash_c", "ulidgen", "xopt"], "succByMethodModel": {"monolith": [16, 0, 0], "ledger": [15, 0, 0], "recode": [8, 0, 0]}, "compByMethodModel": {"monolith": [20, 0, 0], "ledger": [16, 0, 0], "recode": [12, 0, 0]}, "succByProject": {"monolith": [5, 0, 1, 0, 5, 5, 0], "ledger": [5, 0, 5, 0, 0, 5, 0], "recode": [4, 0, 0, 0, 0, 4, 0]}, "failLabels": ["Max turns", "Model protocol", "Tests failed", "Model load", "Other", "Output budget", "Invalid tool args", "Daemon conn lost", "Task retries exhausted", "Infra: preflight offload", "Verified pass"], "failColors": ["#ef4444", "#f97316", "#eab308", "#a855f7", "#64748b", "#22c55e"], "failData": [0, 0, 1, 0, 1, 9, 1, 1, 1, 57, 39], "wallByProject": {"labels": ["amp", "approxidate", "chtrie", "gorilla-paper-encode", "murmurhash_c", "ulidgen", "xopt"], "data": [134.7, 0.0, 606.2, 0.0, 229.8, 246.8, 0.0]}} replaced at write time
+
+const D = CHARTS_PAYLOAD;
+Chart.defaults.font.family = '-apple-system, "Segoe UI", Roboto, sans-serif';
+Chart.defaults.color = '#475569';
+
+function bar(id, cfg) {
+  new Chart(document.getElementById(id), Object.assign({ type: 'bar' }, cfg));
+}
+
+bar('c1', {
+  data: {
+    labels: D.models,
+    datasets: D.methods.map((m, i) => ({
+      label: m, data: D.succByMethodModel[m], backgroundColor: D.palette[m],
+    })),
+  },
+  options: {
+    responsive: true, plugins: { legend: { position: 'top' } },
+    scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } },
+  },
+});
+
+bar('c2', {
+  data: {
+    labels: D.models,
+    datasets: D.methods.map((m) => ({
+      label: m, data: D.compByMethodModel[m], backgroundColor: D.palette[m],
+    })),
+  },
+  options: {
+    responsive: true, plugins: { legend: { position: 'top' } },
+    scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } },
+  },
+});
+
+new Chart(document.getElementById('c3'), {
+  type: 'doughnut',
+  data: {
+    labels: D.failLabels,
+    datasets: [{ data: D.failData, backgroundColor: D.failColors }],
+  },
+  options: { responsive: true, plugins: { legend: { position: 'right' } } },
+});
+
+bar('c4', {
+  data: {
+    labels: D.projects,
+    datasets: D.methods.map((m) => ({
+      label: m, data: D.succByProject[m], backgroundColor: D.palette[m],
+    })),
+  },
+  options: {
+    responsive: true, plugins: { legend: { position: 'top' } },
+    scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } },
+  },
+});
+
+bar('c5', {
+  data: {
+    labels: D.wallByProject.labels,
+    datasets: [{ label: 'mean wall s', data: D.wallByProject.data, backgroundColor: '#6366f1' }],
+  },
+  options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } },
+});
+
+bar('c6', {
+  data: {
+    labels: D.projects,
+    datasets: D.methods.map((m) => ({
+      label: m, data: D.succByProject[m], backgroundColor: D.palette[m],
+    })),
+  },
+  options: {
+    responsive: true, plugins: { legend: { position: 'top' } },
+    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+  },
+});
+
+</script>
+</body>
+</html>

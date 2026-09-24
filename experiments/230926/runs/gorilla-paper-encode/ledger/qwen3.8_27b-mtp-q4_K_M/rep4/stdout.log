@@ -1,0 +1,3 @@
+[2m2026-09-23T16:02:05.049976Z[0m [32m INFO[0m [2mharness::experiment[0m[2m:[0m experiment manifest written [3mmanifest[0m[2m=[0m/home/ayin/projs/ARCMiS/experiments/230926/runs/gorilla-paper-encode/ledger/qwen3.8_27b-mtp-q4_K_M/rep4/manifest.json
+[2m2026-09-23T16:02:05.049995Z[0m [32m INFO[0m [2mharness[0m[2m:[0m migration run started [3mmodel[0m[2m=[0mqwen3.8:27b-mtp-q4_K_M [3mmax_turns[0m[2m=[0m120 [3mnum_ctx[0m[2m=[0m16384 [3moutput_dir[0m[2m=[0m/home/ayin/projs/ARCMiS/experiments/230926/runs/gorilla-paper-encode/ledger/qwen3.8_27b-mtp-q4_K_M/rep4/workspace
+[2m2026-09-23T16:02:05.051255Z[0m [31mERROR[0m [2mharness[0m[2m:[0m harness run failed [3merror[0m[2m=[0mmodel offload failed

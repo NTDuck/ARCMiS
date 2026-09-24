@@ -1,62 +1,74 @@
-//! CLI — translation of `src/ulidgen.c`.
+//! ulidgen — generate or tag lines with ULID.
 //!
-//! Usage: `ulidgen [-n N] [-t]`
-//!   -n N   generate N ULIDs (default: 1)
-//!   -t     prefix each stdin line with a ULID
+//! Usage: ulidgen [-n N | -t]
+//!    -n N   generate N ULID (default: 1)
+//!    -t     print each line of standard input prefixed with an ULID
 //!
-//! Exits 0 on success, non-zero on stdout error (C: `exit(!!ferror(stdout))`).
+//! To the extent possible under law, the creator of this work has waived all
+//! copyright and related or neighboring rights to this work.
+//! http://creativecommons.org/publicdomain/zero/1.0/
 
-use std::io::{self, BufRead, Write};
-use ulidgen::UlidGen;
+use clap::Parser;
+use std::io::{self, BufRead, LineWriter, Write};
+
+/// Generate or tag lines with ULID
+#[derive(Parser, Debug)]
+#[command(version, about)]
+struct Args {
+    /// Print N consecutive ULID (default: 1)
+    #[arg(short = 'n', default_value_t = 1, value_parser = parse_long)]
+    n: i64,
+
+    /// Read lines from standard input, and prefix each line with a ULID
+    #[arg(short = 't')]
+    t: bool,
+}
+
+/// C used `atol`; accept the same (i64).
+fn parse_long(s: &str) -> Result<i64, String> {
+    s.parse::<i64>().map_err(|_| format!("invalid number: {s}"))
+}
 
 fn main() {
-    let args: Vec<String> = std::env::args().collect();
-    let mut n: i64 = 1;
-    let mut tflag = false;
+    let args = Args::parse();
 
-    // Parse options (C: `getopt(argc, argv, "n:t")`).
-    let mut it = args.iter().skip(1);
-    while let Some(a) = it.next() {
-        match a.as_str() {
-            "-n" => {
-                // C: `atol` (lenient); fall back to 1 on bad input.
-                n = it.next().and_then(|v| v.parse().ok()).unwrap_or(1);
-            }
-            "-t" => {
-                tflag = true;
-            }
-            _ => {
-                eprintln!("ulidgen: unknown option {a}");
-                std::process::exit(2);
-            }
-        }
-    }
+    // One shared buffer: the same-millisecond increment logic in ulidgen_r
+    // depends on the caller reusing the buffer (C semantics).
+    let mut ulid = [0u8; 27];
 
-    let mut gen = UlidGen::new();
-    let stdout = io::stdout();
-    let mut out = stdout.lock();
-
-    if tflag {
-        // For each line of stdin (C: `getdelim`), print `"<ULID> <line>"`
-        // (C: `printf("%s %s", ...)`; C uses `setvbuf(_IOLBF)` for line
-        // buffering — the locked stdout + per-line `writeln!` is equivalent).
+    if args.t {
+        // Line-buffered stdout, like setvbuf(stdout, 0, _IOLBF, 0).
+        let stdout = io::stdout();
+        let mut out = LineWriter::new(stdout.lock());
         let stdin = io::stdin();
         for line in stdin.lock().lines() {
-            match line {
-                Ok(l) => {
-                    let _ = writeln!(out, "{} {}", gen.next(), l);
+            let line = match line {
+                Ok(l) => l,
+                Err(e) => {
+                    eprintln!("ulidgen: {e}");
+                    std::process::exit(1);
                 }
-                Err(_) => break,
+            };
+            ulidgen::ulidgen_r(&mut ulid);
+            let s = String::from_utf8(ulid[..26].to_vec()).unwrap();
+            // C prints "%s %s" where the line keeps its trailing '\n';
+            // lines() strips it, so writeln! restores it.
+            if out.write_all(format!("{s} {line}\n").as_bytes()).is_err() {
+                std::process::exit(1);
             }
         }
+        if out.flush().is_err() {
+            std::process::exit(1);
+        }
     } else {
-        // Print `n` ULIDs, one per line (C: `puts(ulid)`).
-        for _ in 0..n.max(0) {
-            let _ = writeln!(out, "{}", gen.next());
+        for _ in 0..args.n {
+            ulidgen::ulidgen_r(&mut ulid);
+            let s = String::from_utf8(ulid[..26].to_vec()).unwrap();
+            if writeln!(io::stdout(), "{s}").is_err() {
+                std::process::exit(1);
+            }
         }
     }
 
-    // C: `fflush(0); exit(!!ferror(stdout));`
-    let ok = out.flush().is_ok();
-    std::process::exit(if ok { 0 } else { 1 });
+    // Mirrors `fflush(0); exit(!!ferror(stdout));` — 0 on success, 1 on error.
 }

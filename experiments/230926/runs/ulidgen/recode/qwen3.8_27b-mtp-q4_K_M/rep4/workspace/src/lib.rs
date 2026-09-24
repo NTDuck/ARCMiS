@@ -1,96 +1,123 @@
-//! ulidgen — generate ULIDs (Universally Unique Lexicographically Sortable
-//! Identifiers).
+//! ulidgen — ULID generation core.
 //!
-//! Public-domain port of Leah Neukirchen's C `ulidgen` (see plan.md).
-//! Mirrors `src/ulid.c` + `src/ulid.h`.
+//! Faithful port of `src/ulid.c` (C `ulidgen_r(char ulid[27])`).
+//!
+//! Contract (must be preserved):
+//! - `ulid` is 27 bytes: 26 Crockford-base32 chars + NUL terminator.
+//! - The function is STATEFUL through the caller's buffer: the previous
+//!   ULID left in the buffer is read to detect a same-millisecond call and
+//!   to increment the random part in place.
+//! - The random bytes are encoded with the biased `rnd[i] % 32` mapping —
+//!   do NOT "fix" it to uniform base32.
+//! - On full random-part overflow (all 16 chars were 'Z') the function
+//!   sleeps exactly 1.234567 ms and recurses.
 
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-/// Crockford Base32 alphabet (no I L O U).
-pub const B32_ALPHABET: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+/// Crockford base32 alphabet (no I, L, O, U).
+const B32: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
-/// Generate a ULID into `ulid`.
-///
-/// `ulid` must hold 27 bytes; on success the first 26 bytes are the ULID and
-/// `ulid[26]` is set to 0 (NUL), mirroring the C `char[27]` contract so the
-/// function can be called repeatedly on the same buffer (same-ms increment).
-///
-/// Faithful port of C `ulidgen_r(char[27])`:
-/// - first 10 chars: ms-since-epoch timestamp, 5-bit groups, least
-///   significant group at index 9;
-/// - if the millisecond is unchanged (detected by comparing against the
-///   buffer's prior contents), the 16-char random part is incremented in
-///   place (Z wraps to 0; all-Z sleeps ~1.23 ms and retries via a loop
-///   instead of C's recursion; invalid chars trigger re-randomization);
-/// - otherwise the random part is filled from 16 `getrandom` bytes.
+/// Generate a ULID into `ulid` (27 bytes: 26 chars + NUL), matching the C
+/// `ulidgen_r(char ulid[27])`. The previous ULID left in the buffer is used
+/// for the same-millisecond increment path.
 pub fn ulidgen_r(ulid: &mut [u8; 27]) {
-    // C: ulid[26] = 0;
     ulid[26] = 0;
 
-    // C: clock_gettime(CLOCK_REALTIME) -> t = tv.tv_sec*1000 + tv.tv_nsec/1000000
-    let mut t: u64 = SystemTime::now()
+    // clock_gettime(CLOCK_REALTIME) -> milliseconds since the epoch.
+    let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .expect("system clock before UNIX epoch")
-        .as_millis() as u64;
+        .expect("system clock is before the UNIX epoch");
+    let mut t = now.as_secs() * 1000 + now.subsec_nanos() as u64 / 1_000_000;
 
-    // C: for (i = 9; i >= 0; i--, t /= 32) ulid[i] = b32alphabet[t % 32];
-    // `same` is 0 if any char differs from the buffer's prior content.
+    // Encode the 48-bit timestamp into ulid[9..=0], comparing each new char
+    // against the PRE-EXISTING buffer value to detect a same-millisecond call.
     let mut same = true;
     for i in (0..10).rev() {
-        let c = B32_ALPHABET[(t % 32) as usize];
+        let c = B32[(t % 32) as usize];
         if ulid[i] != c {
-            ulid[i] = c;
             same = false;
         }
+        ulid[i] = c;
         t /= 32;
     }
 
     if same {
-        // Same millisecond as the previous call in this buffer: increment the
-        // 16-char random part in place. C recurses on all-Z overflow; we use a
-        // loop + sleep retry instead to avoid unbounded stack growth.
-        loop {
-            let mut all_z = true;
-            let mut invalid = false;
-            for i in (0..16).rev() {
-                let idx = 10 + i;
-                let c = ulid[idx];
-                if c == b'Z' {
-                    ulid[idx] = b'0';
-                    continue;
-                }
-                all_z = false;
-                match B32_ALPHABET.iter().position(|&a| a == c) {
-                    Some(pos) => {
-                        // Advance to the alphabet successor.
-                        ulid[idx] = B32_ALPHABET[pos + 1];
-                        return;
-                    }
-                    None => {
-                        // Corrupt buffer: fall through to re-randomization.
-                        invalid = true;
-                        break;
-                    }
-                }
-            }
-            if invalid {
-                break;
-            }
-            if all_z {
-                // C: nanosleep(0, 1234567); ulidgen_r(ulid);
-                std::thread::sleep(Duration::from_nanos(1_234_567));
-                continue;
-            }
-            // Should not reach here (either returned or broke), but be safe.
-            return;
+        // Increment the 16-char random part in place: carry 'Z' -> '0' from
+        // the least significant char (index 15) upwards.
+        let mut i: i32 = 15;
+        while i >= 0 && ulid[10 + i as usize] == b'Z' {
+            ulid[10 + i as usize] = b'0';
+            i -= 1;
+        }
+        if i < 0 {
+            // Full overflow: wait 1.234567 ms and recurse (re-fetches the
+            // timestamp, mirroring the C code).
+            std::thread::sleep(Duration::from_nanos(1_234_567));
+            return ulidgen_r(ulid);
+        }
+        // Bump the char to its successor in the alphabet (strchr + *++p).
+        match B32.iter().position(|&c| c == ulid[10 + i as usize]) {
+            Some(pos) => ulid[10 + i as usize] = B32[pos + 1],
+            // Char not in the alphabet: fall through to re-randomization.
+            None => same = false,
         }
     }
 
-    // New millisecond / fresh buffer / corrupt random part: re-randomize.
-    // C: getentropy(rnd, 16); abort() on failure.
-    let mut rnd = [0u8; 16];
-    getrandom::fill(&mut rnd).expect("getentropy failed");
-    for i in 0..16 {
-        ulid[10 + i] = B32_ALPHABET[(rnd[i] % 32) as usize];
+    if !same {
+        // getentropy(rnd, 16); abort() on failure.
+        let mut rnd = [0u8; 16];
+        getrandom::fill(&mut rnd).expect("getentropy failed");
+        // Preserve the biased `rnd[i] % 32` encoding.
+        for i in 0..16 {
+            ulid[10 + i] = B32[rnd[i] as usize % 32];
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    //! Port of `tests/test.c` (all four tests, including the structure test
+    //! that is commented out in the C `main` — keep it enabled here).
+
+    use super::*;
+    use std::thread;
+
+    /// Helper: validate ULID structure (port of `is_valid_ulid` in tests/test.c).
+    fn is_valid_ulid(ulid: &[u8]) -> bool {
+        ulid.len() == 26 && ulid.iter().all(|&c| B32.contains(&c))
+    }
+
+    #[test]
+    fn test_ulid_length() {
+        let mut ulid = [0u8; 27];
+        ulidgen_r(&mut ulid);
+        assert_eq!(ulid[26], 0);
+        assert_eq!(ulid[..26].iter().filter(|&&c| c != 0).count(), 26);
+    }
+
+    #[test]
+    fn test_ulid_structure() {
+        let mut ulid = [0u8; 27];
+        ulidgen_r(&mut ulid);
+        assert!(is_valid_ulid(&ulid[..26]));
+    }
+
+    #[test]
+    fn test_ulid_uniqueness() {
+        let mut ulid1 = [0u8; 27];
+        let mut ulid2 = [0u8; 27];
+        ulidgen_r(&mut ulid1);
+        ulidgen_r(&mut ulid2);
+        assert_ne!(&ulid1[..26], &ulid2[..26]);
+    }
+
+    #[test]
+    fn test_ulid_sortability() {
+        let mut ulid1 = [0u8; 27];
+        let mut ulid2 = [0u8; 27];
+        ulidgen_r(&mut ulid1);
+        thread::sleep(Duration::from_micros(1500));
+        ulidgen_r(&mut ulid2);
+        assert!(ulid1[..26] < ulid2[..26]);
     }
 }

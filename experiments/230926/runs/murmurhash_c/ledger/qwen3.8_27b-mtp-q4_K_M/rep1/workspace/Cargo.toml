@@ -1,0 +1,16 @@
+[package]
+name = "murmurhash"
+version = "0.2.0"
+edition = "2021"
+description = "Rust port of the non-standard murmurhash C implementation (reverse chunk order)"
+license = "MIT"
+
+[lib]
+name = "murmurhash"
+path = "src/lib.rs"
+
+[[bin]]
+name = "murmurhash"
+path = "src/main.rs"
+
+[workspace]

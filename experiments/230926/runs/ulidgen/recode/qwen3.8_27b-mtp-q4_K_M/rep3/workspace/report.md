@@ -1,37 +1,43 @@
 # Validation Report — ulidgen (C → Rust)
 
+Date: validation run by pipeline validator
+Test command: `cargo test`
+
 ## Build
-- `cargo build`: **OK** (lib + bin compile, no errors).
 
-## Tests (`cargo test`)
-- `tests/ulid.rs`: **4 passed, 0 failed**
-  - `ulid_length` ... ok
-  - `ulid_structure` ... ok
-  - `ulid_uniqueness` ... ok
-  - `ulid_sortability` ... ok
-- Unit tests (lib/bin): 0 (none defined)
-- Doc-tests: 0
+- `cargo build`: **OK** (no errors, no warnings surfaced).
 
-**Result: all_success = true** (build clean, all tests pass).
+## Test Results
 
-## CLI smoke (manual)
-- `cargo run -- -n 3` → 3 ULIDs, same-ms increment visible (`...Y97Y` → `...Y97Z` → `...Y980`), exit 0.
-- `echo hi | cargo run -- -t` → `<ULID> hi`, exit 0.
+`cargo test` — **12 passed, 0 failed**:
 
-## Function coverage vs. plan
-| Plan symbol (C) | Rust | Covered by test? |
+| Suite | Tests | Result |
 |---|---|---|
-| `ulidgen_r` | `UlidGen::next` | Yes (all 4 tests) |
-| `b32alphabet` | `B32` (const) | n/a (constant, used by tests) |
-| `main` | `main` (CLI) | **No** (manual smoke only) |
-| `is_valid_ulid` | `is_valid_ulid` | Yes (helper used in tests) |
-| `test_ulid_length` | `ulid_length` | Yes |
-| `test_ulid_structure` | `ulid_structure` | Yes |
-| `test_ulid_uniqueness` | `ulid_uniqueness` | Yes |
-| `test_ulid_sortability` | `ulid_sortability` | Yes |
+| `tests/cli.rs` | `default_prints_one_ulid`, `n_mode_prints_n_ulids`, `n_zero_prints_nothing`, `invalid_n_fails_with_parse_long_error`, `t_mode_prefixes_each_stdin_line`, `t_mode_empty_stdin_prints_nothing` | 6/6 ok |
+| `tests/ulid.rs` | `ulid_length`, `ulid_structure`, `ulid_uniqueness`, `ulid_sortability` | 4/4 ok |
+| `tests/ulid_fn.rs` | `ulid_returns_26_valid_chars`, `ulid_is_unique_across_calls` | 2/2 ok |
+| Doc-tests | — | 0 (none) |
 
-### Uncovered functions
-- `main` (CLI entry point) — exercised only by manual smoke test, not by `cargo test`.
+No failing tests; no diagnostics to record.
 
-## Failures
-- None.
+## Smoke Checks (plan §Verification)
+
+- `cargo run -- -n 3` → printed 3 ULIDs, exit 0. Output shows the same-millisecond increment path working (`...W1KF`, `...W1KG`, `...W1KH`).
+- `printf 'a\nb\n' | cargo run -- -t` → each stdin line prefixed with a ULID, exit 0.
+
+## Function Coverage vs. Plan
+
+| Plan function | Coverage |
+|---|---|
+| `ulidgen_r` (src/lib.rs) | ✅ `tests/ulid.rs` (length/structure/uniqueness/sortability via shared buffer), `tests/ulid_fn.rs` |
+| `B32_ALPHABET` (src/lib.rs) | ✅ exercised via `is_valid_ulid` in all three test suites |
+| `ulid()` (src/lib.rs) | ✅ `tests/ulid_fn.rs` |
+| `parse_long` (src/main.rs) | ✅ `invalid_n_fails_with_parse_long_error` |
+| `Args` / `main` (src/main.rs) | ✅ `tests/cli.rs` (default, `-n`, `-t`, error path) |
+| `is_valid_ulid` (test helper) | ✅ used by all suites |
+
+**Uncovered functions: none.**
+
+## Conclusion
+
+Build succeeds, all 12 tests pass, smoke checks match the C semantics described in the plan, and every planned function has test coverage. The translator's report (12/12 green, no uncovered functions) is confirmed.

@@ -1,26 +1,27 @@
-//! Integration test — direct port of `tests/test.c`.
-//!
-//! Encodes `["some", "stuff", "here"]`, decodes the header (assert version == 1,
-//! argc == 3), then decodes the three arguments and asserts their values.
+//! Integration test mirroring `tests/test.c` from the C project.
 
-use amp::{encode, AmpMessage};
+use amp::{decode, decode_arg, encode, AmpMessage, VERSION};
 
 #[test]
-fn encode_decode_three_args() {
-    let args: Vec<&[u8]> = vec!["some".as_bytes(), "stuff".as_bytes(), "here".as_bytes()];
+fn roundtrip() {
+    // C: char *args[] = { "some", "stuff", "here" };
+    let args: Vec<&[u8]> = ["some", "stuff", "here"]
+        .iter()
+        .map(|s| s.as_bytes())
+        .collect();
 
     // encode
-    let buf = encode(&args).expect("encode should succeed");
+    let buf = encode(&args);
 
     // header
-    let mut msg = AmpMessage::decode(&buf).expect("decode should succeed");
-    assert_eq!(1, msg.version);
-    assert_eq!(3, msg.argc);
+    let mut msg = AmpMessage::default();
+    decode(&mut msg, &buf).unwrap();
+    assert_eq!(msg.version, VERSION);
+    assert_eq!(msg.argc, 3);
 
     // args
-    let expected = ["some", "stuff", "here"];
-    for exp in expected {
-        let arg = msg.decode_arg().expect("decode_arg should succeed");
-        assert_eq!(exp.as_bytes(), arg.as_slice());
+    for expected in ["some", "stuff", "here"] {
+        let arg = decode_arg(&mut msg).unwrap();
+        assert_eq!(arg, expected.as_bytes());
     }
 }

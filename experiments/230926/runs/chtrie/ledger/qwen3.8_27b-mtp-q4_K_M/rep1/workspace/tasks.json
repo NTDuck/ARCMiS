@@ -1,0 +1,7 @@
+[
+  { "id": "t1", "title": "brainstorm core difficulties and approaches", "status": "done" },
+  { "id": "t2", "title": "scaffold Rust crate (Cargo.toml, src/lib.rs, src/chtrie.rs) with ChTrie API", "status": "pending" },
+  { "id": "t3", "title": "port tests/test.c into Rust tests", "status": "pending" },
+  { "id": "t4", "title": "build and run cargo test, fix failures", "status": "pending" },
+  { "id": "t5", "title": "verify behavioral parity details (LIFO pool, overflow guards, del no-op)", "status": "pending" }
+]

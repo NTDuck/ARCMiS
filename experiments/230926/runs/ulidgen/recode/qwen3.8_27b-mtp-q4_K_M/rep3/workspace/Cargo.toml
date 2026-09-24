@@ -2,13 +2,12 @@
 name = "ulidgen"
 version = "0.1.0"
 edition = "2021"
+description = "Generate or tag lines with ULIDs (Rust port of the public-domain C ulidgen)"
+license = "Unlicense"
 
-# Isolate from any enclosing cargo workspace.
+# Keep this package standalone (the surrounding tree has its own cargo workspace).
 [workspace]
 
 [dependencies]
 getrandom = "0.2"
-
-[[bin]]
-name = "ulidgen"
-path = "src/main.rs"
+clap = { version = "4", features = ["derive"] }

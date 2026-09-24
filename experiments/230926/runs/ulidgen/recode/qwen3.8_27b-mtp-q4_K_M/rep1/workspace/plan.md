@@ -1,99 +1,97 @@
-# ulidgen — C → Rust Implementation Plan
+# ulidgen — C → Rust Translation Plan
 
-Translate the public-domain C utility `ulidgen` (ULID generator / stdin tagger)
-into a zero-dependency Rust Cargo package. Test command: `cargo test`.
+Workspace: Cargo package `ulidgen` (edition 2021), lib + bin + integration tests.
+Only external dependency: `getrandom` v0.2 (`fill` API, replaces `getentropy(2)`).
+Everything else (time, sleep, I/O, args, tests) comes from `std`.
+Test command: `cargo test`.
 
-## Fragment inventory (source → target)
+## 1. Fragment extraction (source symbols)
 
-| Source fragment | Location | Target | Target location |
+| Source file | Symbol | Kind | Notes |
 |---|---|---|---|
-| `ulidgen_r` (decl) | `src/ulid.h` | `pub fn ulidgen_r(ulid: &mut [u8; 27])` | `src/lib.rs` |
-| `ulidgen_r` (impl) | `src/ulid.c` | `pub fn ulidgen_r(ulid: &mut [u8; 27])` | `src/lib.rs` |
-| `b32alphabet` (local const) | `src/ulid.c` | `pub const B32_ALPHABET: &str` | `src/lib.rs` |
-| `main` (CLI) | `src/ulidgen.c` | `fn main()` | `src/main.rs` |
-| `is_valid_ulid` (helper) | `tests/test.c` | `fn is_valid_ulid(ulid: &str) -> bool` | `tests/test.rs` |
-| `test_ulid_length` | `tests/test.c` | `#[test] fn test_ulid_length()` | `tests/test.rs` |
-| `test_ulid_structure` | `tests/test.c` | `#[test] fn test_ulid_structure()` | `tests/test.rs` |
-| `test_ulid_uniqueness` | `tests/test.c` | `#[test] fn test_ulid_uniqueness()` | `tests/test.rs` |
-| `test_ulid_sortability` | `tests/test.c` | `#[test] fn test_ulid_sortability()` | `tests/test.rs` |
-| (new, per design) | — | `pub fn ulid() -> String` wrapper | `src/lib.rs` |
+| `src/ulid.h` | `ulidgen_r` | declaration | `void ulidgen_r(char[27])` |
+| `src/ulid.c` | `ulidgen_r` | function | core ULID generator; static `b32alphabet`; same-ms in-place increment, all-'Z' wrap → 1.23 ms sleep + recursion; `getentropy` random fill; `abort()` on entropy failure |
+| `src/ulidgen.c` | `main` | function | CLI: `getopt("n:t")`, `-n N` (atol, default 1), `-t` stdin tagging via `getdelim`, `setvbuf` line-buffering, `exit(!!ferror(stdout))` |
+| `tests/test.c` | `is_valid_ulid` | helper fn | length 26 + alphabet membership |
+| `tests/test.c` | `test_ulid_length` | test | `strlen == 26` |
+| `tests/test.c` | `test_ulid_structure` | test | alphabet validity (commented out in C `main`, but ported) |
+| `tests/test.c` | `test_ulid_uniqueness` | test | two consecutive ULIDs differ |
+| `tests/test.c` | `test_ulid_sortability` | test | ULID1 < ULID2 after 1.5 ms `nanosleep` |
+| `tests/test.c` | `main` | test runner | replaced by Rust's `#[test]` harness |
 
-## Name mapping
+## 2. Name mapping (C → Rust)
 
-- `ulidgen_r` → `ulidgen_r` (name preserved; C `char[27]` becomes `&mut [u8; 27]`).
-- `main` → `main` (preserved).
-- `is_valid_ulid` → `is_valid_ulid` (preserved; `const char *` → `&str`).
-- `test_ulid_*` → same names as `#[test]` functions.
-- `b32alphabet` → `B32_ALPHABET` (Rust const naming convention; made `pub` so
-  tests can reference it).
-- C library calls → std: `clock_gettime(CLOCK_REALTIME)` →
-  `SystemTime::now().duration_since(UNIX_EPOCH)`; `getentropy` →
-  `std::os::unix::fs::getentropy`; `nanosleep` → `std::thread::sleep`;
-  `getopt` → manual `std::env::args()` parsing; `setvbuf(_IOLBF)` → nothing
-  (Rust stdout is line-buffered); `getdelim` → `BufRead::read_line`;
-  `atol` → `str::parse::<i64>()`; `abort()` → `std::process::abort()`;
-  `exit(!!ferror(stdout))` → flush/write error → `std::process::exit(1)`.
-- Locals `n`, `tflag` preserved as `n: i64`, `tflag: bool`.
+| C name | Rust name | Reason |
+|---|---|---|
+| `ulidgen_r` | `ulidgen_r` | preserved; signature becomes `pub fn ulidgen_r(ulid: &mut [u8; 27])` to mirror the caller-buffer contract |
+| `b32alphabet` (static in `ulid.c`) | `B32_ALPHABET` | Rust `const` naming convention; promoted to `pub const &[u8; 32]` |
+| `main` (CLI, `src/ulidgen.c`) | `main` | preserved; `fn main() -> io::Result<()>` for nonzero exit on write error |
+| `is_valid_ulid` | `is_valid_ulid` | preserved (test helper) |
+| `test_ulid_length` | `ulid_length` | Rust `#[test]` names drop the redundant `test_` prefix |
+| `test_ulid_structure` | `ulid_structure` | same |
+| `test_ulid_uniqueness` | `ulid_uniqueness` | same |
+| `test_ulid_sortability` | `ulid_sortability` | same |
+| `main` (test runner, `tests/test.c`) | — (removed) | Rust test harness replaces the manual runner |
+| — (new) | `ulid()` | added convenience `pub fn ulid() -> String` per design (zeroed buffer → first call randomizes, matching C's `char ulid[27] = {0}`) |
 
-## Part A — source files (bottom-up dependency order)
+## 3. Skeleton status
 
-### A1. `Cargo.toml` (already in place)
-- Package `ulidgen`, edition 2021, empty `[dependencies]`, explicit `[lib]`
-  and `[[bin]]` sections, empty `[workspace]` table to stay standalone.
-- Verify: `cargo check` passes.
+Skeleton files already exist in the workspace and compile (`cargo build` and
+`cargo test --no-run` both pass):
 
-### A2. `src/lib.rs` — core generator (depends only on std)
-Fill in the two stubs, porting `src/ulid.c` line-for-line in semantics:
+- `Cargo.toml` / `Cargo.lock` — package `ulidgen`, dep `getrandom = "0.2"`.
+- `src/lib.rs` — `B32_ALPHABET`, `ulidgen_r` (stub, `todo!`), `ulid()` (stub),
+  `#[cfg(test)] mod tests` with 5 stub tests.
+- `src/main.rs` — `main` stub (`todo!`).
+- `tests/ulid.rs` — `is_valid_ulid` helper + 4 stub `#[test]` fns.
 
-1. `pub fn ulidgen_r(ulid: &mut [u8; 27])`:
-   - `ulid[26] = 0` (NUL terminator, as in C).
-   - Timestamp ms: `let d = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default();`
-     `let mut t = d.as_secs() as u64 * 1000 + d.subsec_nanos() as u64 / 1_000_000;`
-   - Encode loop `for i in (0..10).rev()`: if `ulid[i] != B32_ALPHABET.as_bytes()[t % 32]`
-     set it and clear `same`; else keep `same = true`. (C: `for (i = 9; i >= 0; i--, t /= 32)`.)
-   - If `same` (same millisecond as previous call): scan `i` from 15 down while
-     `ulid[i] == b'Z'` → set `b'0'`; if `i < 0`: `thread::sleep(Duration::from_nanos(1_234_567))`
-     and recurse `ulidgen_r(ulid)` then return; else if the byte is in
-     `B32_ALPHABET`, advance to the next alphabet byte and return; otherwise
-     fall through to re-randomization.
-   - Random fill: `let mut rnd = [0u8; 16];`
-     `std::os::unix::fs::getentropy(&mut rnd).unwrap_or_else(|_| std::process::abort());`
-     then `for i in 0..16 { ulid[i] = B32_ALPHABET.as_bytes()[rnd[i] as usize % 32] as u8; }`
-     (keep the `% 32` modulo bias — do NOT "improve" it).
-2. `pub fn ulid() -> String`: zeroed `[0u8; 27]`, call `ulidgen_r`, return
-   `String::from_utf8_lossy(&buf[..26]).into_owned()`.
+Implementers must replace each `todo!`/`TODO` body per design.md §3 and keep the
+public signatures unchanged.
 
-Faithfulness notes: keep the stateful-buffer semantics (the function reads the
-previous ULID from its argument); keep recursion on Z-carry overflow; keep
-`abort()` on getentropy failure.
+## 4. Implementation plan
 
-### A3. `src/main.rs` — CLI (depends on `ulidgen` lib)
-Port `src/ulidgen.c`:
-- Parse `std::env::args().skip(1)`: `-n N` (next arg parsed as `i64`, default
-  `n = 1`), `-t` sets `tflag = true`; unknown flag → usage to stderr, exit 1.
-- `-t` mode: `io::stdin().lock()` + `read_line` loop; reuse ONE `let mut ulid =
-  [0u8; 27];` buffer across `ulidgen_r` calls (preserves C same-ms increment);
-  `write!(stdout, "{} {}", String::from_utf8_lossy(&ulid[..26]), line)`.
-- `-n` mode: loop `n` times, `println!` each ULID (same reused buffer).
-- Final `stdout.flush()`; on any write/flush error `std::process::exit(1)`
-  (mirrors `exit(!!ferror(stdout))`). No `setvbuf` equivalent needed.
+### Part A — source files (bottom-up dependency order)
 
-## Part B — test files (bottom-up dependency order)
+1. **`src/lib.rs`** (port of `src/ulid.c` + `src/ulid.h`)
+   - Implement `ulidgen_r(&mut [u8; 27])` mirroring the C logic 1:1:
+     - ms timestamp via `SystemTime::now().duration_since(UNIX_EPOCH)` →
+       `secs*1000 + nanos/1_000_000` as `u64`;
+     - encode into `ulid[0..10]` (loop `i` 9..=0, `t /= 32`), tracking `same`;
+     - same-ms branch: scan `ulid[10..26]` from index 15 down, wrap `'Z'`→`'0'`;
+       all wrapped → `thread::sleep(Duration::from_nanos(1_234_567))` + recurse;
+       else advance char via linear alphabet lookup (like `strchr`); invalid
+       char → fall through to randomize;
+     - random branch: `getrandom::fill(&mut [0u8; 16])` (`.expect(...)` ≈ C
+       `abort()`), encode `B32_ALPHABET[rnd[i] % 32]` into `ulid[10..26]`;
+     - keep `ulid[26] == 0` sentinel.
+   - Implement `ulid() -> String` on top of `ulidgen_r` (zeroed buffer).
+   - Fill in the 5 unit tests in `mod tests` (alphabet length, length, structure,
+     uniqueness, sortability with 2 ms sleep).
+   - Depends on: `getrandom`, `std` only.
 
-### B1. `tests/test.rs` — integration tests (depends on `ulidgen` lib)
-Port all four tests from `tests/test.c` (uncomment `test_ulid_structure`,
-which was disabled in the C `main`):
-- `is_valid_ulid(ulid: &str) -> bool`: `ulid.len() == 26` and every char is in
-  `ulidgen::B32_ALPHABET`.
-- `test_ulid_length`: `ulidgen::ulid().len() == 26`.
-- `test_ulid_structure`: `is_valid_ulid(&ulidgen::ulid())`.
-- `test_ulid_uniqueness`: two consecutive `ulidgen::ulid()` calls differ.
-- `test_ulid_sortability`: generate one, `thread::sleep(Duration::from_millis(1))`
-  + `from_micros(500)` (1.5 ms, as in C), generate second, assert
-  `first < second` lexicographically.
+2. **`src/main.rs`** (port of `src/ulidgen.c`)
+   - Manual `std::env::args().skip(1)` parsing: `-n N` (`parse::<i64>()
+     .unwrap_or(1)`, atol-like leniency), `-t` flag; unknown flag → usage to
+     stderr, exit 1.
+   - `-t` mode: `stdin.lock().lines()` loop, `ulidgen_r(&mut buf)`,
+     `write!(stdout, "{} {}\n", ulid_str, line)` (re-append `\n` since
+     `lines()` strips it — C `getdelim` kept it).
+   - `-n` mode: loop `0..n`, `println!`.
+   - `fn main() -> io::Result<()>` + explicit `flush()` for parity with
+     `exit(!!ferror(stdout))`.
+   - Depends on: `src/lib.rs` (`ulidgen_r`).
 
-## Verification
-- `cargo check --all-targets` — no errors.
-- `cargo test` — all 4 tests pass.
-- `cargo run -- -n 3` — prints 3 ULIDs; `echo hi | cargo run -- -t` — prints
-  `<ULID> hi`.
+### Part B — test files (bottom-up dependency order)
+
+1. **`tests/ulid.rs`** (port of `tests/test.c`)
+   - `is_valid_ulid` helper (length 26 + Crockford alphabet membership).
+   - `ulid_length`, `ulid_structure` (prints generated ULID, like C),
+     `ulid_uniqueness`, `ulid_sortability` (2 ms sleep vs C's 1.5 ms).
+   - Depends on: `src/lib.rs` public API (`ulid`).
+
+### Verification
+
+- `cargo build` — lib + bin compile.
+- `cargo test` — 5 unit tests (lib.rs) + 4 integration tests (tests/ulid.rs).
+- Smoke: `cargo run -- -n 3` → 3 distinct 26-char ULIDs;
+  `echo hello | cargo run -- -t` → `<ULID> hello`.

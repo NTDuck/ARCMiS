@@ -1,97 +1,76 @@
-//! ulidgen — generate or tag lines with ULID
-//! (Universally Unique Lexicographically Sortable Identifier)
+//! ulidgen — generate or tag lines with ULID.
 //!
-//! Usage: ulidgen [-n N | -t]
-//!    -n N   generate N ULID (default: 1)
-//!    -t     print each line of standard input prefixed with an ULID
+//! Port of `src/ulidgen.c` (public domain, Leah Neukirchen).
 //!
-//! Rust port of `src/ulidgen.c` from the public-domain C project
-//! by Leah Neukirchen <leah@vuxu.org>.
+//! Usage: `ulidgen [-n N | -t]`
+//!   -n N   generate N ULID (default: 1)
+//!   -t     print each line of standard input prefixed with an ULID
 //!
-//! To the extent possible under law, Leah Neukirchen <leah@vuxu.org>
-//! has waived all copyright and related or neighboring rights to this work.
-//! http://creativecommons.org/publicdomain/zero/1.0/
+//! Exit status: 0 on success, 1 on write/flush error (mirrors `exit(!!ferror(stdout))`).
 
 use std::io::{self, BufRead, Write};
-use std::process;
 
-const USAGE: &str = "usage: ulidgen [-n N | -t]\n\
-                     -n N   generate N ULID (default: 1)\n\
-                     -t     print each line of standard input prefixed with an ULID\n";
+use ulidgen::ulidgen_r;
 
 fn main() {
-    // 1. Manual arg parsing (getopt "n:t" equivalent).
-    let mut n: i64 = 1;
-    let mut tag = false;
+    let mut ulid = [0u8; 27];
 
-    let args: Vec<String> = std::env::args().skip(1).collect();
-    let mut i = 0;
-    while i < args.len() {
-        match args[i].as_str() {
+    // manual parse of: -n N  and  -t   (mirrors getopt "n:t")
+    let mut n: i64 = 1;
+    let mut tflag = false;
+    let mut args = std::env::args().skip(1);
+    while let Some(a) = args.next() {
+        match a.as_str() {
             "-n" => {
-                i += 1;
-                if i >= args.len() {
-                    eprint!("{}", USAGE);
-                    process::exit(2);
-                }
-                match args[i].parse::<i64>() {
-                    Ok(v) => n = v,
-                    Err(_) => {
-                        eprint!("{}", USAGE);
-                        process::exit(2);
-                    }
-                }
+                n = args
+                    .next()
+                    .expect("-n requires an argument")
+                    .parse()
+                    .unwrap_or(1);
             }
-            "-t" => tag = true,
-            other => {
-                eprintln!("ulidgen: unknown option '{}'", other);
-                eprint!("{}", USAGE);
-                process::exit(2);
+            "-t" => tflag = true,
+            _ => {
+                eprintln!("usage: ulidgen [-n N] [-t]");
+                std::process::exit(1);
             }
         }
-        i += 1;
     }
 
+    let stdin = io::stdin();
     let stdout = io::stdout();
     let mut out = stdout.lock();
 
-    if tag {
-        // 2. -t mode: tag each stdin line with a ULID.
-        let stdin = io::stdin();
-        let mut last: Option<String> = None;
-        for line in stdin.lock().lines() {
-            match line {
-                Ok(line) => {
-                    let ulid = ulidgen::ulidgen(last.as_deref());
-                    if writeln!(out, "{} {}", ulid, line).is_err() {
-                        process::exit(1);
-                    }
-                    // Line-buffering equivalent of setvbuf(_IOLBF).
-                    if out.flush().is_err() {
-                        process::exit(1);
-                    }
-                    last = Some(ulid);
+    if tflag {
+        // tag mode: prefix each stdin line with a ULID.
+        // Use BufRead::read_line (like C getdelim) so the trailing newline is
+        // preserved and the output matches printf("%s %s", ulid, line) byte-for-byte.
+        let mut input = String::new();
+        let mut reader = stdin.lock();
+        loop {
+            input.clear();
+            match reader.read_line(&mut input) {
+                Ok(0) => break,
+                Ok(_) => {
+                    ulidgen_r(&mut ulid);
+                    let _ = write!(
+                        out,
+                        "{} {}",
+                        std::str::from_utf8(&ulid[..26]).unwrap(),
+                        input
+                    );
                 }
-                Err(e) => {
-                    eprintln!("ulidgen: {}", e);
-                    process::exit(1);
-                }
+                Err(_) => break,
             }
         }
     } else {
-        // 3. -n mode: generate n ULIDs.
-        let mut last: Option<String> = None;
-        for _ in 0..n {
-            let ulid = ulidgen::ulidgen(last.as_deref());
-            if writeln!(out, "{}", ulid).is_err() {
-                process::exit(1);
-            }
-            last = Some(ulid);
+        // generate mode: print n ULIDs
+        for _ in 0..n.max(0) {
+            ulidgen_r(&mut ulid);
+            let _ = writeln!(out, "{}", std::str::from_utf8(&ulid[..26]).unwrap());
         }
     }
 
-    // 4. Final flush; exit(1) on error (equivalent of exit(!!ferror(stdout))).
-    if out.flush().is_err() {
-        process::exit(1);
-    }
+    // exit(!!ferror(stdout))
+    let ok = out.flush().is_ok();
+    std::process::exit(if ok { 0 } else { 1 });
 }

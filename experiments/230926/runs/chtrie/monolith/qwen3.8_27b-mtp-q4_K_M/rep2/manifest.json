@@ -15,8 +15,8 @@
   "config_path": "/home/ayin/projs/ARCMiS/experiments/230926/runs/chtrie/monolith/qwen3.8_27b-mtp-q4_K_M/rep2/config.yml",
   "problem_root": "assets/ReCodeAgent/data/tool_projects/crust/chtrie/c",
   "target_language": "rust",
-  "git_revision": "bf7f390",
+  "git_revision": "6d7b667",
   "parents": [],
   "hypothesis": "",
-  "created_at": "20260923T090438Z"
+  "created_at": "20260923T105826Z"
 }

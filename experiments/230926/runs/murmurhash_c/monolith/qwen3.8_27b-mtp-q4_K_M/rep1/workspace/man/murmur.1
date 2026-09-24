@@ -1,0 +1,22 @@
+.\" Process this file with
+.\"   man -l murmur.1
+.\"
+.TH murmur 1 "September 2014"
+.SH NAME
+murmur \- MurmurHash3 general hash bashed lookup function implementation
+.SH SYNOPSIS
+.B murmur
+[-hV] [options]
+.SH OPTIONS
+.TP
+.B --seed=[seed]
+hash seed (optional)
+.SH EXAMPLES
+.nf
+$ echo -n kinkajou | murmur
+3067714808
+$ echo -n panda | murmur --seed=10
+1406483717
+.fi
+.SH SEE ALSO
+.BR murmurhash (3)

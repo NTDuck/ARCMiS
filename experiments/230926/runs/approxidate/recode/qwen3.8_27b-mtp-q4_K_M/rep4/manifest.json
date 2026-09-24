@@ -1,0 +1,22 @@
+{
+  "candidate_id": "rep4",
+  "method": "recode",
+  "model": "qwen3.8:27b-mtp-q4_K_M",
+  "budgets": {
+    "max_turns": 120,
+    "num_ctx": 16384,
+    "max_output_tokens": 8192,
+    "max_retries": 2,
+    "temperature": 0.2,
+    "recode_max_rounds": 11,
+    "ledger_manager_turns": 60,
+    "ledger_worker_turns": 120
+  },
+  "config_path": "/home/ayin/projs/ARCMiS/experiments/230926/runs/approxidate/recode/qwen3.8_27b-mtp-q4_K_M/rep4/config.yml",
+  "problem_root": "assets/ReCodeAgent/data/tool_projects/crust/approxidate/c",
+  "target_language": "rust",
+  "git_revision": "6d7b667",
+  "parents": [],
+  "hypothesis": "",
+  "created_at": "20260923T160205Z"
+}

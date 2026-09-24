@@ -1,0 +1,34 @@
+[
+  {
+    "id": "T1",
+    "title": "Scaffold crate: Cargo.toml (name chtrie, edition 2021, no deps) and src/lib.rs stub; verify cargo build",
+    "status": "done"
+  },
+  {
+    "id": "T2",
+    "title": "Implement ChTrie::alloc (clamp n/m to >=1, ERANGE/overflow checks, ecap = (n-1)+(n-1)/3, global edge table, index pool) plus ChTrieError { Range, Capacity } and Drop",
+    "status": "done",
+    "note": "Size validation extracted into ChTrie::validate (clamping, i32 bounds, overflow guard) and runs BEFORE any allocation, so the guard boundary is testable without allocating."
+  },
+  {
+    "id": "T3",
+    "title": "Implement walk (bucket lookup by (from,sym), create with pool exhaustion -> Err(Capacity), free-list pop) and del (unlink edge, recycle child index); no unsafe",
+    "status": "done"
+  },
+  {
+    "id": "T4",
+    "title": "Port tests/test.c to tests/test.rs: add/del/query helpers with term/nchild state (N=65536, M=256) and all 14 query assertions unchanged",
+    "status": "done"
+  },
+  {
+    "id": "T5",
+    "title": "Add unit tests in lib.rs: ERANGE on oversized n/m, pool exhaustion -> Err(Capacity), index recycling (del then re-create reuses the index)",
+    "status": "done",
+    "note": "alloc_range_errors exercises the guard boundary via ChTrie::validate (no ~51 GB allocation); a small real allocation (n=1024) covers the success path."
+  },
+  {
+    "id": "T6",
+    "title": "Final gate: cargo build clean, cargo test all green, cargo clippy clean; update notes.md",
+    "status": "done"
+  }
+]

@@ -1,0 +1,11 @@
+[package]
+name = "chtrie"
+version = "0.1.0"
+edition = "2021"
+description = "Coordinate hash trie"
+license = "BSD-3-Clause"
+
+[dependencies]
+# None — std only
+
+[workspace]

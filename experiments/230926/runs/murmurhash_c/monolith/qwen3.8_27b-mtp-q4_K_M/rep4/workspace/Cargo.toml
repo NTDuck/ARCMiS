@@ -1,0 +1,21 @@
+[package]
+name = "murmurhash"
+version = "0.2.0"
+edition = "2021"
+description = "MurmurHash3 general hash based lookup function implementation"
+license = "MIT"
+keywords = ["murmur", "hash", "murmurhash"]
+
+[lib]
+name = "murmurhash"
+path = "src/lib.rs"
+
+[[bin]]
+name = "murmur"
+path = "src/bin/murmur.rs"
+
+[[example]]
+name = "example"
+path = "examples/example.rs"
+
+[workspace]

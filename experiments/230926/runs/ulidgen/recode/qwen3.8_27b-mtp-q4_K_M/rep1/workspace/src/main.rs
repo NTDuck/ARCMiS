@@ -1,14 +1,29 @@
-//! `ulidgen` — generate or tag lines with ULID.
+//! ulidgen — generate or tag lines with ULID
+//! (Universally Unique Lexicographically Sortable Identifier)
 //!
-//! Port of `src/ulidgen.c`.
+//! Usage: ulidgen [-n N | -t]
+//!    -n N   generate N ULID (default: 1)
+//!    -t     print each line of standard input prefixed with a ULID
 //!
-//! Usage: `ulidgen [-n N | -t]`
-//!   -n N   generate N ULIDs (default: 1), one per line
-//!   -t     print each line of standard input prefixed with a ULID
+//! Port of the public-domain C src/ulidgen.c.
 //!
-//! Exits 0 on success, >0 if a write to stdout fails (mirrors
-//! `exit(!!ferror(stdout))`).
+//! To the extent possible under law, Leah Neukirchen <leah@vuxu.org>
+//! has waived all copyright and related or neighboring rights to this work.
+//! http://creativecommons.org/publicdomain/zero/1.0/
 
-fn main() {
-    todo!("port of C main: manual parse of std::env::args for -n N (i64, default 1) and -t; -t mode: BufRead::read_line loop, reuse one [0u8; 27] buffer across ulidgen_r calls, write '<ulid> <line>'; -n mode: loop n times printing each ULID; final flush, exit(1) on any write/flush error")
+use std::io;
+
+use ulidgen::ulidgen_r;
+
+/// Port of C `main(int argc, char *argv[])`.
+///
+/// - `-n N` (default 1, parsed like `atol` — `parse().unwrap_or(1)`);
+/// - `-t` reads stdin lines and prints `<ULID> <line>` (newline re-appended,
+///   since Rust `lines()` strips it while C `getdelim` kept it);
+/// - exits nonzero on stdout write errors (mirrors `exit(!!ferror(stdout))`).
+fn main() -> io::Result<()> {
+    // TODO: implement (see design.md section 3, src/main.rs)
+    let buf = [0u8; 27];
+    let _ = (buf, ulidgen_r);
+    todo!("main not yet implemented")
 }

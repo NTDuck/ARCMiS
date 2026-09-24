@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Aggregate the 220926 survey sweep.
+"""Aggregate a survey sweep.
 
-Walks experiments/220926/runs/<project>/<method>/<model>/rep<N>/, reads
+Usage: aggregate-survey.py [SURVEY_ID] (default 220926).
+
+Walks experiments/<ID>/runs/<project>/<method>/<model>/rep<N>/, reads
 the harness artifacts of every attempt (successful or not), and writes:
 
-- experiments/220926/results/per-run.yml: one record per attempt
-- experiments/220926/results/aggregated.yml: per (project, method,
+- experiments/<ID>/results/per-run.yml: one record per attempt
+- experiments/<ID>/results/aggregated.yml: per (project, method,
   model) mean compile rate, mean pass rate, mean tests, wall time
 
 Success is always the toolchain's verdict from result/per_problem.json,
@@ -23,8 +25,9 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-RUNS = REPO / "experiments" / "220926" / "runs"
-OUT = REPO / "experiments" / "220926" / "results"
+SURVEY_ID = sys.argv[1] if len(sys.argv) > 1 else "220926"
+RUNS = REPO / "experiments" / SURVEY_ID / "runs"
+OUT = REPO / "experiments" / SURVEY_ID / "results"
 
 
 def parse_result_yml(path: Path) -> dict:
@@ -51,7 +54,7 @@ def parse_elapsed(text: str) -> float:
 def wall_from_log(run_dir: Path) -> float:
     """Read the wall seconds the sweep driver logged for this cell. The
     driver keys its lines by project, sanitized model tag, and rep."""
-    log = REPO / "experiments" / "220926" / "survey.log"
+    log = REPO / "experiments" / SURVEY_ID / "survey.log"
     if not log.is_file():
         return math.nan
     model_dir = run_dir.parent.name
@@ -119,11 +122,14 @@ def collect_run(run_dir: Path) -> dict:
     # Compile truth: the toolchain rerun scored the workspace. a run
     # without a score never produced a valid workspace.
     ymls = sorted((run_dir / "result").glob("*.yml")) if (run_dir / "result").is_dir() else []
-    if scored:
-        workspace = run_dir / "workspace"
-        rec["compiled"] = (workspace / "Cargo.toml").is_file()
-    else:
-        rec["compiled"] = False
+    # A workspace can exist without a score: a late failure after the
+    # agents already wrote a crate. Count the artifact whenever present.
+    workspace = run_dir / "workspace"
+    # The agent may nest the crate one level below the workspace root
+    # (a repo-shaped output). Accept either root.
+    rec["compiled"] = (workspace / "Cargo.toml").is_file() or any(
+        workspace.glob("*/Cargo.toml")
+    )
     if ymls:
         y = parse_result_yml(ymls[-1])
         rec["reported_pass_rate"] = y.get("test_pass_rate", "n/a")
@@ -158,6 +164,18 @@ def collect_run(run_dir: Path) -> dict:
         rec["failure_class"] = "model_output"
     elif "unknown model architecture" in text:
         rec["failure_class"] = "model_load"
+    elif "finish_reason=Length" in text:
+        rec["failure_class"] = "output_budget"
+    elif "UnknownToolCall" in text or "invalid tool call arguments" in text:
+        rec["failure_class"] = "invalid_tool_args"
+    elif "ConnectError" in text:
+        # A lost daemon connection can also emit a post-run offload warn;
+        # the conn loss is the real cause, so it wins the class.
+        rec["failure_class"] = "daemon_conn"
+    elif "task failed after retries" in text:
+        rec["failure_class"] = "task_retries"
+    elif "model offload failed" in text:
+        rec["failure_class"] = "infra_offload"
     else:
         rec["failure_class"] = "other"
     # A scored record only counts when the evaluator reran the
@@ -189,7 +207,7 @@ def main():
             continue
         records.append(collect_run(run_dir))
 
-    results = REPO / "experiments" / "220926" / "results"
+    results = REPO / "experiments" / SURVEY_ID / "results"
     results.mkdir(parents=True, exist_ok=True)
 
     per_run = results / "per-run.yml"
@@ -204,7 +222,7 @@ def main():
         cell.append(rec)
 
     aggregate = {
-        "survey": "220926",
+        "survey": SURVEY_ID,
         "runs_total": len(records),
         "cells": [],
     }
@@ -236,7 +254,7 @@ def main():
         )
 
     write_aggregate(results / "aggregated.yml", aggregate)
-    report = results / "survey-220926.html"
+    report = results / f"survey-{SURVEY_ID}.html"
     write_html_report(report, aggregate, records)
     print(f"runs: {len(records)} cells: {len(aggregate['cells'])}")
     print(f"wrote {per_run}")
@@ -258,7 +276,7 @@ def yaml_record(rec: dict) -> str:
 
 
 def write_aggregate(path: Path, aggregate: dict) -> None:
-    lines = [f"# Survey 220926 aggregate over {aggregate['runs_total']} attempts", "cells:"]
+    lines = [f"# Survey {SURVEY_ID} aggregate over {aggregate['runs_total']} attempts", "cells:"]
     for cell in aggregate["cells"]:
         lines.append("-")
         for key, value in cell.items():
@@ -275,20 +293,39 @@ def write_aggregate(path: Path, aggregate: dict) -> None:
     path.write_text("\n".join(lines) + "\n")
 
 
-MODEL_SHORT = {
-    "openbmb/minicpm5-2b:q8_0": "minicpm5-2b",
-    "qwen3.8:27b-mtp-q4_K_M": "qwen3.8-27B",
-    "smtek/Swift-Qwen3.8-27B:dflash2": "Swift-27B",
-}
 METHOD_SHORT = {"monolith": "monolith", "ledger": "ledger", "recode": "recode"}
-PROJECT_LOC = {"fft": "233 LOC", "totp": "443 LOC", "cjson": "1101 LOC", "expr": "1110 LOC"}
 PALETTE = {"monolith": "#3b82f6", "ledger": "#f59e0b", "recode": "#10b981"}
-MODEL_ORDER = ["qwen3.8:27b-mtp-q4_K_M", "smtek/Swift-Qwen3.8-27B:dflash2", "openbmb/minicpm5-2b:q8_0"]
-MODEL_COLORS = {
-    "qwen3.8:27b-mtp-q4_K_M": "#6366f1",
-    "smtek/Swift-Qwen3.8-27B:dflash2": "#8b5cf6",
-    "openbmb/minicpm5-2b:q8_0": "#94a3b8",
+
+# Project LOC, measured over the sample C sources. The ReCodeAgent crust
+# split is the only sample family so far; sizes here match survey 220926
+# and 230926 sample picks.
+PROJECT_LOC = {
+    "fft": "233 LOC", "totp": "443 LOC", "cjson": "1101 LOC", "expr": "1110 LOC",
+    "amp": "185 LOC", "ulidgen": "186 LOC", "chtrie": "258 LOC",
+    "murmurhash_c": "324 LOC", "gorilla-paper-encode": "635 LOC",
+    "approxidate": "1151 LOC", "xopt": "3087 LOC",
 }
+
+CHART_COLORS = ["#6366f1", "#8b5cf6", "#94a3b8", "#f97316", "#0ea5e9", "#14b8a6", "#eab308", "#ec4899"]
+
+
+def discover_grid(records: list) -> tuple[list, list]:
+    """Models and projects present in the records, in stable first-seen order."""
+    models: list = []
+    projects: list = []
+    for rec in records:
+        if rec["model"] not in models:
+            models.append(rec["model"])
+        if rec["project"] not in projects:
+            projects.append(rec["project"])
+    return models, projects
+
+
+def model_short(model: str) -> str:
+    """Compact display name; the tag tail after the last colon or slash."""
+    tail = model.rsplit(":", 1)[-1].rsplit("/", 1)[-1]
+    base = model.rsplit("/", 1)[-1].rsplit(":", 1)[0]
+    return f"{base} {tail}" if tail and tail != base else (base or model)
 
 
 def fmt_ratio(covered: int, total: int) -> str:
@@ -315,16 +352,41 @@ def esc(text) -> str:
     return html.escape(str(text))
 
 
+# Per-survey scoring caveat shown under the summary cards.
+NOTES = {
+    "220926": (
+        " Three ledger runs wrote per-problem records from the manager's"
+        " self-report with empty workspaces; the verified metrics exclude them."
+    ),
+    "230926": (
+        " One monolith run scored a pass from a workspace nested one level"
+        " below the root; the evaluator's build/test rerun verified it there,"
+        " so it counts. The 57 preflight offload aborts against a dead ollama"
+        " daemon are infrastructure failures, not model failures."
+    ),
+}
+NOTE_TEXT = NOTES.get(SURVEY_ID, "")
+
+
 def write_html_report(path: Path, aggregate: dict, records: list) -> None:
     """Render the standalone HTML report next to the Chart.js bundle."""
     cells = aggregate["cells"]
     charts_json = json.dumps(build_chart_data(cells, records))
-    body = render_body(cells)
+    total = sum(c["reps"] for c in cells)
+    verified = sum(c["verified"] for c in cells)
+    grid = f"{len({c['project'] for c in cells})} projects × {len({c['method'] for c in cells})} methods × {len({c['model'] for c in cells})} model(s) × 5 reps"
+    body = (
+        render_body(cells, records)
+        .replace("__SUCCESS_RATE__", f"{100.0 * verified / max(1, total):.1f}%")
+        .replace("__GRID__", grid)
+        .replace("__NOTE__", NOTE_TEXT)
+    )
     page = (
         HTML_SKELETON.replace("__CHARTS_JSON__", charts_json)
         .replace("__BODY__", body)
         .replace("__CSS__", CSS)
         .replace("__JS__", JS)
+        .replace("__SURVEY_ID__", SURVEY_ID)
     )
     path.write_text(page)
 
@@ -332,7 +394,7 @@ def write_html_report(path: Path, aggregate: dict, records: list) -> None:
 def build_chart_data(cells: list, records: list) -> dict:
     """All chart inputs in one JSON payload for the inline script."""
     methods = ["monolith", "ledger", "recode"]
-    projects = ["fft", "totp", "cjson", "expr"]
+    models, projects = discover_grid(records)
 
     def matrix(value_fn):
         return {
@@ -361,13 +423,22 @@ def build_chart_data(cells: list, records: list) -> dict:
         cls = r["failure_class"]
         if cls:
             fail[cls] = fail.get(cls, 0) + 1
-    fail_order = ["max_turns", "model_output", "tests_failed", "model_load", "other", "verified_ok"]
+    fail_order = [
+        "max_turns", "model_output", "tests_failed", "model_load", "other",
+        "output_budget", "invalid_tool_args", "daemon_conn", "task_retries",
+        "infra_offload", "verified_ok",
+    ]
     fail_labels = {
         "max_turns": "Max turns",
         "model_output": "Model protocol",
         "tests_failed": "Tests failed",
         "model_load": "Model load",
         "other": "Other",
+        "output_budget": "Output budget",
+        "invalid_tool_args": "Invalid tool args",
+        "daemon_conn": "Daemon conn lost",
+        "task_retries": "Task retries exhausted",
+        "infra_offload": "Infra: preflight offload",
         "verified_ok": "Verified pass",
     }
     fail_data = [fail.get(k, 0) for k in fail_order]
@@ -382,13 +453,13 @@ def build_chart_data(cells: list, records: list) -> dict:
     }
 
     return {
-        "models": [MODEL_SHORT[m] for m in MODEL_ORDER],
-        "modelColors": {MODEL_SHORT[m]: MODEL_COLORS[m] for m in MODEL_ORDER},
+        "models": [model_short(m) for m in models],
+        "modelColors": {model_short(m): CHART_COLORS[i % len(CHART_COLORS)] for i, m in enumerate(models)},
         "methods": methods,
         "palette": PALETTE,
         "projects": projects,
-        "succByMethodModel": {METHOD_SHORT[m]: [succ.get(m, {}).get(mm, 0) for mm in MODEL_ORDER] for m in methods},
-        "compByMethodModel": {METHOD_SHORT[m]: [comp.get(m, {}).get(mm, 0) for mm in MODEL_ORDER] for m in methods},
+        "succByMethodModel": {METHOD_SHORT[m]: [succ.get(m, {}).get(mm, 0) for mm in models] for m in methods},
+        "compByMethodModel": {METHOD_SHORT[m]: [comp.get(m, {}).get(mm, 0) for mm in models] for m in methods},
         "succByProject": {m: [succ_p.get(m, {}).get(p, 0) for p in projects] for m in methods},
         "failLabels": [fail_labels[k] for k in fail_order],
         "failColors": ["#ef4444", "#f97316", "#eab308", "#a855f7", "#64748b", "#22c55e"],
@@ -397,19 +468,20 @@ def build_chart_data(cells: list, records: list) -> dict:
     }
 
 
-def render_body(cells: list) -> str:
+def render_body(cells: list, records: list) -> str:
     total = sum(c["reps"] for c in cells)
     verified = sum(c["verified"] for c in cells)
     compiled_total = sum(c["compiled"] for c in cells)
+    models, projects = discover_grid(records)
     project_rows = ""
-    for project in ["fft", "totp", "cjson", "expr"]:
+    for project in projects:
         group = [c for c in cells if c["project"] == project]
         n = sum(c["reps"] for c in group)
         comp = sum(c["compiled"] for c in group)
         ver = sum(c["verified"] for c in group)
         wall = mean([c["wall_s_mean"] for c in group])
         project_rows += (
-            f"<tr><td>{esc(project)}</td><td>{PROJECT_LOC[project]}</td>"
+            f"<tr><td>{esc(project)}</td><td>{PROJECT_LOC.get(project, '-')}</td>"
             f"<td class='ratio'>{comp}/{n}</td><td class='ratio'>{ver}/{n}</td>"
             f"<td>{wall:.0f} s</td></tr>\n"
         )
@@ -434,21 +506,22 @@ def render_body(cells: list) -> str:
             f"<td>{pr}</td><td>{wall:.0f} s</td></tr>\n"
         )
     model_rows = ""
-    for model in MODEL_ORDER:
+    for i, model in enumerate(models):
         group = [c for c in cells if c["model"] == model]
         n = sum(c["reps"] for c in group)
         comp = sum(c["compiled"] for c in group)
         ver = sum(c["verified"] for c in group)
         wall = mean([c["wall_s_mean"] for c in group])
+        color = CHART_COLORS[i % len(CHART_COLORS)]
         model_rows += (
-            f"<tr><td style='color:{MODEL_COLORS[model]}'>&#9632.</td><td>{esc(MODEL_SHORT[model])}</td>"
+            f"<tr><td style='color:{color}'>&#9632.</td><td>{esc(model_short(model))}</td>"
             f"<td class='ratio'>{comp}/{n}</td><td class='ratio'>{ver}/{n}</td><td>{wall:.0f} s</td></tr>\n"
         )
     cell_rows = ""
     for c in cells:
         fc = ", ".join(f"{k} {v}" for k, v in c["failure_classes"].items()) or "-"
         cell_rows += (
-            f"<tr><td>{esc(c['project'])}</td><td>{esc(c['method'])}</td><td>{esc(MODEL_SHORT.get(c['model'], c['model']))}</td>"
+            f"<tr><td>{esc(c['project'])}</td><td>{esc(c['method'])}</td><td>{esc(model_short(c['model']))}</td>"
             f"<td class='ratio'>{c['compiled']}/{c['reps']}</td><td class='ratio'>{c['verified']}/{c['reps']}</td>"
             f"<td>{fmt_pass(c)}</td><td>{fmt_wall(c)}</td><td class='fails'>{esc(fc)}</td></tr>\n"
         )
@@ -464,7 +537,7 @@ HTML_SKELETON = """<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Survey 220926 — methods × models</title>
+<title>Survey __SURVEY_ID__ — methods × models</title>
 <style>
 __CSS__
 </style>
@@ -511,20 +584,18 @@ footer { margin-top: 40px; color: #94a3b8; font-size: 12.5px; }
 
 BODY_SKELETON = """
 <div class="wrap">
-  <h1>Survey 220926 — methodology × model sweep</h1>
-  <p class="sub">4 projects × 3 methods × 3 models × 5 reps = 180 sequential runs · ollama · C → Rust · toolchain-scored only</p>
+  <h1>Survey __SURVEY_ID__ — methodology × model sweep</h1>
+  <p class="sub">__GRID__ · ollama · C → Rust · toolchain-scored only</p>
 
   <div class="cards">
-    <div class="card"><div class="n">180</div><div class="l">runs</div></div>
+    <div class="card"><div class="n">__TOTAL__</div><div class="l">runs</div></div>
     <div class="card"><div class="n">__COMPILED__</div><div class="l">compiled workspaces</div></div>
     <div class="card"><div class="n">__VERIFIED__</div><div class="l">toolchain-verified passes</div></div>
-    <div class="card"><div class="n">2.9%</div><div class="l">end-to-end success rate</div></div>
+    <div class="card"><div class="n">__SUCCESS_RATE__</div><div class="l">end-to-end success rate</div></div>
   </div>
 
   <div class="note"><b>Scoring rule.</b> A run counts only when the evaluator's own rerun of
-  <code>cargo build</code> and <code>cargo test</code> inside the produced workspace passed.
-  Three ledger runs wrote per-problem records from the manager's self-report with empty
-  workspaces. they the verified metrics exclude them.</div>
+  <code>cargo build</code> and <code>cargo test</code> inside the produced workspace passed.__NOTE__</div>
 
   <h2>Charts</h2>
   <div class="grid2">
@@ -532,7 +603,7 @@ BODY_SKELETON = """
     <div class="panel"><h3>Compiled workspaces by method × model</h3><canvas id="c2"></canvas></div>
   </div>
   <div class="grid2" style="margin-top:20px">
-    <div class="panel"><h3>Run outcomes (180 runs)</h3><canvas id="c3"></canvas></div>
+    <div class="panel"><h3>Run outcomes</h3><canvas id="c3"></canvas></div>
     <div class="panel"><h3>Verified successes by project × method</h3><canvas id="c4"></canvas></div>
   </div>
   <div class="grid2" style="margin-top:20px">
@@ -558,7 +629,7 @@ BODY_SKELETON = """
     __MODEL_ROWS__
   </table>
 
-  <h2>Per-cell detail (36 cells)</h2>
+  <h2>Per-cell detail</h2>
   <table>
     <tr><th>Project</th><th>Method</th><th>Model</th><th>Compiled</th><th>Verified</th><th>Pass rate</th><th>Mean wall</th><th>Failures</th></tr>
     __CELL_ROWS__
@@ -568,7 +639,7 @@ BODY_SKELETON = """
     Compiled = produced workspace has a valid Cargo manifest. Verified = the evaluator reran
     cargo build + cargo test and all problems passed. Pass rate = mean over verified reps of
     passed / (passed + failed), ± population std. Wall = driver-logged seconds per cell mean.
-    Artifacts. experiments/220926/runs/PROJECT/METHOD/MODEL/rep-N/.
+    Artifacts. experiments/__SURVEY_ID__/runs/PROJECT/METHOD/MODEL/rep-N/.
   </footer>
 </div>
 """

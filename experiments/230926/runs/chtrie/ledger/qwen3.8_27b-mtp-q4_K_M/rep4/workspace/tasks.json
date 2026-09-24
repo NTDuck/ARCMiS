@@ -1,0 +1,32 @@
+[
+  {
+    "id": "t1",
+    "task": "Set up Cargo project (Cargo.toml, src/lib.rs skeleton, tests/test.rs placeholder)",
+    "status": "done"
+  },
+  {
+    "id": "t2",
+    "task": "Translate chtrie_alloc to ChTrie::alloc with ERANGE checks and ChTrieError",
+    "status": "done"
+  },
+  {
+    "id": "t3",
+    "task": "Translate chtrie_walk (lookup + create, index pool logic, ENOMEM)",
+    "status": "done"
+  },
+  {
+    "id": "t4",
+    "task": "Translate chtrie_del and chtrie_free (Drop impl)",
+    "status": "done"
+  },
+  {
+    "id": "t5",
+    "task": "Translate tests/test.c to tests/test.rs with the 14 test cases and expected results",
+    "status": "done"
+  },
+  {
+    "id": "t6",
+    "task": "Run cargo test, fix failures until all tests pass",
+    "status": "done"
+  }
+]

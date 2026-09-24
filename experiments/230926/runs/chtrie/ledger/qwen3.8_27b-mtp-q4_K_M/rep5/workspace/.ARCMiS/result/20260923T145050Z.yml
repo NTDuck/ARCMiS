@@ -1,0 +1,10 @@
+compiled: true
+test_pass_rate: '1.00'
+elapsed: 1178.434446353s
+steps:
+- step: build
+  passed: true
+  detail: ''
+- step: test
+  passed: true
+  detail: tests passed 6, failed 0

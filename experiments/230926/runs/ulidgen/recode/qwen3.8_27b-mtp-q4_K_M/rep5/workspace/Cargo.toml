@@ -2,11 +2,11 @@
 name = "ulidgen"
 version = "0.1.0"
 edition = "2021"
-description = "generate or tag lines with ULID (Universally Unique Lexicographically Sortable Identifier)"
+description = "generate or tag lines with ULID"
 license = "Unlicense"
 
-# Keep this package independent of any enclosing Cargo workspace.
+# keep this crate out of any enclosing cargo workspace
 [workspace]
 
 [dependencies]
-rand = "0.9"
+getrandom = "0.2"

@@ -1,151 +1,74 @@
-//! ulidgen — generate ULID
-//! (Universally Unique Lexicographically Sortable Identifier)
+//! ulidgen — generate ULID (Universally Unique Lexicographically Sortable Identifier).
 //!
-//! Rust port of `src/ulid.c` / `src/ulid.h` from the public-domain C project
-//! by Leah Neukirchen <leah@vuxu.org>.
+//! Port of `src/ulid.c` (public domain, Leah Neukirchen).
 //!
-//! To the extent possible under law, Leah Neukirchen <leah@vuxu.org>
-//! has waived all copyright and related or neighboring rights to this work.
-//! http://creativecommons.org/publicdomain/zero/1.0/
+//! NOTE (fidelity): `ulidgen_r` is stateful in the *caller's* buffer — the
+//! same-millisecond detection compares against the previous contents of the
+//! same buffer, exactly like the C original. Callers must reuse one buffer
+//! (as `main` does) to get the increment-on-same-millisecond behavior.
 
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-/// Crockford Base32 alphabet (ULID spec), most-significant digit first.
-pub const B32_ALPHABET: &str = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+/// Crockford Base32 alphabet (32 chars, no I/L/O/U).
+pub const B32_ALPHABET: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
-/// Generate a ULID (26 Crockford-Base32 characters).
+/// Generate a ULID into `ulid` (26 chars + NUL at index 26), like C `ulidgen_r`.
 ///
-/// Port of `ulidgen_r(char[27])` from `src/ulid.c`. The C function detects
-/// "same millisecond" by comparing against the caller-reused output buffer;
-/// here the previous ULID is passed explicitly via `prev`.
-///
-/// - If `prev` is `Some` and its timestamp part (first 10 chars) equals the
-///   current millisecond, the random part (chars 10..26) is incremented in
-///   place with Crockford-Base32 carry (`'Z'` wraps to `'0'`).
-/// - If the random part was all `'Z'` (overflow), sleep 1.234567 ms and retry.
-/// - If any char of `prev`'s random part is not in the alphabet, fall through
-///   to full re-randomization.
-/// - Otherwise the random part is 16 fresh CSPRNG bytes, each encoded as
-///   `B32_ALPHABET[byte % 32]`.
-pub fn ulidgen(prev: Option<&str>) -> String {
-    loop {
-        // 1. Current millisecond timestamp (48-bit range).
-        let ms = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("system clock before UNIX epoch")
-            .as_millis() as u64;
+/// Mirrors `src/ulid.c`:
+/// - 10-char big-endian base32 millisecond timestamp in `ulid[0..10)`
+/// - 16-char random part in `ulid[10..26)`
+/// - same-millisecond: increment random part in place (carry from index 15);
+///   on carry-off sleep 1,234,567 ns and recurse
+/// - fresh random part: 16 bytes from `getrandom`, mapped `B32_ALPHABET[b % 32]`
+///   (modulo bias intentionally preserved for parity with the C tool)
+pub fn ulidgen_r(ulid: &mut [u8; 27]) {
+    let mut same = true;
+    ulid[26] = 0;
 
-        // 2. Encode the 48-bit timestamp into the first 10 chars,
-        //    most-significant digit first.
-        let mut ulid = String::with_capacity(26);
-        let mut t = ms;
-        for _ in 0..10 {
-            ulid.push(B32_ALPHABET.as_bytes()[(t % 32) as usize] as char);
-            t /= 32;
+    // Milliseconds since the Unix epoch (clock_gettime(CLOCK_REALTIME)).
+    let duration = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default();
+    let mut t = duration.as_secs() * 1000 + duration.subsec_nanos() as u64 / 1_000_000;
+
+    // Encode the timestamp big-endian into 10 base32 digits.
+    for i in (0..10).rev() {
+        let d = B32_ALPHABET[(t % 32) as usize];
+        if ulid[i] != d {
+            ulid[i] = d;
+            same = false;
         }
+        t /= 32;
+    }
 
-        // 3. Same-millisecond detection against `prev`'s timestamp part.
-        if let Some(prev) = prev {
-            let prev_bytes = prev.as_bytes();
-            if prev_bytes.len() >= 26 && prev_bytes[..10] == *ulid.as_bytes() {
-                // 4. Increment the random part (chars 10..26) in place.
-                let mut rnd: Vec<u8> = prev_bytes[10..26].to_vec();
-                let mut overflow = false;
-                let mut corrupt = false;
-
-                // Walk from the last char, wrapping 'Z' -> '0' and carrying.
-                let mut i = 15;
-                loop {
-                    let c = rnd[i] as char;
-                    if c == 'Z' {
-                        rnd[i] = b'0';
-                        if i == 0 {
-                            // Whole random part was 'Z' -> overflow.
-                            overflow = true;
-                            break;
-                        }
-                        i -= 1;
-                        continue;
-                    }
-                    match B32_ALPHABET.find(c) {
-                        Some(pos) => {
-                            // Bump to the successor in the alphabet.
-                            rnd[i] = B32_ALPHABET.as_bytes()[pos + 1];
-                            break;
-                        }
-                        None => {
-                            // Char not in the alphabet: corrupt buffer,
-                            // fall through to full re-randomization.
-                            corrupt = true;
-                            break;
-                        }
-                    }
-                }
-
-                if !overflow && !corrupt {
-                    ulid.push_str(&String::from_utf8(rnd).expect("valid utf8"));
-                    return ulid;
-                }
-                if overflow {
-                    // 5. Overflow: sleep 1.234567 ms and retry.
-                    std::thread::sleep(Duration::from_nanos(1_234_567));
-                    continue;
-                }
-                // corrupt: fall through to re-randomization below.
-            }
+    if same {
+        // Same millisecond as the previous call: increment the random part
+        // in place, carrying from the last digit (index 15) backwards.
+        let mut i: i32 = 15;
+        while i < 16 && ulid[10 + i as usize] == b'Z' {
+            ulid[10 + i as usize] = b'0';
+            i -= 1;
         }
-
-        // 6. Fresh random part: 16 CSPRNG bytes, each -> alphabet[byte % 32].
-        let rnd: [u8; 16] = rand::random();
-        for b in rnd {
-            ulid.push(B32_ALPHABET.as_bytes()[(b % 32) as usize] as char);
+        if i < 0 {
+            // Carry fell off: wait ~1.23 ms and retry.
+            std::thread::sleep(Duration::from_nanos(1_234_567));
+            ulidgen_r(ulid);
+            return;
         }
-        return ulid;
-    }
-}
-
-/// Convenience wrapper: generate a ULID with no previous value (fresh random
-/// part). Equivalent to `ulidgen(None)`.
-pub fn ulidgen_fresh() -> String {
-    ulidgen(None)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// Port of `is_valid_ulid` from `tests/test.c`.
-    fn is_valid_ulid(ulid: &str) -> bool {
-        ulid.len() == 26 && ulid.chars().all(|c| B32_ALPHABET.contains(c))
+        // If the digit is a valid alphabet char, advance it to the next one.
+        if let Some(pos) = B32_ALPHABET.iter().position(|&c| c == ulid[10 + i as usize]) {
+            ulid[10 + i as usize] = B32_ALPHABET[pos + 1];
+            return;
+        }
+        // Otherwise the buffer is corrupted: fall through to re-randomization.
     }
 
-    /// Port of `test_ulid_length` from `tests/test.c`.
-    #[test]
-    fn test_ulid_length() {
-        assert_eq!(ulidgen_fresh().len(), 26);
+    // Fresh random part: 16 bytes, each mapped through the alphabet.
+    let mut rnd = [0u8; 16];
+    if getrandom::getrandom(&mut rnd).is_err() {
+        std::process::abort();
     }
-
-    /// Port of `test_ulid_structure` from `tests/test.c`
-    /// (disabled in the C main; enabled here).
-    #[test]
-    fn test_ulid_structure() {
-        assert!(is_valid_ulid(&ulidgen_fresh()));
-    }
-
-    /// Port of `test_ulid_uniqueness` from `tests/test.c`.
-    #[test]
-    fn test_ulid_uniqueness() {
-        let a = ulidgen_fresh();
-        let b = ulidgen(Some(&a));
-        assert_ne!(a, b);
-    }
-
-    /// Port of `test_ulid_sortability` from `tests/test.c`.
-    #[test]
-    fn test_ulid_sortability() {
-        let a = ulidgen_fresh();
-        std::thread::sleep(Duration::from_micros(1500));
-        let b = ulidgen(Some(&a));
-        assert!(a < b);
+    for (i, b) in rnd.iter().enumerate() {
+        ulid[10 + i as usize] = B32_ALPHABET[(*b % 32) as usize];
     }
 }

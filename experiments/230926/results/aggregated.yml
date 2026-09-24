@@ -1,0 +1,367 @@
+# Survey 230926 aggregate over 109 attempts
+cells:
+-
+  project: "amp"
+  method: "ledger"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 5
+  compile_rate: 1
+  scored: 5
+  verified: 5
+  test_pass_rate_mean: 1
+  test_pass_rate_std: 0
+  tests_passed_mean: 1.6
+  tests_failed_mean: 0
+  wall_s_mean: 179.6
+  failure_classes:
+-
+  project: "amp"
+  method: "monolith"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 5
+  compile_rate: 1
+  scored: 5
+  verified: 5
+  test_pass_rate_mean: 1
+  test_pass_rate_std: 0
+  tests_passed_mean: 1
+  tests_failed_mean: 0
+  wall_s_mean: 179.6
+  failure_classes:
+-
+  project: "amp"
+  method: "monolith"
+  model: "smtek/Swift-Qwen3.8-27B:dflash2"
+  reps: 3
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  verified: 0
+  test_pass_rate_mean: nan
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
+  wall_s_mean: 0
+  failure_classes:
+    infra_offload: 3
+-
+  project: "amp"
+  method: "monolith"
+  model: "smtek_Swift-Qwen3.8-27B_dflash2"
+  reps: 1
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  verified: 0
+  test_pass_rate_mean: nan
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
+  wall_s_mean: nan
+  failure_classes:
+    other: 1
+-
+  project: "amp"
+  method: "recode"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 5
+  compile_rate: 1
+  scored: 4
+  verified: 4
+  test_pass_rate_mean: 1
+  test_pass_rate_std: 0
+  tests_passed_mean: 5.25
+  tests_failed_mean: 0
+  wall_s_mean: 179.6
+  failure_classes:
+    task_retries: 1
+-
+  project: "approxidate"
+  method: "ledger"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  verified: 0
+  test_pass_rate_mean: nan
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
+  wall_s_mean: 0
+  failure_classes:
+    infra_offload: 5
+-
+  project: "approxidate"
+  method: "monolith"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  verified: 0
+  test_pass_rate_mean: nan
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
+  wall_s_mean: 0
+  failure_classes:
+    infra_offload: 5
+-
+  project: "approxidate"
+  method: "recode"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  verified: 0
+  test_pass_rate_mean: nan
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
+  wall_s_mean: 0
+  failure_classes:
+    infra_offload: 5
+-
+  project: "chtrie"
+  method: "ledger"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 5
+  compile_rate: 1
+  scored: 5
+  verified: 5
+  test_pass_rate_mean: 1
+  test_pass_rate_std: 0
+  tests_passed_mean: 5.6
+  tests_failed_mean: 0
+  wall_s_mean: 606.2
+  failure_classes:
+-
+  project: "chtrie"
+  method: "monolith"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 5
+  compile_rate: 1
+  scored: 1
+  verified: 1
+  test_pass_rate_mean: 1
+  test_pass_rate_std: 0
+  tests_passed_mean: 1
+  tests_failed_mean: 0
+  wall_s_mean: 606.2
+  failure_classes:
+    output_budget: 4
+-
+  project: "chtrie"
+  method: "recode"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 2
+  compile_rate: 0.4
+  scored: 0
+  verified: 0
+  test_pass_rate_mean: nan
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
+  wall_s_mean: 606.2
+  failure_classes:
+    invalid_tool_args: 1
+    output_budget: 4
+-
+  project: "gorilla-paper-encode"
+  method: "ledger"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  verified: 0
+  test_pass_rate_mean: nan
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
+  wall_s_mean: 0
+  failure_classes:
+    infra_offload: 5
+-
+  project: "gorilla-paper-encode"
+  method: "monolith"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  verified: 0
+  test_pass_rate_mean: nan
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
+  wall_s_mean: 0
+  failure_classes:
+    infra_offload: 5
+-
+  project: "gorilla-paper-encode"
+  method: "recode"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  verified: 0
+  test_pass_rate_mean: nan
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
+  wall_s_mean: 0
+  failure_classes:
+    infra_offload: 5
+-
+  project: "murmurhash_c"
+  method: "ledger"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 1
+  compile_rate: 0.2
+  scored: 0
+  verified: 0
+  test_pass_rate_mean: nan
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
+  wall_s_mean: 229.8
+  failure_classes:
+    daemon_conn: 1
+    infra_offload: 4
+-
+  project: "murmurhash_c"
+  method: "monolith"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 5
+  compile_rate: 1
+  scored: 5
+  verified: 5
+  test_pass_rate_mean: 0.8
+  test_pass_rate_std: 0.4
+  tests_passed_mean: 1.8
+  tests_failed_mean: 0
+  wall_s_mean: 229.8
+  failure_classes:
+-
+  project: "murmurhash_c"
+  method: "recode"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  verified: 0
+  test_pass_rate_mean: nan
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
+  wall_s_mean: 229.8
+  failure_classes:
+    infra_offload: 5
+-
+  project: "ulidgen"
+  method: "ledger"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 5
+  compile_rate: 1
+  scored: 5
+  verified: 5
+  test_pass_rate_mean: 1
+  test_pass_rate_std: 0
+  tests_passed_mean: 4.4
+  tests_failed_mean: 0
+  wall_s_mean: 246.8
+  failure_classes:
+-
+  project: "ulidgen"
+  method: "monolith"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 5
+  compile_rate: 1
+  scored: 5
+  verified: 5
+  test_pass_rate_mean: 1
+  test_pass_rate_std: 0
+  tests_passed_mean: 4
+  tests_failed_mean: 0
+  wall_s_mean: 246.8
+  failure_classes:
+-
+  project: "ulidgen"
+  method: "recode"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 5
+  compile_rate: 1
+  scored: 4
+  verified: 4
+  test_pass_rate_mean: 0.969
+  test_pass_rate_std: 0.054
+  tests_passed_mean: 10.75
+  tests_failed_mean: 0.25
+  wall_s_mean: 246.8
+  failure_classes:
+    output_budget: 1
+    tests_failed: 1
+-
+  project: "xopt"
+  method: "ledger"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  verified: 0
+  test_pass_rate_mean: nan
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
+  wall_s_mean: 0
+  failure_classes:
+    infra_offload: 5
+-
+  project: "xopt"
+  method: "monolith"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  verified: 0
+  test_pass_rate_mean: nan
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
+  wall_s_mean: 0
+  failure_classes:
+    infra_offload: 5
+-
+  project: "xopt"
+  method: "recode"
+  model: "qwen3.8:27b-mtp-q4_K_M"
+  reps: 5
+  compiled: 0
+  compile_rate: 0
+  scored: 0
+  verified: 0
+  test_pass_rate_mean: nan
+  test_pass_rate_std: 0
+  tests_passed_mean: nan
+  tests_failed_mean: nan
+  wall_s_mean: 0
+  failure_classes:
+    infra_offload: 5

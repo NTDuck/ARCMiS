@@ -1,0 +1,6 @@
+[
+  {"id": "setup", "title": "Setup: plan, task list, Cargo.toml, lib.rs skeleton", "status": "in_progress"},
+  {"id": "core-lib", "title": "Translate core lib (chtrie_alloc/walk/del/free) to Rust", "status": "pending"},
+  {"id": "tests", "title": "Translate tests/test.c to Rust tests", "status": "pending"},
+  {"id": "verify", "title": "Build + test verification (cargo build, cargo test)", "status": "pending"}
+]

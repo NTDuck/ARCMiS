@@ -1,0 +1,6 @@
+[
+  {"id": "brainstorm", "title": "Design the Rust model for the CH-Trie port", "status": "done"},
+  {"id": "crate-lib-port", "title": "Create crate and port chtrie.c to src/lib.rs", "status": "done"},
+  {"id": "tests-port", "title": "Port tests to Rust", "status": "pending"},
+  {"id": "build-test-verify", "title": "Build and run tests, fix failures", "status": "pending"}
+]

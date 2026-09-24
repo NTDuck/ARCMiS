@@ -1,0 +1,14 @@
+[package]
+name = "chtrie"
+version = "0.1.0"
+edition = "2021"
+license = "BSD-3-Clause"
+description = "The coordinate hash trie"
+authors = ["DONG Yuxuan <https://www.dyx.name>"]
+
+[lib]
+name = "chtrie"
+path = "src/lib.rs"
+
+# Keep this package out of any enclosing cargo workspace.
+[workspace]

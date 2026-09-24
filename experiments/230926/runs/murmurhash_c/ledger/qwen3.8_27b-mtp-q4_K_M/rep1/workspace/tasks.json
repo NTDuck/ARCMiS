@@ -1,0 +1,32 @@
+[
+  {
+    "id": "t1",
+    "title": "Scaffold Cargo package (Cargo.toml, src/lib.rs, src/main.rs)",
+    "status": "todo",
+    "notes": "Package name murmurhash; lib target for the hash function, bin target for the CLI. No external dependencies."
+  },
+  {
+    "id": "t2",
+    "title": "Port murmurhash3 core function to Rust",
+    "status": "todo",
+    "notes": "Preserve the NON-STANDARD reverse chunk loop (for i = -l; i != 0; ++i over chunks = d + l*4). Use u32::to_le/from_le for htole32. Translate the fallthrough remainder switch (3->2->1) into a match with combined arms. Use wrapping_mul/wrapping_add for C-style overflow."
+  },
+  {
+    "id": "t3",
+    "title": "Port test.c vectors into #[cfg(test)] tests",
+    "status": "todo",
+    "notes": "Must include \"kinkajou\" seed 0 -> 0xb6d99cf8 and \"\" seed 1 -> 0x514e28b7, plus all other vectors from test.c. Tests are the acceptance criteria."
+  },
+  {
+    "id": "t4",
+    "title": "Implement working CLI in src/main.rs",
+    "status": "todo",
+    "notes": "Read stdin lines, hash each with optional --seed N (default 0), print decimal hash per line. Do NOT reproduce main.c bugs (malformed printf \"%d\" PRIu32, loop re-hashing buf instead of key)."
+  },
+  {
+    "id": "t5",
+    "title": "Build and run cargo test until green",
+    "status": "todo",
+    "notes": "cargo build then cargo test. Fix any overflow panics (wrapping ops) or value mismatches (check reverse chunk order and remainder fallthrough). Verify CLI manually with echo | cargo run."
+  }
+]

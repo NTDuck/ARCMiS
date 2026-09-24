@@ -3,15 +3,8 @@ name = "ulidgen"
 version = "0.1.0"
 edition = "2021"
 
-[lib]
-name = "ulidgen"
-path = "src/lib.rs"
-
-[[bin]]
-name = "ulidgen"
-path = "src/main.rs"
+# Standalone package: detach from any enclosing Cargo workspace.
+[workspace]
 
 [dependencies]
-
-# Standalone package: do not join any parent workspace.
-[workspace]
+getrandom = "0.2"

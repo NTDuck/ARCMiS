@@ -1,52 +1,44 @@
 # Validation Report — ulidgen (C → Rust)
 
+Validator run: `cargo build` + `cargo test` (workspace root).
+
 ## Build
-- `cargo build`: **success** (clean, no errors).
 
-## Tests (`cargo test`)
-- **17 passed, 0 failed** (4 lib unit tests + 9 CLI integration tests in `tests/cli.rs` + 4 integration tests in `tests/ulid.rs`).
-- No failing tests; no diagnostics to collect.
+- `cargo build`: **OK** — clean, no warnings, binary `ulidgen` produced.
 
-| Test | Result |
+## Test results
+
+`cargo test`: **11 passed, 0 failed** (0 ignored, 0 doc-tests).
+
+| Test target | Tests | Result |
+|---|---|---|
+| `tests/test.rs` (port of `tests/test.c`) | `ulid_length`, `ulid_structure`, `ulid_uniqueness`, `ulid_sortability` | 4 passed |
+| `tests/cli.rs` (port of `src/ulidgen.c` behavior) | `cli_default_prints_one_ulid`, `cli_n_generates_n_unique_ulids`, `cli_n_zero_prints_nothing`, `cli_t_tags_each_line`, `cli_t_preserves_missing_trailing_newline`, `cli_t_empty_input_prints_nothing`, `cli_unknown_flag_exits_1_with_usage` | 7 passed |
+
+### Failing tests
+
+None. No diagnostics to collect.
+
+## Coverage vs. plan function list
+
+| Plan function (C → Rust) | Test coverage |
 |---|---|
-| `tests::test_ulid_length` (lib) | ok |
-| `tests::test_ulid_structure` (lib) | ok |
-| `tests::test_ulid_uniqueness` (lib) | ok |
-| `tests::test_ulid_sortability` (lib) | ok |
-| `cli_n_generates_n_ulids` | ok |
-| `cli_default_single_ulid` | ok |
-| `cli_t_tags_stdin_lines` | ok |
-| `cli_bad_n_operand_exits_2` | ok |
-| `cli_missing_n_operand_exits_2` | ok |
-| `cli_unknown_option_exits_2` | ok |
-| `cli_n_zero_prints_nothing` (added) | ok |
-| `cli_t_empty_stdin` (added) | ok |
-| `cli_t_preserves_spaces_in_line` (added) | ok |
-| `test_ulid_length` (integration) | ok |
-| `test_ulid_structure` (integration) | ok |
-| `test_ulid_uniqueness` (integration) | ok |
-| `test_ulid_sortability` (integration) | ok |
+| `ulidgen_r` (`src/ulid.c` → `src/lib.rs`) | `ulid_length`, `ulid_structure`, `ulid_uniqueness`, `ulid_sortability` + all CLI tests (same-millisecond increment path exercised by `cli_n_generates_n_unique_ulids`) |
+| `main` (`src/ulidgen.c` → `src/main.rs`) | all 7 `tests/cli.rs` tests (both `-n` and `-t` modes, default, zero, error path) |
+| `is_valid_ulid` (test helper) | used by `ulid_structure` and CLI tests |
+| `test_ulid_length` → `ulid_length` | present, passing |
+| `test_ulid_structure` → `ulid_structure` | present, passing (note: C `main` never called it; Rust runs it — strictly more coverage) |
+| `test_ulid_uniqueness` → `ulid_uniqueness` | present, passing |
+| `test_ulid_sortability` → `ulid_sortability` | present, passing |
 
-## Test generation
-The message flagged `main` as uncovered, but `tests/cli.rs` already exercised the
-CLI (arg parsing, `-n`, `-t`, exit codes). Per `test_generation: true`, three
-additional tests for `main` were appended to `tests/cli.rs` (no existing test
-modified or weakened):
-- `cli_n_zero_prints_nothing` — `-n 0` prints no lines, exit 0 (C `atol("0")` → zero iterations).
-- `cli_t_empty_stdin` — `-t` with empty stdin prints nothing, exit 0.
-- `cli_t_preserves_spaces_in_line` — `-t` preserves lines containing spaces verbatim after `ULID `.
+**Uncovered functions: none.**
 
-Full suite re-run after additions: **17 passed, 0 failed**.
+## Notes
 
-## Plan function coverage
-| Plan function | Coverage |
-|---|---|
-| `ulidgen` (src/lib.rs) | covered (length/structure/uniqueness/sortability, lib + integration) |
-| `ulidgen_fresh` (src/lib.rs) | covered (lib unit tests) |
-| `is_valid_ulid` (helper) | covered (used by structure tests) |
-| `main` (src/main.rs, CLI) | covered (9 tests in `tests/cli.rs`, incl. 3 added this run) |
+- Name mapping from the plan is preserved (`ulidgen_r`, `B32_ALPHABET`, `is_valid_ulid`, `test_` prefix dropped per cargo convention).
+- `test_generation` was `false`; no additional tests were written.
+- No translated source was modified by the validator.
 
-## Conclusion
-Build succeeds, all 17 tests pass, every plan function has test coverage, and
-CLI behavior matches the plan's checklist (26-char Crockford Base32 output,
-`-t` preserves lines verbatim, exit 0 on success, exit 2 on bad args).
+## Verdict
+
+**all_success = true** — build clean, 11/11 tests pass, every planned function covered.

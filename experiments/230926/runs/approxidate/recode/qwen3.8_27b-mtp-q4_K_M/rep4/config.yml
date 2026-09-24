@@ -1,0 +1,53 @@
+# Migration run configuration. The agent reads this file. The agent does
+# not hardcode anything from it. Survey 230926: generous budgets so the
+# agent can work; the sweep driver overrides the model.
+
+run:
+  # Model that drives the agent (ollama model tag). Overridable with --model.
+  model: qwen3.8:27b-mtp-q4_K_M
+  # Turn budget for the agent tool loop. Generous: the survey wants the
+  # agent to finish its plan, not to die on a ceiling. The driver logs the
+  # turns each run actually used.
+  max_turns: 120
+  # Model context window.
+  num_ctx: 16384
+  # Max output tokens per model call (ollama num_predict). Large models
+  # spend the first chunk on thinking blocks before the tool call.
+  max_output_tokens: 8192
+  # Whole-run retries when a model turn truncates or errors.
+  max_retries: 2
+  # Thinking mode on: the models reason before tool calls, and the
+  # resilience hook retries a turn the provider cut short.
+  think: true
+  # Sampling temperature. Low value for deterministic tool use.
+  temperature: 0.2
+
+output:
+  # Destination root for the transformed codebase and run logs. The sweep
+  # driver rewrites this per run.
+  dir: /home/ayin/projs/ARCMiS/experiments/230926/runs/approxidate/recode/qwen3.8_27b-mtp-q4_K_M/rep4/workspace
+
+# Recode fix-round ceiling. The first execution round plus up to ten
+# fix rounds: the agent decides when the code is done, the ceiling only
+# guards a runaway loop.
+recode:
+  max_rounds: 11
+
+# Ledger budget split: the manager and each fresh worker delegation carry
+# separate turn budgets.
+ledger:
+  manager_turns: 60
+  worker_turns: 120
+  retries: 2
+
+source:
+  # Input codebase to transform. From the ReCodeAgent dataset (crust,
+  # C to Rust pair).
+  language: c
+  root: assets/ReCodeAgent/data/tool_projects/crust/approxidate/c
+  # Target language and toolchain for the output codebase and the test run.
+  target:
+    language: rust
+    # Cargo test invocation for the translated tests. The runner and
+    # profile come from the toolchain.
+    test_command: cargo test

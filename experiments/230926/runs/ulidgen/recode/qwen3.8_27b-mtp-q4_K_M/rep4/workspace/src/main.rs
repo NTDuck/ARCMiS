@@ -1,67 +1,84 @@
-//! ulidgen CLI — generate or tag lines with ULIDs.
+//! ulidgen — generate or tag lines with ULID.
 //!
-//! Mirrors C `src/ulidgen.c`:
-//! - `-n N`  print N consecutive ULIDs (default 1);
-//! - `-t`    prefix each stdin line with a ULID (line-buffered);
-//! - exit 0 on success, non-zero on stdout error.
+//! Port of `src/ulidgen.c`.
+//!
+//! Usage: `ulidgen [-n N | -t]`
+//!   -n N   generate N ULIDs (default: 1)
+//!   -t     print each line of standard input prefixed with a ULID
+//!
+//! Exit status: 0 on success, 1 if a stdout write failed
+//! (mirrors C `exit(!!ferror(stdout))`).
 
-use std::env;
 use std::io::{self, BufRead, Write};
+use std::process;
 
-fn usage_exit() -> ! {
-    eprintln!("usage: ulidgen [-n N] [-t]");
-    std::process::exit(2);
+use ulidgen::ulidgen_r;
+
+fn usage() {
+    eprintln!("usage: ulidgen [-n N | -t]");
 }
 
-fn main() -> std::io::Result<()> {
+fn main() {
+    // getopt("n:t") -> manual argument parsing.
     let mut n: i64 = 1;
-    let mut tflag = false;
-
-    // Manual getopt("n:t") equivalent.
-    let mut args = env::args().skip(1);
-    while let Some(a) = args.next() {
-        match a.as_str() {
-            "-n" => {
-                let v = match args.next() {
-                    Some(v) => v,
-                    None => usage_exit(),
-                };
-                n = match v.parse::<i64>() {
-                    Ok(v) => v,
-                    Err(_) => usage_exit(),
-                };
+    let mut tag = false;
+    let mut args = std::env::args().skip(1);
+    while let Some(arg) = args.next() {
+        match arg.as_str() {
+            "-n" => match args.next() {
+                Some(value) => match value.parse::<i64>() {
+                    Ok(value) => n = value,
+                    Err(_) => {
+                        usage();
+                        process::exit(1);
+                    }
+                },
+                None => {
+                    usage();
+                    process::exit(1);
+                }
+            },
+            "-t" => tag = true,
+            _ => {
+                usage();
+                process::exit(1);
             }
-            "-t" => tflag = true,
-            _ => usage_exit(),
         }
     }
 
+    let mut stdout = io::stdout();
     let mut ulid = [0u8; 27];
-    let stdout = io::stdout();
-    let mut out = stdout.lock();
 
-    if tflag {
-        // C: setvbuf(stdout, 0, _IOLBF, 0); getdelim loop printing "%s %s".
-        let stdin = io::stdin();
-        for line in stdin.lock().lines() {
-            let line = line?;
-            ulidgen::ulidgen_r(&mut ulid);
-            out.write_all(&ulid[..26])?;
-            out.write_all(b" ")?;
-            out.write_all(line.as_bytes())?;
-            out.write_all(b"\n")?;
-            out.flush()?; // line-buffered behavior
+    if tag {
+        // setvbuf(stdout, _IOLBF) -> explicit flush() after each line.
+        let mut stdin = io::stdin().lock();
+        let mut line = String::new();
+        loop {
+            line.clear();
+            // getdelim keeps the trailing '\n'; read_line does too.
+            match stdin.read_line(&mut line) {
+                Ok(0) => break,
+                Ok(_) => {}
+                Err(_) => break,
+            }
+            ulidgen_r(&mut ulid);
+            let id = std::str::from_utf8(&ulid[..26]).expect("ULID is ASCII");
+            if write!(stdout, "{} {}", id, line).is_err() {
+                process::exit(1);
+            }
+            if stdout.flush().is_err() {
+                process::exit(1);
+            }
         }
-    } else {
-        // C: for (i = 0; i < n; i++) puts(ulid);
-        for _ in 0..n {
-            ulidgen::ulidgen_r(&mut ulid);
-            out.write_all(&ulid[..26])?;
-            out.write_all(b"\n")?;
-        }
+        return;
     }
 
-    // C: fflush(0); exit(!!ferror(stdout));
-    out.flush()?;
-    Ok(())
+    // puts per ULID.
+    for _ in 0..n {
+        ulidgen_r(&mut ulid);
+        let id = std::str::from_utf8(&ulid[..26]).expect("ULID is ASCII");
+        if writeln!(stdout, "{}", id).is_err() {
+            process::exit(1);
+        }
+    }
 }
