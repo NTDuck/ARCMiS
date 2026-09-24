@@ -175,6 +175,7 @@ async fn run() -> anyhow::Result<()> {
     // Initial state + task list.
     let state = State {
         phase: Phase::Preflight,
+        phase_delegations: 0,
         current_task: None,
         current_batch: None,
         current_model: fleet.model_for(agents::Role::Manager).to_owned(),

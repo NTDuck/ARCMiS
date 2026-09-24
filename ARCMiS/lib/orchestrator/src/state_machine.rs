@@ -76,6 +76,8 @@ pub fn apply(state: &mut blackboard::State, to: Phase, reason: &str) -> anyhow::
         reason: reason.to_owned(),
     };
     state.phase = to;
+    // The new phase starts with no completed work of its own.
+    state.phase_delegations = 0;
     state.last_transition = reason.to_owned();
     Ok(record)
 }

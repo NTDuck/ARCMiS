@@ -108,6 +108,17 @@ impl ManagerLoop {
                 Ok(RoundOutcome::Escalated(reason))
             },
             DecisionVerb::Done => {
+                // A phase advances on evidence: at least one completed
+                // delegation since the phase began. A bare claim advances
+                // nothing (observed: the walk Pilot -> Migration ->
+                // Integration in 18 s with no validation work).
+                if state.phase_delegations == 0 {
+                    return Ok(RoundOutcome::Delegated {
+                        role: Role::Manager,
+                        task: "phase exit claimed with no completed delegation".into(),
+                        output: String::new(),
+                    });
+                }
                 // Advance to the successor phase, not a self-transition:
                 // only Pilot/Migration/Integration may self-transition.
                 let next = state_machine::next(state.phase);
@@ -186,6 +197,9 @@ impl ManagerLoop {
             Judged::Pass => {
                 let tasks = TaskList::new(&self.run_dir);
                 tasks.set_status(task_id, TaskStatus::Done)?;
+                let mut state = snapshot_phase(&self.run_dir)?;
+                state.phase_delegations += 1;
+                blackboard::state::write(&self.run_dir, &state)?;
                 self.ledger.append_observation(&blackboard::Observation {
                     at: now(),
                     kind: "delegation_pass".into(),

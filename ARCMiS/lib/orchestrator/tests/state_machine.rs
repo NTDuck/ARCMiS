@@ -15,6 +15,7 @@ use orchestrator::state_machine::is_legal;
 fn state_at(phase: Phase) -> State {
     State {
         phase,
+        phase_delegations: 0,
         current_task: None,
         current_batch: None,
         current_model: "test-model".into(),

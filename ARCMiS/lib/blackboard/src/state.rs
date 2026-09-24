@@ -38,6 +38,11 @@ pub enum Phase {
 pub struct State {
     /// Current phase.
     pub phase: Phase,
+    /// Delegations completed since the phase began. The `done` decision may
+    /// advance only when this is at least one: a phase advances on evidence,
+    /// not on a bare manager claim.
+    #[serde(default)]
+    pub phase_delegations: u64,
     /// Task the manager currently delegates on, when any.
     #[serde(default)]
     pub current_task: Option<String>,
