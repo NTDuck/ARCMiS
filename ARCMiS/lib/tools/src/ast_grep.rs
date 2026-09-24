@@ -1,14 +1,20 @@
 //! `ast_grep` finds AST pattern matches across source files.
 
-use crate::util::paths::{relative_path, resolve_roots};
-use ast_grep_core::language::Language as _;
-use ast_grep_core::tree_sitter::LanguageExt as _;
-use ast_grep_language::SupportLang;
-use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
-use serde::Deserialize;
 use std::fs::read_to_string;
 use std::path::Path;
 use std::path::PathBuf;
+
+use ast_grep_core::language::Language as _;
+use ast_grep_core::tree_sitter::LanguageExt as _;
+use ast_grep_language::SupportLang;
+use rig::tool::Tool;
+use rig::tool::ToolContext;
+use rig::tool::ToolExecutionError;
+use rig::tool::ToolOutput;
+use serde::Deserialize;
+
+use crate::util::paths::relative_path;
+use crate::util::paths::resolve_roots;
 
 /// `ast_grep` finds AST pattern matches and returns tagged per-file output.
 pub struct AstGrep {
@@ -16,11 +22,24 @@ pub struct AstGrep {
     pub root: PathBuf,
 }
 
+impl AstGrep {
+    /// Envelope metadata for `ast_grep`.
+    pub(crate) const METADATA: crate::envelope::ToolMetadata = crate::envelope::base_metadata(
+        "ast_grep",
+        "Searches code structurally with one ast-grep pattern.",
+        crate::envelope::ToolCategory::Search,
+        crate::envelope::SideEffectClass::ReadOnly,
+        crate::envelope::CostClass::Cheap,
+        false,
+    );
+}
+
 impl Tool for AstGrep {
-    const NAME: &'static str = "ast_grep";
-    type Error = ToolExecutionError;
     type Args = AstGrepArgs;
+    type Error = ToolExecutionError;
     type Output = ToolOutput;
+
+    const NAME: &'static str = "ast_grep";
 
     fn description(&self) -> String {
         "Find AST pattern matches in source files under the sandbox root.".to_owned()
@@ -165,3 +184,5 @@ fn resolve_language(language: Option<&str>, relative: &str) -> Result<SupportLan
     }
     SupportLang::from_path(relative).ok_or_else(|| format!("cannot infer a language for '{relative}'. Pass 'lang'."))
 }
+
+crate::impl_envelope!(AstGrep);

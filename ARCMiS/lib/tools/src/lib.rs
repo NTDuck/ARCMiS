@@ -26,12 +26,14 @@ pub mod ast_grep;
 pub mod bash;
 pub mod debug;
 pub mod edit;
+pub mod envelope;
 pub mod eval;
 pub mod find;
 pub mod irc;
 pub mod job;
 pub mod lsp;
 pub mod read;
+pub mod registry;
 pub mod search;
 pub mod ssh;
 pub mod task;
@@ -57,12 +59,11 @@ pub use search::Search;
 pub use ssh::Ssh;
 pub use task::Task;
 pub use todo::Todo;
+pub use util::catalog::Catalog;
+pub use util::catalog::Tool;
 pub use util::jobs::JobRegistry;
+pub use util::path::path_sanitize;
 pub use util::snapshots::InMemorySnapshotStore;
 pub use util::snapshots::SnapshotStore;
-pub use util::{
-    catalog::{Catalog, Tool},
-    path::path_sanitize,
-};
 pub use write::Write;
 pub use write::WriteArgs;

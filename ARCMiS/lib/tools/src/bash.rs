@@ -8,10 +8,15 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
-
-use crate::util::proc::{capture, clamp_seconds, truncate_output};
+use rig::tool::Tool;
+use rig::tool::ToolContext;
+use rig::tool::ToolExecutionError;
+use rig::tool::ToolOutput;
 use serde::Deserialize;
+
+use crate::util::proc::capture;
+use crate::util::proc::clamp_seconds;
+use crate::util::proc::truncate_output;
 
 /// `bash` runs one shell command inside the tool root and returns its output.
 pub struct Bash {
@@ -19,11 +24,24 @@ pub struct Bash {
     pub root: PathBuf,
 }
 
+impl Bash {
+    /// Envelope metadata for `bash`.
+    pub(crate) const METADATA: crate::envelope::ToolMetadata = crate::envelope::base_metadata(
+        "bash",
+        "Runs one shell command inside the sandbox root.",
+        crate::envelope::ToolCategory::Runtime,
+        crate::envelope::SideEffectClass::Privileged,
+        crate::envelope::CostClass::Medium,
+        true,
+    );
+}
+
 impl Tool for Bash {
-    const NAME: &'static str = "bash";
-    type Error = ToolExecutionError;
     type Args = BashArgs;
+    type Error = ToolExecutionError;
     type Output = ToolOutput;
+
+    const NAME: &'static str = "bash";
 
     fn description(&self) -> String {
         "Run one shell command and return its combined output.".to_owned()
@@ -109,3 +127,5 @@ fn valid_env_key(key: &str) -> bool {
     }
     characters.all(|next| next.is_ascii_alphanumeric() || next == '_')
 }
+
+crate::impl_envelope!(Bash);

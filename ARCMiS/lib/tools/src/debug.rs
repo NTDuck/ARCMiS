@@ -4,13 +4,19 @@
 //! action to a backend group. Real adapter wiring lands later. The default
 //! backend reports that no adapter is configured.
 
-use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
-use serde::{Deserialize, Serialize};
 use std::fmt;
-use std::future::{ready, Future};
+use std::future::ready;
+use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::sync::Mutex;
+
+use rig::tool::Tool;
+use rig::tool::ToolContext;
+use rig::tool::ToolExecutionError;
+use rig::tool::ToolOutput;
+use serde::Deserialize;
+use serde::Serialize;
 
 /// `debug` runs one debug adapter operation.
 pub struct Debug {
@@ -26,11 +32,24 @@ impl fmt::Debug for Debug {
     }
 }
 
+impl Debug {
+    /// Envelope metadata for `debug`.
+    pub(crate) const METADATA: crate::envelope::ToolMetadata = crate::envelope::base_metadata(
+        "debug",
+        "Controls one debugger session: breakpoints, stepping, evaluation.",
+        crate::envelope::ToolCategory::CodeIntelligence,
+        crate::envelope::SideEffectClass::Privileged,
+        crate::envelope::CostClass::Expensive,
+        true,
+    );
+}
+
 impl Tool for Debug {
-    const NAME: &'static str = "debug";
-    type Error = ToolExecutionError;
     type Args = DebugArgs;
+    type Error = ToolExecutionError;
     type Output = ToolOutput;
+
+    const NAME: &'static str = "debug";
 
     fn description(&self) -> String {
         "Run one debug adapter operation and return the adapter response.".to_owned()
@@ -499,3 +518,5 @@ async fn dispatch(backend: &dyn DapBackend, action: DebugAction, request: &Debug
         DebugAction::CustomRequest | DebugAction::Terminate | DebugAction::Sessions => backend.control(request).await,
     }
 }
+
+crate::impl_envelope!(Debug);

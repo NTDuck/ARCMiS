@@ -4,18 +4,35 @@
 //! returns a rendered text form. The harness collects the answers and feeds
 //! them back through its own channel.
 
-use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
-use serde::Deserialize;
 use std::collections::BTreeSet;
+
+use rig::tool::Tool;
+use rig::tool::ToolContext;
+use rig::tool::ToolExecutionError;
+use rig::tool::ToolOutput;
+use serde::Deserialize;
 
 /// `ask` validates and renders a question set for the harness.
 pub struct Ask;
 
+impl Ask {
+    /// Envelope metadata for `ask`.
+    pub(crate) const METADATA: crate::envelope::ToolMetadata = crate::envelope::base_metadata(
+        "ask",
+        "Asks the user one clarifying question with options.",
+        crate::envelope::ToolCategory::Coordination,
+        crate::envelope::SideEffectClass::ReadOnly,
+        crate::envelope::CostClass::Cheap,
+        false,
+    );
+}
+
 impl Tool for Ask {
-    const NAME: &'static str = "ask";
-    type Error = ToolExecutionError;
     type Args = AskArgs;
+    type Error = ToolExecutionError;
     type Output = ToolOutput;
+
+    const NAME: &'static str = "ask";
 
     fn description(&self) -> String {
         "Validate a question set and render it as a text form for the harness.".to_owned()
@@ -143,3 +160,5 @@ fn render(questions: &[AskQuestion]) -> String {
     }
     lines.join("\n")
 }
+
+crate::impl_envelope!(Ask);

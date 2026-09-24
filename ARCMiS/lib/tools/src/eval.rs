@@ -6,19 +6,39 @@
 //! timeout in seconds with default 300, clamped to the range 1 through 3600.
 //! A failed cell stops the run. Remaining cells report the status `skipped`.
 
-use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
-
-use crate::util::proc::{capture, clamp_seconds, truncate_output, Captured, ProcError};
+use rig::tool::Tool;
+use rig::tool::ToolContext;
+use rig::tool::ToolExecutionError;
+use rig::tool::ToolOutput;
 use serde::Deserialize;
+
+use crate::util::proc::capture;
+use crate::util::proc::clamp_seconds;
+use crate::util::proc::truncate_output;
+use crate::util::proc::Captured;
+use crate::util::proc::ProcError;
 
 /// `eval` runs code cells in Python or JavaScript and reports each result.
 pub struct Eval {}
 
+impl Eval {
+    /// Envelope metadata for `eval`.
+    pub(crate) const METADATA: crate::envelope::ToolMetadata = crate::envelope::base_metadata(
+        "eval",
+        "Runs one code cell in a persistent kernel.",
+        crate::envelope::ToolCategory::Runtime,
+        crate::envelope::SideEffectClass::WriteRemote,
+        crate::envelope::CostClass::Expensive,
+        true,
+    );
+}
+
 impl Tool for Eval {
-    const NAME: &'static str = "eval";
-    type Error = ToolExecutionError;
     type Args = EvalArgs;
+    type Error = ToolExecutionError;
     type Output = ToolOutput;
+
+    const NAME: &'static str = "eval";
 
     fn description(&self) -> String {
         "Run short code cells in Python or JavaScript and report each result.".to_owned()
@@ -133,3 +153,5 @@ async fn run_cell(language: &str, code: &str, seconds: u64) -> Result<Captured, 
         other => Err(ProcError::Spawn(format!("language '{other}' is not supported. Use py or js."))),
     }
 }
+
+crate::impl_envelope!(Eval);

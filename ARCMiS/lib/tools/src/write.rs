@@ -14,6 +14,18 @@ pub struct Write {
     pub snapshots: Arc<dyn oxi_hashline::SnapshotStore>,
 }
 
+impl Write {
+    /// Envelope metadata for `write`.
+    pub(crate) const METADATA: crate::envelope::ToolMetadata = crate::envelope::base_metadata(
+        "write",
+        "Creates or overwrites one file inside the sandbox root.",
+        crate::envelope::ToolCategory::FileSystem,
+        crate::envelope::SideEffectClass::WriteLocal,
+        crate::envelope::CostClass::Medium,
+        false,
+    );
+}
+
 impl Tool for Write {
     const NAME: &'static str = "write";
     type Error = ToolExecutionError;
@@ -57,10 +69,7 @@ impl Tool for Write {
             None => self.root.clone(),
         };
         // Atomic write: temp file in the target directory, then rename.
-        let temp = parent.join(format!(
-            ".{}.tmp",
-            requested.rsplit('/').next().unwrap_or("file")
-        ));
+        let temp = parent.join(format!(".{}.tmp", requested.rsplit('/').next().unwrap_or("file")));
         tokio::fs::create_dir_all(&parent)
             .await
             .map_err(|error| ToolExecutionError::other(format!("write failed for '{requested}': {error}")))?;
@@ -72,9 +81,7 @@ impl Tool for Write {
             .map_err(|error| ToolExecutionError::other(format!("write failed for '{requested}': {error}")))?;
         let tag = self.snapshots.record(&requested, &text, None);
         let header = format!("[{requested}#{tag}]\n");
-        Ok(ToolOutput::text(format!(
-            "{header}Wrote {bytes} bytes to '{requested}'."
-        )))
+        Ok(ToolOutput::text(format!("{header}Wrote {bytes} bytes to '{requested}'.")))
     }
 }
 
@@ -105,3 +112,5 @@ fn strip_echo(content: &str) -> String {
     }
     output
 }
+
+crate::impl_envelope!(Write);

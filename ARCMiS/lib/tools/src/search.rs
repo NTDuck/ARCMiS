@@ -17,6 +17,18 @@ pub struct Search {
     pub snapshots: Arc<dyn oxi_hashline::SnapshotStore>,
 }
 
+impl Search {
+    /// Envelope metadata for `search`.
+    pub(crate) const METADATA: crate::envelope::ToolMetadata = crate::envelope::base_metadata(
+        "search",
+        "Searches files for one regex and returns matches with context.",
+        crate::envelope::ToolCategory::Search,
+        crate::envelope::SideEffectClass::ReadOnly,
+        crate::envelope::CostClass::Cheap,
+        false,
+    );
+}
+
 impl Tool for Search {
     const NAME: &'static str = "search";
     type Error = ToolExecutionError;
@@ -156,3 +168,5 @@ fn search_file(path: &Path, relative: &str, matcher: &grep_regex::RegexMatcher) 
 fn format_root_error(root: &Path, error: &str) -> String {
     format!("search failed for '{}': {error}", root.display())
 }
+
+crate::impl_envelope!(Search);

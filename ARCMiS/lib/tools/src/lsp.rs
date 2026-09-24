@@ -4,12 +4,18 @@
 //! language server wiring lands later. The default backend reports that no
 //! server is configured.
 
-use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
-use serde::{Deserialize, Serialize};
 use std::fmt;
-use std::future::{ready, Future};
+use std::future::ready;
+use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
+
+use rig::tool::Tool;
+use rig::tool::ToolContext;
+use rig::tool::ToolExecutionError;
+use rig::tool::ToolOutput;
+use serde::Deserialize;
+use serde::Serialize;
 
 /// `lsp` sends one request to a language server.
 pub struct Lsp {
@@ -23,11 +29,24 @@ impl fmt::Debug for Lsp {
     }
 }
 
+impl Lsp {
+    /// Envelope metadata for `lsp`.
+    pub(crate) const METADATA: crate::envelope::ToolMetadata = crate::envelope::base_metadata(
+        "lsp",
+        "Runs one language-server action: diagnostics, definitions, references, renames.",
+        crate::envelope::ToolCategory::CodeIntelligence,
+        crate::envelope::SideEffectClass::ReadOnly,
+        crate::envelope::CostClass::Medium,
+        false,
+    );
+}
+
 impl Tool for Lsp {
-    const NAME: &'static str = "lsp";
-    type Error = ToolExecutionError;
     type Args = LspArgs;
+    type Error = ToolExecutionError;
     type Output = ToolOutput;
+
+    const NAME: &'static str = "lsp";
 
     fn description(&self) -> String {
         "Send one request to a language server and return the server response.".to_owned()
@@ -249,9 +268,8 @@ fn clamp_timeout(value: Option<u64>, default: u64, minimum: u64, maximum: u64) -
 /// Reject actions whose required arguments are missing.
 fn validate(action: LspAction, args: &LspArgs) -> Result<(), ToolExecutionError> {
     match action {
-        LspAction::Rename | LspAction::RenameFile => {
-            require(args.new_name.is_some(), "new_name is required for a rename action")
-        },
+        LspAction::Rename | LspAction::RenameFile =>
+            require(args.new_name.is_some(), "new_name is required for a rename action"),
         LspAction::Request => require(args.query.is_some(), "query is required for the request action"),
         LspAction::Diagnostics
         | LspAction::Definition
@@ -293,3 +311,5 @@ async fn dispatch(backend: &dyn LspBackend, action: LspAction, request: &LspRequ
         LspAction::Request => backend.request(request).await,
     }
 }
+
+crate::impl_envelope!(Lsp);

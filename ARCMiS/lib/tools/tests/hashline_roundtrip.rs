@@ -2,16 +2,16 @@
 //! changed and the edit landed.
 
 use oxi_hashline::InMemorySnapshotStore;
+use rig::tool::Tool;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
-use rig::tool::Tool;
-use tools::Edit;
 use tools::edit::EditArgs;
 use tools::read::ReadArgs;
+use tools::write::WriteArgs;
+use tools::Edit;
 use tools::Read;
 use tools::Write;
-use tools::write::WriteArgs;
 
 /// Root of a throwaway sandbox directory, unique per test name.
 fn sandbox(name: &str) -> PathBuf {
@@ -70,7 +70,12 @@ async fn read_write_edit_roundtrip_changes_tag() {
     let edit = Edit::new(root.clone(), store.clone());
     let patch = format!("[src/lib.rs#{first_tag}]\nSWAP 2.=2:\n+    2\n");
     let result = edit
-        .call(&mut rig::tool::ToolContext::new(), EditArgs { patch })
+        .call(
+            &mut rig::tool::ToolContext::new(),
+            EditArgs {
+                patch,
+            },
+        )
         .await;
     if let Err(error) = &result {
         panic!("edit failed: {error}");

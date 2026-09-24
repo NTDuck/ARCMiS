@@ -1,11 +1,15 @@
 //! `find` walks the sandbox root and lists files by glob pattern.
 
-use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
-use serde::Deserialize;
 use std::path::Path;
 use std::path::PathBuf;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
+
+use rig::tool::Tool;
+use rig::tool::ToolContext;
+use rig::tool::ToolExecutionError;
+use rig::tool::ToolOutput;
+use serde::Deserialize;
 
 /// `find` lists files that match globs, newest first, grouped by directory.
 pub struct Find {
@@ -13,11 +17,24 @@ pub struct Find {
     pub root: PathBuf,
 }
 
+impl Find {
+    /// Envelope metadata for `find`.
+    pub(crate) const METADATA: crate::envelope::ToolMetadata = crate::envelope::base_metadata(
+        "find",
+        "Finds paths by glob pattern under the sandbox root.",
+        crate::envelope::ToolCategory::Search,
+        crate::envelope::SideEffectClass::ReadOnly,
+        crate::envelope::CostClass::Cheap,
+        false,
+    );
+}
+
 impl Tool for Find {
-    const NAME: &'static str = "find";
-    type Error = ToolExecutionError;
     type Args = FindArgs;
+    type Error = ToolExecutionError;
     type Output = ToolOutput;
+
+    const NAME: &'static str = "find";
 
     fn description(&self) -> String {
         "List files under the sandbox root that match one glob, newest first.".to_owned()
@@ -83,12 +100,11 @@ struct FoundFile {
 fn build_matchers(paths: &Option<Vec<String>>) -> Result<globset::GlobSet, String> {
     let mut builder = globset::GlobSetBuilder::new();
     match paths {
-        Some(paths) if !paths.is_empty() => {
+        Some(paths) if !paths.is_empty() =>
             for pattern in paths {
                 let glob = globset::Glob::new(pattern).map_err(|error| format!("bad glob '{pattern}': {error}"))?;
                 builder.add(glob);
-            }
-        },
+            },
         _ => {
             let glob = globset::Glob::new("**/*").map_err(|error| format!("bad default glob: {error}"))?;
             builder.add(glob);
@@ -167,3 +183,5 @@ fn render_list(files: &[FoundFile]) -> String {
     output.push_str(&render_files(files));
     output
 }
+
+crate::impl_envelope!(Find);

@@ -2,11 +2,12 @@
 //! value (model, paths, languages, toolchain) lives in the yml, not in the
 //! agent. See .omp/rules/config.md.
 
-use anyhow::Context as _;
-use serde::Deserialize;
 use std::fs::read_to_string;
 use std::path::Path;
 use std::path::PathBuf;
+
+use anyhow::Context as _;
+use serde::Deserialize;
 
 /// Top-level config file shape.
 #[derive(Debug, Deserialize)]

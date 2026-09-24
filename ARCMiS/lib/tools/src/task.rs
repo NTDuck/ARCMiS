@@ -18,6 +18,18 @@ pub struct Task {
     pub jobs: Arc<Mutex<crate::util::jobs::JobRegistry>>,
 }
 
+impl Task {
+    /// Envelope metadata for `task`.
+    pub(crate) const METADATA: crate::envelope::ToolMetadata = crate::envelope::base_metadata(
+        "task",
+        "Delegates work to background subagents.",
+        crate::envelope::ToolCategory::Coordination,
+        crate::envelope::SideEffectClass::WriteLocal,
+        crate::envelope::CostClass::Expensive,
+        false,
+    );
+}
+
 impl Tool for Task {
     const NAME: &'static str = "task";
     type Error = ToolExecutionError;
@@ -126,3 +138,5 @@ fn lock_registry(
 ) -> Result<MutexGuard<'_, crate::util::jobs::JobRegistry>, ToolExecutionError> {
     jobs.lock().map_err(|error| ToolExecutionError::other(format!("job registry lock failed: {error}")))
 }
+
+crate::impl_envelope!(Task);

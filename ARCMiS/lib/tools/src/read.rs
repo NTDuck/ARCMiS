@@ -1,11 +1,17 @@
 //! `read` reads files, directories, SQLite, and URLs for the agent.
 
-use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
-use serde::Deserialize;
-use std::fs::{metadata, read, read_dir};
+use std::fs::metadata;
+use std::fs::read;
+use std::fs::read_dir;
 use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Arc;
+
+use rig::tool::Tool;
+use rig::tool::ToolContext;
+use rig::tool::ToolExecutionError;
+use rig::tool::ToolOutput;
+use serde::Deserialize;
 
 /// Default number of body lines emitted per text read (oh-my-pi default).
 const DEFAULT_LIMIT: usize = 400;
@@ -38,11 +44,24 @@ pub struct ReadArgs {
     pub limit: Option<usize>,
 }
 
+impl Read {
+    /// Envelope metadata for `read`.
+    pub(crate) const METADATA: crate::envelope::ToolMetadata = crate::envelope::base_metadata(
+        "read",
+        "Reads one file, directory, SQLite database, or URL with line anchors.",
+        crate::envelope::ToolCategory::FileSystem,
+        crate::envelope::SideEffectClass::ReadOnly,
+        crate::envelope::CostClass::Cheap,
+        false,
+    );
+}
+
 impl Tool for Read {
-    const NAME: &'static str = "read";
-    type Error = ToolExecutionError;
     type Args = ReadArgs;
+    type Error = ToolExecutionError;
     type Output = ToolOutput;
+
+    const NAME: &'static str = "read";
 
     fn description(&self) -> String {
         "Read a file, directory, archive, SQLite database, or URL and return text with line anchors.".to_owned()
@@ -172,7 +191,11 @@ fn read_directory(path: &Path, relative: &str) -> Result<String, String> {
     let mut output = format!("[{relative}#0000]\n");
     let shown = rows.len().min(MAX_DIR_ENTRIES);
     for (name, is_dir, size) in rows.iter().take(shown) {
-        let suffix = if *is_dir { "/" } else { "" };
+        let suffix = if *is_dir {
+            "/"
+        } else {
+            ""
+        };
         output.push_str(&format!("{name}{suffix} ({})\n", format_size(*size)));
     }
     if shown < rows.len() {
@@ -248,12 +271,7 @@ fn read_text(
         }
     }
     if last_emitted < total {
-        output.push_str(&format!(
-            "... lines {} to {} elided ({} total lines)\n",
-            last_emitted + 1,
-            total,
-            total
-        ));
+        output.push_str(&format!("... lines {} to {} elided ({} total lines)\n", last_emitted + 1, total, total));
     }
     store.record_seen_lines(relative, &tag, &shown_lines);
     Ok(output)
@@ -286,8 +304,8 @@ fn parse_ranges(selector: &str) -> Result<Vec<(usize, usize)>, String> {
 
 /// Read one SQLite database: table list, one table, or a custom query.
 fn read_sqlite(path: &Path, relative: &str, selector: &str) -> Result<String, String> {
-    let connection = rusqlite::Connection::open(path)
-        .map_err(|error| format!("read failed for '{relative}': {error}"))?;
+    let connection =
+        rusqlite::Connection::open(path).map_err(|error| format!("read failed for '{relative}': {error}"))?;
     if selector.is_empty() {
         return sqlite_tables(&connection, relative);
     }
@@ -316,14 +334,8 @@ fn sqlite_tables(connection: &rusqlite::Connection, relative: &str) -> Result<St
 
 /// Run one custom query and render its rows.
 fn sqlite_query(connection: &rusqlite::Connection, relative: &str, query: &str) -> Result<String, String> {
-    let mut statement = connection
-        .prepare(query)
-        .map_err(|error| format!("read failed for '{relative}': {error}"))?;
-    let columns: Vec<String> = statement
-        .column_names()
-        .into_iter()
-        .map(str::to_owned)
-        .collect();
+    let mut statement = connection.prepare(query).map_err(|error| format!("read failed for '{relative}': {error}"))?;
+    let columns: Vec<String> = statement.column_names().into_iter().map(str::to_owned).collect();
     let rows = statement
         .query_map([], |row| {
             let mut values = Vec::with_capacity(columns.len());
@@ -355,9 +367,7 @@ fn sqlite_rows(
         Some(_) => format!("SELECT rowid, * FROM \"{table}\" WHERE rowid = ?1"),
         None => format!("SELECT rowid, * FROM \"{table}\" LIMIT {MAX_TABLE_ROWS}"),
     };
-    let mut statement = connection
-        .prepare(&sql)
-        .map_err(|error| format!("read failed for '{relative}': {error}"))?;
+    let mut statement = connection.prepare(&sql).map_err(|error| format!("read failed for '{relative}': {error}"))?;
     let params = rusqlite::params![key.and_then(|k| k.parse::<i64>().ok()).unwrap_or(0)];
     let rows = statement
         .query_map(params, |row| {
@@ -393,9 +403,7 @@ fn format_sql_value(value: &rusqlite::types::Value) -> String {
 
 /// Fetch one URL and return cleaned text or raw HTML.
 async fn read_url(raw: &str) -> Result<String, ToolExecutionError> {
-    Err(ToolExecutionError::other(format!(
-        "read does not fetch remote URLs in this build: {raw}"
-    )))
+    Err(ToolExecutionError::other(format!("read does not fetch remote URLs in this build: {raw}")))
 }
 
 /// Split text into lines without line terminators (used by tests).
@@ -403,3 +411,5 @@ async fn read_url(raw: &str) -> Result<String, ToolExecutionError> {
 pub(crate) fn split_lines(text: &str) -> Vec<String> {
     text.split('\n').map(|line| line.to_owned()).collect()
 }
+
+crate::impl_envelope!(Read);

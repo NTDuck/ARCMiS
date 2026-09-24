@@ -17,6 +17,18 @@ pub struct Todo {
     pub phases: Arc<Mutex<Vec<TodoPhase>>>,
 }
 
+impl Todo {
+    /// Envelope metadata for `todo`.
+    pub(crate) const METADATA: crate::envelope::ToolMetadata = crate::envelope::base_metadata(
+        "todo",
+        "Tracks the session task list through one operation.",
+        crate::envelope::ToolCategory::Coordination,
+        crate::envelope::SideEffectClass::WriteLocal,
+        crate::envelope::CostClass::Cheap,
+        false,
+    );
+}
+
 impl Tool for Todo {
     const NAME: &'static str = "todo";
     type Error = ToolExecutionError;
@@ -305,3 +317,5 @@ fn render_tree(phases: &[TodoPhase]) -> String {
 fn lock_phases(phases: &Mutex<Vec<TodoPhase>>) -> Result<MutexGuard<'_, Vec<TodoPhase>>, ToolExecutionError> {
     phases.lock().map_err(|error| ToolExecutionError::other(format!("todo state lock failed: {error}")))
 }
+
+crate::impl_envelope!(Todo);

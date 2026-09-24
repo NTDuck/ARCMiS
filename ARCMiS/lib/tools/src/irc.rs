@@ -5,12 +5,16 @@
 //! not-found style result text, not an error. There is no LLM reply loop in
 //! this pass. A later pass grows replies and await handling.
 
-use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
-use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::MutexGuard;
+
+use rig::tool::Tool;
+use rig::tool::ToolContext;
+use rig::tool::ToolExecutionError;
+use rig::tool::ToolOutput;
+use serde::Deserialize;
 
 /// `irc` lists peers and delivers messages into peer inboxes.
 pub struct Irc {
@@ -29,11 +33,24 @@ pub struct Peer {
     pub inbox: Vec<String>,
 }
 
+impl Irc {
+    /// Envelope metadata for `irc`.
+    pub(crate) const METADATA: crate::envelope::ToolMetadata = crate::envelope::base_metadata(
+        "irc",
+        "Sends messages between peer agents.",
+        crate::envelope::ToolCategory::Coordination,
+        crate::envelope::SideEffectClass::ReadOnly,
+        crate::envelope::CostClass::Cheap,
+        false,
+    );
+}
+
 impl Tool for Irc {
-    const NAME: &'static str = "irc";
-    type Error = ToolExecutionError;
     type Args = IrcArgs;
+    type Error = ToolExecutionError;
     type Output = ToolOutput;
+
+    const NAME: &'static str = "irc";
 
     fn description(&self) -> String {
         "List peers or deliver one message into a peer inbox.".to_owned()
@@ -56,11 +73,10 @@ impl Tool for Irc {
         let text = match args.op.as_str() {
             "list" => list_peers(&self.peers)?,
             "send" => send_message(&self.peers, &args)?,
-            other => {
+            other =>
                 return Err(ToolExecutionError::invalid_args(format!(
                     "unknown op \"{other}\". Use \"list\" or \"send\"."
-                )))
-            },
+                ))),
         };
         Ok(ToolOutput::text(text))
     }
@@ -119,3 +135,5 @@ fn lock_peers(
 ) -> Result<MutexGuard<'_, BTreeMap<String, Peer>>, ToolExecutionError> {
     peers.lock().map_err(|error| ToolExecutionError::other(format!("peer registry lock failed: {error}")))
 }
+
+crate::impl_envelope!(Irc);

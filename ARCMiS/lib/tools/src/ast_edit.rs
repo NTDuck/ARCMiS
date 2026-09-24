@@ -1,14 +1,20 @@
 //! `ast_edit` stages AST pattern rewrites as preview diffs.
 
-use crate::util::paths::{relative_path, resolve_roots};
-use ast_grep_core::language::Language as _;
-use ast_grep_core::tree_sitter::LanguageExt as _;
-use ast_grep_language::SupportLang;
-use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
-use serde::Deserialize;
 use std::fs::read_to_string;
 use std::path::Path;
 use std::path::PathBuf;
+
+use ast_grep_core::language::Language as _;
+use ast_grep_core::tree_sitter::LanguageExt as _;
+use ast_grep_language::SupportLang;
+use rig::tool::Tool;
+use rig::tool::ToolContext;
+use rig::tool::ToolExecutionError;
+use rig::tool::ToolOutput;
+use serde::Deserialize;
+
+use crate::util::paths::relative_path;
+use crate::util::paths::resolve_roots;
 
 /// `ast_edit` stages AST rewrites and returns a preview diff for approval.
 pub struct AstEdit {
@@ -16,11 +22,24 @@ pub struct AstEdit {
     pub root: PathBuf,
 }
 
+impl AstEdit {
+    /// Envelope metadata for `ast_edit`.
+    pub(crate) const METADATA: crate::envelope::ToolMetadata = crate::envelope::base_metadata(
+        "ast_edit",
+        "Rewrites code structurally with ast-grep pattern pairs.",
+        crate::envelope::ToolCategory::Search,
+        crate::envelope::SideEffectClass::WriteLocal,
+        crate::envelope::CostClass::Medium,
+        false,
+    );
+}
+
 impl Tool for AstEdit {
-    const NAME: &'static str = "ast_edit";
-    type Error = ToolExecutionError;
     type Args = AstEditArgs;
+    type Error = ToolExecutionError;
     type Output = ToolOutput;
+
+    const NAME: &'static str = "ast_edit";
 
     fn description(&self) -> String {
         "Stage AST pattern rewrites as a preview diff without changing files.".to_owned()
@@ -155,3 +174,5 @@ fn preview_file(path: &Path, relative: &str, ops: &[OpSpec], changed: &mut usize
     *changed += 1;
     Ok(format!("staged (not applied): {relative}\n{diff}\n"))
 }
+
+crate::impl_envelope!(AstEdit);

@@ -23,6 +23,18 @@ pub struct Ssh {
     pub root: PathBuf,
 }
 
+impl Ssh {
+    /// Envelope metadata for `ssh`.
+    pub(crate) const METADATA: crate::envelope::ToolMetadata = crate::envelope::base_metadata(
+        "ssh",
+        "Reads or writes files on one remote host over SSH.",
+        crate::envelope::ToolCategory::Runtime,
+        crate::envelope::SideEffectClass::WriteRemote,
+        crate::envelope::CostClass::Expensive,
+        true,
+    );
+}
+
 impl Tool for Ssh {
     const NAME: &'static str = "ssh";
     type Error = ToolExecutionError;
@@ -183,3 +195,5 @@ fn expand_home(path: &str) -> String {
     }
     path.to_owned()
 }
+
+crate::impl_envelope!(Ssh);

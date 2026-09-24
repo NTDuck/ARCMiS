@@ -5,11 +5,15 @@
 //! jobs. Every op returns text sections, and async disabled is a text error,
 //! not a thrown error.
 
-use rig::tool::{Tool, ToolContext, ToolExecutionError, ToolOutput};
-use serde::Deserialize;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::MutexGuard;
+
+use rig::tool::Tool;
+use rig::tool::ToolContext;
+use rig::tool::ToolExecutionError;
+use rig::tool::ToolOutput;
+use serde::Deserialize;
 
 /// `job` polls, cancels, and lists registry jobs.
 pub struct Job {
@@ -17,11 +21,24 @@ pub struct Job {
     pub jobs: Arc<Mutex<crate::util::jobs::JobRegistry>>,
 }
 
+impl Job {
+    /// Envelope metadata for `job`.
+    pub(crate) const METADATA: crate::envelope::ToolMetadata = crate::envelope::base_metadata(
+        "job",
+        "Inspects and controls background jobs.",
+        crate::envelope::ToolCategory::Coordination,
+        crate::envelope::SideEffectClass::ReadOnly,
+        crate::envelope::CostClass::Cheap,
+        false,
+    );
+}
+
 impl Tool for Job {
-    const NAME: &'static str = "job";
-    type Error = ToolExecutionError;
     type Args = JobArgs;
+    type Error = ToolExecutionError;
     type Output = ToolOutput;
+
+    const NAME: &'static str = "job";
 
     fn description(&self) -> String {
         "Poll, cancel, or list background jobs in the registry.".to_owned()
@@ -127,3 +144,5 @@ fn lock_registry(
 ) -> Result<MutexGuard<'_, crate::util::jobs::JobRegistry>, ToolExecutionError> {
     jobs.lock().map_err(|error| ToolExecutionError::other(format!("job registry lock failed: {error}")))
 }
+
+crate::impl_envelope!(Job);

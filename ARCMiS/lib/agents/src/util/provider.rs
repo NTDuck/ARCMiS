@@ -4,10 +4,11 @@
 //! same rig `Agent` through the blanket `AgentClientExt`, so every agent
 //! builder stays provider-agnostic and generic over the client type.
 
-use crate::util::config::Run;
 use anyhow::Context as _;
 use rig::providers::ollama;
 use rig::providers::openai;
+
+use crate::util::config::Run;
 
 /// Selected model provider.
 #[derive(Debug, Clone)]
