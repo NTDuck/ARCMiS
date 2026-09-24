@@ -18,6 +18,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "ARCMiS-blackboard"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "petgraph",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tempfile",
+ "time",
+ "tracing",
+ "walkdir",
+]
+
+[[package]]
 name = "ARCMiS-snapcompact"
 version = "0.1.0"
 dependencies = [

@@ -1,0 +1,30 @@
+[package]
+name = "ARCMiS-blackboard"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Persistent blackboard: state files, append-only ledgers, dependency graph."
+
+[lib]
+name = "blackboard"
+
+[dependencies]
+anyhow.workspace = true
+petgraph = "0.8.3"
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml.workspace = true
+time.workspace = true
+tracing.workspace = true
+walkdir = "2.5.0"
+
+[dev-dependencies]
+tempfile = "3"
+
+[lints.rust]
+non_snake_case = "allow"
+
+[lints.clippy]
+let_and_return = "allow"
+too_many_arguments = "allow"
