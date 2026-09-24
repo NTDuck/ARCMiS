@@ -352,9 +352,12 @@ async fn prompt_with_retries(agent: &rig::agent::Agent, prompt: &str, max_retrie
 fn is_transient(error: &rig::completion::PromptError) -> bool {
     match error {
         rig::completion::PromptError::CompletionError(error) => match error {
+            // Transport- and server-side only. `ResponseError` covers
+            // deterministic failures (budget exhaustion, malformed output);
+            // retrying one restarts the conversation from scratch and burns
+            // the same budget again.
             rig::completion::CompletionError::HttpError(_)
-            | rig::completion::CompletionError::ProviderError(_)
-            | rig::completion::CompletionError::ResponseError(_) => true,
+            | rig::completion::CompletionError::ProviderError(_) => true,
             _ => false,
         },
         _ => false,

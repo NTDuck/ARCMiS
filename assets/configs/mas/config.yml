@@ -10,7 +10,7 @@ run:
   num_ctx: 16384
   max_output_tokens: 16384
   max_retries: 1
-  think: true
+  think: false
   temperature: 0.2
 
 output:
