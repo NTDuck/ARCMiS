@@ -39,25 +39,30 @@ pub mod todo;
 pub mod write;
 
 pub use ask::Ask;
+pub use ask::AskArgs;
 pub use ast_edit::AstEdit;
 pub use ast_grep::AstGrep;
 pub use bash::Bash;
 pub use debug::Debug;
 pub use edit::Edit;
+pub use edit::EditArgs;
 pub use eval::Eval;
 pub use find::Find;
 pub use irc::Irc;
 pub use job::Job;
 pub use lsp::Lsp;
 pub use read::Read;
+pub use read::ReadArgs;
 pub use search::Search;
 pub use ssh::Ssh;
 pub use task::Task;
 pub use todo::Todo;
 pub use util::jobs::JobRegistry;
+pub use util::snapshots::InMemorySnapshotStore;
 pub use util::snapshots::SnapshotStore;
 pub use util::{
     catalog::{Catalog, Tool},
     path::path_sanitize,
 };
 pub use write::Write;
+pub use write::WriteArgs;

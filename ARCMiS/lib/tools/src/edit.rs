@@ -81,11 +81,14 @@ impl Tool for Edit {
                 }
                 Ok(ToolOutput::text(output))
             },
-            Err(oxi_hashline::HashlineError::NoOp { path }) => {
+            Err(oxi_hashline::mismatch::HashlineError::NoOp { path }) => {
                 let mut counts = self.noop_counts.lock().expect("noop guard poisoned");
-                let count = counts.entry(payload_key).or_insert(0);
-                *count += 1;
-                let trip = *count >= NOOP_GUARD_LIMIT;
+                let count = {
+                    let slot = counts.entry(payload_key).or_insert(0);
+                    *slot += 1;
+                    *slot
+                };
+                let trip = count >= NOOP_GUARD_LIMIT;
                 if trip {
                     counts.clear();
                 }
@@ -130,9 +133,9 @@ struct RootFs {
 
 impl RootFs {
     /// Resolve one root-relative path, refusing traversal outside the root.
-    fn resolve(&self, path: &str) -> Result<PathBuf, oxi_hashline::HashlineError> {
+    fn resolve(&self, path: &str) -> Result<PathBuf, oxi_hashline::mismatch::HashlineError> {
         crate::util::path::path_sanitize(&self.root, path)
-            .map_err(|error| oxi_hashline::HashlineError::Io(std::io::Error::new(
+            .map_err(|error| oxi_hashline::mismatch::HashlineError::Io(std::io::Error::new(
                 std::io::ErrorKind::InvalidInput,
                 error,
             )))
@@ -141,34 +144,34 @@ impl RootFs {
 
 #[async_trait::async_trait]
 impl oxi_hashline::HashlineFs for RootFs {
-    async fn read_text(&self, path: &str) -> Result<String, oxi_hashline::HashlineError> {
+    async fn read_text(&self, path: &str) -> Result<String, oxi_hashline::mismatch::HashlineError> {
         let resolved = self.resolve(path)?;
         match tokio::fs::read_to_string(&resolved).await {
-            Ok(text) => Ok(oxi_hashline::normalize_to_lf(&oxi_hashline::strip_bom(&text))),
+            Ok(text) => Ok(oxi_hashline::normalize_to_lf(oxi_hashline::strip_bom(&text).text)),
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => Err(
-                oxi_hashline::HashlineError::NotFound {
+                oxi_hashline::mismatch::HashlineError::NotFound {
                     path: path.to_owned(),
                 },
             ),
-            Err(error) => Err(oxi_hashline::HashlineError::Io(error)),
+            Err(error) => Err(oxi_hashline::mismatch::HashlineError::Io(error)),
         }
     }
 
-    async fn write_text(&self, path: &str, text: &str) -> Result<String, oxi_hashline::HashlineError> {
+    async fn write_text(&self, path: &str, text: &str) -> Result<String, oxi_hashline::mismatch::HashlineError> {
         let resolved = self.resolve(path)?;
         if let Some(parent) = resolved.parent() {
             tokio::fs::create_dir_all(parent)
                 .await
-                .map_err(oxi_hashline::HashlineError::Io)?;
+                .map_err(oxi_hashline::mismatch::HashlineError::Io)?;
         }
         // Atomic write: temp file in the target directory, then rename.
         let temp = resolved.with_extension("arcmis.tmp");
         tokio::fs::write(&temp, text.as_bytes())
             .await
-            .map_err(oxi_hashline::HashlineError::Io)?;
+            .map_err(oxi_hashline::mismatch::HashlineError::Io)?;
         tokio::fs::rename(&temp, &resolved)
             .await
-            .map_err(oxi_hashline::HashlineError::Io)?;
+            .map_err(oxi_hashline::mismatch::HashlineError::Io)?;
         Ok(path.to_owned())
     }
 

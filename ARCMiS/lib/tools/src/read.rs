@@ -9,8 +9,6 @@ use std::sync::Arc;
 
 /// Default number of body lines emitted per text read (oh-my-pi default).
 const DEFAULT_LIMIT: usize = 400;
-/// Default byte ceiling per text read.
-const DEFAULT_BYTES: usize = 32 * 1024;
 /// Hard byte cap: files above this size are reported, never read.
 const HARD_BYTES: usize = 200 * 1024;
 /// Cap on lines shown per directory listing.
