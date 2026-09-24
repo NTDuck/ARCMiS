@@ -53,6 +53,7 @@ where
             .agent(model)
             .preamble(&prompt)
             .temperature(run.temperature)
+            .max_tokens(run.max_output_tokens)
             .default_max_turns(run.max_turns);
         if let Some(params) = extra_params(run) {
             builder = builder.additional_params(params);
