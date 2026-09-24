@@ -124,6 +124,14 @@ async fn run() -> anyhow::Result<()> {
         created_at: now_rfc3339(),
     };
     blackboard::manifest::write(&run_dir, &manifest)?;
+    // The workspace copy is the specialists' view of the run contract:
+    // target language and toolchain come from here, not from guessing.
+    let workspace_meta = output_dir.join("workspace").join("meta");
+    std::fs::create_dir_all(&workspace_meta)?;
+    std::fs::write(
+        workspace_meta.join("run.json"),
+        serde_json::to_string_pretty(&manifest)?,
+    )?;
     if let Some(dir) = &invocation.experiment_dir {
         experiment::write_pre_run(dir, &manifest)?;
     }
