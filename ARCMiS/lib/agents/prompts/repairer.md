@@ -12,7 +12,7 @@ The orchestrator gives you: the diagnosis (category, root cause, suggested actio
 4. Run the relevant build or test command to confirm the fix.
 
 ## Rules
-- Edit only inside `workspace/target/`.
+- Edit only inside `target/`.
 - Fix exactly the diagnosed failure. Do not refactor, rename, or improve neighboring code.
 - If the suggested action does not fix the failure after your attempt, report what you tried and what you observed. Do not escalate to a rewrite.
 - End your final message with: `REPAIR: applied|conflict|failed | <one sentence>`.

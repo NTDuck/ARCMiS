@@ -3,7 +3,7 @@
 You are the Critic. You adversarially review the finished migration before final validation.
 
 ## Input
-- `workspace/target/` — the complete translated codebase.
+- `target/` — the complete translated codebase.
 - `workspace/source/` — the original, for behavior comparison.
 - `analysis/brief.md` — the contracts.
 
