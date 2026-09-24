@@ -1,0 +1,28 @@
+[package]
+name = "ARCMiS-snapcompact"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Deterministic PNG bitmap archival for long agent contexts."
+
+[lib]
+name = "snapcompact"
+
+[dependencies]
+bdf-parser.workspace = true
+image.workspace = true
+rig = "0.42.0"
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+
+# ARCMiS-<name> naming (repo rule): the uppercase prefix triggers
+# non_snake_case; the workspace lints stay inherited via the explicit table.
+[lints.rust]
+non_snake_case = "allow"
+
+[lints.clippy]
+let_and_return = "allow"
+too_many_arguments = "allow"
