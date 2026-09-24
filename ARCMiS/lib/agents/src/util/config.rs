@@ -21,6 +21,9 @@ pub struct Config {
     /// Recode fix-round ceiling. Ignored by the other methods.
     #[serde(default)]
     pub recode: RecodeBudgets,
+    /// MAS method configuration. Ignored by the other methods.
+    #[serde(default)]
+    pub mas: MasConfig,
 }
 
 /// Run section: model identity and agent budget.
@@ -37,8 +40,9 @@ pub struct Run {
     pub think: bool,
     /// Sampling temperature for the model.
     pub temperature: f64,
+    /// Provider name: `ollama` (default) or `netmind`.
+    pub provider: String,
 }
-
 impl Default for Run {
     fn default() -> Self {
         Self {
@@ -49,6 +53,55 @@ impl Default for Run {
             max_retries: 1,
             think: true,
             temperature: 0.2,
+            provider: "ollama".to_owned(),
+        }
+    }
+}
+
+impl Run {
+    /// Whether the provider is the local ollama daemon (native protocol,
+    /// context-window and think params ride along).
+    #[must_use]
+    pub fn provider_is_ollama(&self) -> bool {
+        self.provider == "ollama"
+    }
+}
+
+/// MAS method configuration: budgets, fleet ladder, and specialist caps.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default)]
+pub struct MasConfig {
+    /// Manager-loop round ceiling across the whole run.
+    pub max_rounds: usize,
+    /// Manager turn budget per round.
+    pub manager_turns: usize,
+    /// Specialist turn budget per delegation.
+    pub worker_turns: usize,
+    /// Repair attempts per diagnosed failure before escalation.
+    pub max_repairs: usize,
+    /// Consecutive stalled rounds before the manager escalates.
+    pub stagnation_rounds: usize,
+    /// plan.md character cap (GVS5H keeps the plan inside one read).
+    pub plan_cap: usize,
+    /// notes.md character cap.
+    pub notes_cap: usize,
+    /// Model ladder, weakest first. The fleet analyst promotes along it.
+    pub model_ladder: Vec<String>,
+    /// Test generations the tester may write per module (coverage-gap cap).
+    pub max_generated_tests_per_module: usize,
+}
+impl Default for MasConfig {
+    fn default() -> Self {
+        Self {
+            max_rounds: 60,
+            manager_turns: 20,
+            worker_turns: 40,
+            max_repairs: 2,
+            stagnation_rounds: 3,
+            plan_cap: 4000,
+            notes_cap: 8000,
+            model_ladder: Vec::new(),
+            max_generated_tests_per_module: 4,
         }
     }
 }
