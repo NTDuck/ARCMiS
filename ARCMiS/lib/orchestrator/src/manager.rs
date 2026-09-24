@@ -35,6 +35,9 @@ pub enum RoundOutcome {
     Escalated(String),
     /// The manager declared the phase done.
     PhaseDone(Phase),
+    /// The harness refused a decision (evidence gate); the manager sees the
+    /// refusal in the next round's failure tail.
+    Refused,
     /// The manager asked to stop the run.
     Finished(String),
 }
@@ -113,11 +116,14 @@ impl ManagerLoop {
                 // nothing (observed: the walk Pilot -> Migration ->
                 // Integration in 18 s with no validation work).
                 if state.phase_delegations == 0 {
-                    return Ok(RoundOutcome::Delegated {
-                        role: Role::Manager,
-                        task: "phase exit claimed with no completed delegation".into(),
-                        output: String::new(),
-                    });
+                    self.ledger.append_failure(&blackboard::Failure {
+                        at: now(),
+                        phase: format!("{:?}", state.phase),
+                        category: "gate".into(),
+                        root_cause: "done claimed with no completed delegation in this phase; advance needs at least one judged pass".into(),
+                        suggested_action: format!("delegate the remaining {:?} work first", state.phase),
+                    })?;
+                    return Ok(RoundOutcome::Refused);
                 }
                 // Advance to the successor phase, not a self-transition:
                 // only Pilot/Migration/Integration may self-transition.

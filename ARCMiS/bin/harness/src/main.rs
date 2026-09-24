@@ -234,6 +234,9 @@ async fn run() -> anyhow::Result<()> {
                 cli_sink::emit("phase", &format!("{phase:?}"));
                 events.record("phase", serde_json::json!({"to": format!("{phase:?}")}))?;
             },
+            RoundOutcome::Refused => {
+                cli_sink::emit("gate", "decision refused; see the failure ledger");
+            },
             RoundOutcome::Finished(reason) => {
                 stop_reason = Some(reason.clone());
                 break;
