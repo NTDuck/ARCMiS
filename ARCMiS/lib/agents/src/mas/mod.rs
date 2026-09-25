@@ -6,6 +6,7 @@
 pub mod fleet;
 pub mod registry;
 pub mod roles;
+pub mod trace;
 
 pub use fleet::Fleet;
 pub use registry::MasAgents;

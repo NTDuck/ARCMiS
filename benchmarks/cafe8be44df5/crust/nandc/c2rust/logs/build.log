@@ -1,0 +1,10 @@
+warning: type `u4` should have an upper camel case name
+  --> src/lib.rs:13:10
+   |
+13 | pub type u4 = u8;
+   |          ^^ help: convert the identifier to upper camel case (notice the capitalization): `U4`
+   |
+   = note: `#[warn(non_camel_case_types)]` (part of `#[warn(nonstandard_style)]`) on by default
+
+warning: `nandc` (lib) generated 1 warning
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.01s

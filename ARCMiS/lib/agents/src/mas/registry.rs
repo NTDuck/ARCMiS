@@ -33,8 +33,15 @@ impl MasAgents {
 ///
 /// `tools_for_role` supplies the portable tool adapters for one role; each
 /// adapter is registered on that role's agent only, so the model sees
-/// exactly its allowlist.
-pub fn build<C, F>(client: &C, fleet: &Fleet, run: &Run, tools_for_role: F) -> anyhow::Result<MasAgents>
+/// exactly its allowlist. `trace_sink`, when set, receives one JSONL line
+/// per model call, model response, tool call, and tool result.
+pub fn build<C, F>(
+    client: &C,
+    fleet: &Fleet,
+    run: &Run,
+    tools_for_role: F,
+    trace_sink: Option<Arc<crate::mas::trace::TraceSink>>,
+) -> anyhow::Result<MasAgents>
 where
     C: CompletionClient,
     C::CompletionModel: 'static,
@@ -50,6 +57,9 @@ where
             .temperature(run.temperature)
             .max_tokens(run.max_output_tokens)
             .default_max_turns(run.max_turns);
+        if let Some(sink) = &trace_sink {
+            builder = builder.add_hook(crate::mas::trace::TraceHook::new(role.name(), sink.clone()));
+        }
         if let Some(params) = extra_params(run) {
             builder = builder.additional_params(params);
         }

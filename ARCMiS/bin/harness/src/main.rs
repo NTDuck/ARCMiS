@@ -159,16 +159,17 @@ async fn run() -> anyhow::Result<()> {
     // allowlist rooted at the workspace. Tools resolve relative paths
     // against this root; prompts direct specialists at source/ and target/.
     let workspace_root = output_dir.join("workspace");
+    let trace_sink = agents::mas::trace::sink(&output_dir)?;
     let agents_set = match &clients {
         agents::util::provider::Clients::Ollama(client) => {
             agents::mas::registry::build(client, &fleet, &config.run, |role| {
                 tools::build_tools(&workspace_root, role.allowed_tools())
-            })?
+            }, Some(trace_sink.clone()))?
         },
         agents::util::provider::Clients::Netmind(client) => {
             agents::mas::registry::build(client, &fleet, &config.run, |role| {
                 tools::build_tools(&workspace_root, role.allowed_tools())
-            })?
+            }, Some(trace_sink.clone()))?
         },
     };
 
