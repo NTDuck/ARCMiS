@@ -1,0 +1,3 @@
+[preflight] snapshot 6 files from assets/ReCodeAgent/data/tool_projects/crust/approxidate/c
+[delegate] analyst <- Analyze the source codebase: map every module, its public API, dependencies, and behavior; produce the source map and a brief covering all modules.
+[phase] Contract

@@ -61,6 +61,7 @@ where
         if let Some(sink) = &trace_sink {
             builder = builder.add_hook(crate::mas::trace::TraceHook::new(role.name(), sink.clone()));
         }
+        builder = builder.add_hook(crate::mas::continuation::TrailingUserMessageHook);
         if let Some(params) = extra_params(run) {
             builder = builder.additional_params(params);
         }

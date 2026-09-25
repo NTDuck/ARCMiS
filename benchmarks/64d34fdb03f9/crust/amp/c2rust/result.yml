@@ -1,0 +1,14 @@
+family: crust
+project: amp
+source_language: c
+target_language: rust
+commit: 64d34fdb03f9
+config: benchmarks/64d34fdb03f9/crust/amp/c2rust/config.yml
+output_dir: .artifacts/bench/crust/amp/c2rust
+duration_seconds: 5400
+harness_exit: 124
+score_status: tests_green
+compilation_status: ok
+tests_pass: 5
+tests_fail: 0
+test_pass_rate: 100

@@ -1,0 +1,14 @@
+family: crust
+project: 2dpartint
+source_language: c
+target_language: rust
+commit: 7e6cf9e8105e
+config: benchmarks/7e6cf9e8105e/crust/2dpartint/c2rust/config.yml
+output_dir: .artifacts/bench/crust/2dpartint/c2rust
+duration_seconds: 5400
+harness_exit: 124
+score_status: tests_green
+compilation_status: ok
+tests_pass: 25
+tests_fail: 0
+test_pass_rate: 100

@@ -3,6 +3,7 @@
 //! machine; this crate owns the role definitions, the fleet model ladder,
 //! and the agent registry.
 
+pub mod continuation;
 pub mod fleet;
 pub mod registry;
 pub mod roles;

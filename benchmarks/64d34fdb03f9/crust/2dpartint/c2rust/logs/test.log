@@ -1,0 +1,33 @@
+warning: function `split_lines` is never used
+   --> ARCMiS/lib/tools/src/read.rs:411:15
+    |
+411 | pub(crate) fn split_lines(text: &str) -> Vec<String> {
+    |               ^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `ARCMiS-tools` (lib test) generated 1 warning
+   Compiling ARCMiS-agents v0.1.0 (/home/ayin/projs/ARCMiS/ARCMiS/lib/agents)
+   Compiling ARCMiS-orchestrator v0.1.0 (/home/ayin/projs/ARCMiS/ARCMiS/lib/orchestrator)
+   Compiling harness v0.1.0 (/home/ayin/projs/ARCMiS/ARCMiS/bin/harness)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 9.28s
+warning: the following packages contain code that will be rejected by a future version of Rust: nom v6.1.2
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running unittests src/lib.rs (/home/ayin/projs/ARCMiS/target/debug/deps/agents-f8d08e369f10a198)
+     Running tests/config_parse.rs (/home/ayin/projs/ARCMiS/target/debug/deps/config_parse-0cb1bde022af6806)
+     Running tests/registry_default.rs (/home/ayin/projs/ARCMiS/target/debug/deps/registry_default-4a52374f5cc7b5a4)
+     Running unittests src/lib.rs (/home/ayin/projs/ARCMiS/target/debug/deps/blackboard-95a2af52dacf6e6d)
+     Running tests/ledger_roundtrip.rs (/home/ayin/projs/ARCMiS/target/debug/deps/ledger_roundtrip-ece6f671a8d3756b)
+     Running unittests src/lib.rs (/home/ayin/projs/ARCMiS/target/debug/deps/orchestrator-b3bd8f1400250e57)
+     Running tests/state_machine.rs (/home/ayin/projs/ARCMiS/target/debug/deps/state_machine-229ab7b915e8c1f9)
+     Running unittests src/lib.rs (/home/ayin/projs/ARCMiS/target/debug/deps/snapcompact-1b6f24310160112e)
+     Running tests/render_smoke.rs (/home/ayin/projs/ARCMiS/target/debug/deps/render_smoke-7f9c6416967d1093)
+     Running unittests src/lib.rs (/home/ayin/projs/ARCMiS/target/debug/deps/tools-bc44c4426df12502)
+     Running tests/envelope_metadata.rs (/home/ayin/projs/ARCMiS/target/debug/deps/envelope_metadata-282b05109e8d5592)
+     Running tests/hashline_roundtrip.rs (/home/ayin/projs/ARCMiS/target/debug/deps/hashline_roundtrip-fd37f3679e9275bb)
+     Running unittests src/main.rs (/home/ayin/projs/ARCMiS/target/debug/deps/harness-d010b117ff769eeb)
+   Doc-tests agents
+   Doc-tests blackboard
+   Doc-tests orchestrator
+   Doc-tests snapcompact
+   Doc-tests tools
