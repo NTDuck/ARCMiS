@@ -237,7 +237,7 @@ fn read_text(
         return Ok(format!("[{relative}#0000]\n{text}"));
     }
     let windows = parse_ranges(selector)?;
-    let all: Vec<&str> = text.lines().collect();
+    let all = text.lines().collect::<Vec<&str>>();
     let total = all.len().max(1);
     let tag = store.record(relative, &text, None);
     let mut output = format!("[{relative}#{tag}]\n");
@@ -404,12 +404,6 @@ fn format_sql_value(value: &rusqlite::types::Value) -> String {
 /// Fetch one URL and return cleaned text or raw HTML.
 async fn read_url(raw: &str) -> Result<String, ToolExecutionError> {
     Err(ToolExecutionError::other(format!("read does not fetch remote URLs in this build: {raw}")))
-}
-
-/// Split text into lines without line terminators (used by tests).
-#[cfg(test)]
-pub(crate) fn split_lines(text: &str) -> Vec<String> {
-    text.split('\n').map(|line| line.to_owned()).collect()
 }
 
 crate::impl_envelope!(Read);

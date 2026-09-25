@@ -16,7 +16,7 @@ use crate::search::Search;
 use crate::write::Write;
 use oxi_hashline::InMemorySnapshotStore;
 use rig::tool::PortableDynamicTool;
-use std::path::PathBuf;
+use std::path::Path;
 use std::sync::Arc;
 
 /// One dynamic tool factory output: the adapter plus its name.
@@ -30,13 +30,13 @@ pub struct Named {
 /// Build the tool set for one role allowlist. `root` is the sandbox root;
 /// every path tool resolves inside it. Tools named in `allow` are registered.
 #[must_use]
-pub fn build_tools(root: &PathBuf, allow: &[&str]) -> Vec<Named> {
+pub fn build_tools(root: &Path, allow: &[&str]) -> Vec<Named> {
     let snapshots: Arc<dyn oxi_hashline::SnapshotStore> = Arc::new(InMemorySnapshotStore::new());
     let mut tools = Vec::new();
 
     if allow.contains(&"read") {
         let read = Arc::new(Read {
-            root: root.clone(),
+            root: root.to_path_buf(),
             snapshots: snapshots.clone(),
         });
         let read_for_call = read.clone();
@@ -47,7 +47,7 @@ pub fn build_tools(root: &PathBuf, allow: &[&str]) -> Vec<Named> {
     }
     if allow.contains(&"write") {
         let write = Arc::new(Write {
-            root: root.clone(),
+            root: root.to_path_buf(),
             snapshots: snapshots.clone(),
         });
         let write_for_call = write.clone();
@@ -57,7 +57,7 @@ pub fn build_tools(root: &PathBuf, allow: &[&str]) -> Vec<Named> {
         }));
     }
     if allow.contains(&"edit") {
-        let edit = Edit::new(root.clone(), snapshots.clone());
+        let edit = Edit::new(root.to_path_buf(), snapshots.clone());
         let edit_for_call = edit.clone();
         tools.push(named(&edit, move |args| {
             let edit = edit_for_call.clone();
@@ -66,7 +66,7 @@ pub fn build_tools(root: &PathBuf, allow: &[&str]) -> Vec<Named> {
     }
     if allow.contains(&"search") {
         let search = Arc::new(Search {
-            root: root.clone(),
+            root: root.to_path_buf(),
             snapshots: snapshots.clone(),
         });
         let search_for_call = search.clone();
@@ -77,7 +77,7 @@ pub fn build_tools(root: &PathBuf, allow: &[&str]) -> Vec<Named> {
     }
     if allow.contains(&"find") {
         let find = Arc::new(Find {
-            root: root.clone(),
+            root: root.to_path_buf(),
         });
         let find_for_call = find.clone();
         tools.push(named(&find, move |args| {
@@ -87,7 +87,7 @@ pub fn build_tools(root: &PathBuf, allow: &[&str]) -> Vec<Named> {
     }
     if allow.contains(&"ast_grep") {
         let ast_grep = Arc::new(AstGrep {
-            root: root.clone(),
+            root: root.to_path_buf(),
         });
         let ast_grep_for_call = ast_grep.clone();
         tools.push(named(&ast_grep, move |args| {
@@ -97,7 +97,7 @@ pub fn build_tools(root: &PathBuf, allow: &[&str]) -> Vec<Named> {
     }
     if allow.contains(&"ast_edit") {
         let ast_edit = Arc::new(AstEdit {
-            root: root.clone(),
+            root: root.to_path_buf(),
         });
         let ast_edit_for_call = ast_edit.clone();
         tools.push(named(&ast_edit, move |args| {
@@ -107,7 +107,7 @@ pub fn build_tools(root: &PathBuf, allow: &[&str]) -> Vec<Named> {
     }
     if allow.contains(&"bash") {
         let bash = Arc::new(Bash {
-            root: root.clone(),
+            root: root.to_path_buf(),
         });
         let bash_for_call = bash.clone();
         tools.push(named(&bash, move |args| {
@@ -165,7 +165,6 @@ where
         Error = rig::tool::ToolExecutionError,
     >,
 {
-    let args: T::Args =
-        serde_json::from_value(args).map_err(|error| rig::tool::ToolExecutionError::from_error(error))?;
+    let args: T::Args = serde_json::from_value(args).map_err(rig::tool::ToolExecutionError::from_error)?;
     tool.call(&mut rig::tool::ToolContext::new(), args).await
 }

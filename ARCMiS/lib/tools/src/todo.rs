@@ -162,7 +162,7 @@ fn op_init(phases: &mut Vec<TodoPhase>, step: &TodoOp, errors: &mut Vec<String>)
 }
 
 /// Mark one task in progress and demote other in-progress tasks to pending.
-fn op_start(phases: &mut Vec<TodoPhase>, step: &TodoOp, errors: &mut Vec<String>) {
+fn op_start(phases: &mut [TodoPhase], step: &TodoOp, errors: &mut Vec<String>) {
     let target = step.task.as_deref().unwrap_or_default();
     match find_mut(phases, target) {
         None => errors.push(format!("task \"{target}\" not found")),
@@ -255,7 +255,7 @@ fn op_append(phases: &mut Vec<TodoPhase>, step: &TodoOp, errors: &mut Vec<String
 }
 
 /// Append one note to one task.
-fn op_note(phases: &mut Vec<TodoPhase>, step: &TodoOp, errors: &mut Vec<String>) {
+fn op_note(phases: &mut [TodoPhase], step: &TodoOp, errors: &mut Vec<String>) {
     let target = step.task.as_deref().unwrap_or_default();
     let note_text = step.text.as_deref().unwrap_or_default();
     if target.is_empty() || note_text.is_empty() {
