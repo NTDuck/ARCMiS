@@ -1,4 +1,6 @@
 crate: laya-rs 0.1.0
+source: https://crates.io/api/v1/crates/laya-rs/0.1.0/download
+repo: bob-rietveld/laya-rs (GitHub 404s; the crates.io tarball is the only source)
 yanked: False
 checksum: c651803bc2cf3a7c30730ccc0b45b831a3162d72f9851149befb9e29e0b25c05
 license: Apache-2.0
