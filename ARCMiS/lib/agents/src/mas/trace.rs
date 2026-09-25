@@ -2,7 +2,6 @@
 //! call, and tool result at `{output_dir}/traces/turns.jsonl`. The hook is
 //! observe-only: every callback returns `Continue`.
 
-use anyhow::Context as _;
 use rig::agent::hook::{AgentHook, CompletionCall, CompletionCallAction, CompletionResponse,
     HookContext, ObservationAction, ToolCall, ToolCallAction, ToolResultAction,
     ToolResultEvent};
@@ -169,8 +168,5 @@ impl AgentHook for TraceHook {
 
 /// Open the trace file lazily on append; a failed open drops the record.
 pub fn sink(path: &Path) -> anyhow::Result<std::sync::Arc<TraceSink>> {
-    let dir = path
-        .parent()
-        .with_context(|| format!("trace path has no parent: {}", path.display()))?;
-    Ok(std::sync::Arc::new(TraceSink::new(dir)?))
+    Ok(std::sync::Arc::new(TraceSink::new(path)?))
 }

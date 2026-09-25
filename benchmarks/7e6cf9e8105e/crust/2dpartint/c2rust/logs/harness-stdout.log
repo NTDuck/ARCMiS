@@ -1,0 +1,4 @@
+[preflight] snapshot 14 files from assets/ReCodeAgent/data/tool_projects/crust/2dpartint/c
+[delegate] analyst <- Analyze the source codebase, identify all modules, dependencies, and entry points, and produce a source map and brief in meta/plan.md.
+[delegate] architect <- Create the target architecture contract (analysis/brief.md) based on the source map, defining the Rust module structure, data types, and error handling strategy for the 2DPartInt particle simulator.
+[phase] Contract

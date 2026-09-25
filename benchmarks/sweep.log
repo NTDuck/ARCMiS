@@ -1,0 +1,1 @@
+RUN crust/2dpartint c->rust
