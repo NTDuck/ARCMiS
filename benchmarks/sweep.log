@@ -1,3 +1,6 @@
 RUN crust/2dpartint c->rust
 DONE crust/2dpartint c->rust status=timeout dur=5400s
 RUN crust/42-kocaeli-printf c->rust
+DONE crust/42-kocaeli-printf c->rust status=compile_failed dur=1598s
+FAILURE 1/3 at crust/42-kocaeli-printf (compile_failed)
+RUN crust/aes128-simd c->rust

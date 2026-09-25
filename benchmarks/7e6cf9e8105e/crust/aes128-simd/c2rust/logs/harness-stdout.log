@@ -1,0 +1,4 @@
+[preflight] snapshot 14 files from assets/ReCodeAgent/data/tool_projects/crust/aes128-simd/c
+[delegate] analyst <- Explore the source codebase and produce a source map and brief that cites every module, identifying entry points, dependencies, and key abstractions.
+[phase] Contract
+[delegate] architect <- Produce the migration contract at analysis/brief.md based on analysis/source-map.md: define the target-language (Rust) crate layout, map every C module/function to its Rust equivalent, specify how the SSE intrinsics (g_mult_sse, Columns_sse, g_mult_sse_byte) will be handled (port to portable Rust or use std::arch), resolve the three functions declared in aes.h but never defined (drop, stub, or implement), and state the public API surface of the resulting crate. Cite every module from the source map.

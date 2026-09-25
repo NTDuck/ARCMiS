@@ -115,7 +115,7 @@ run_cell() {
         return 0
     fi
     mkdir -p "$cell_dir/logs"
-    LOGDIR="$cell_dir/logs"
+    LOGDIR="$(cd "$cell_dir/logs" && pwd)"
 
     # Source root: the SOURCE language dir of the pair.
     case "$family:$src" in
