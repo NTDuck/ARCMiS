@@ -27,11 +27,20 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 # AlphaTrans (Java->Python), Oxidizer (C->Rust with verified tests), and the
 # skeleton-translation (skel) setup. Numbers are the best-reported pass@1
 # per system on the shared dataset.
+# Verified against the ReCodeAgent paper (arXiv:2604.07341) full text:
+# overall CS 99.4%, overall TPR 86.5% (1822/2107); Crust CS 89/100, Crust-alpha
+# TPR 88.0% (146/166) vs SWE-agent 78.3%; vs Oxidizer 100% vs 67.2% TPR; vs
+# Skel 100% vs 93.2% TPR; single-agent ablations drop TPR 40.4%.
 RECODEAGENT_RESULTS = {
-    "crust": {"recodeagent": 78.2, "transcoder": 3.2, "codet": 21.7},
-    "oxidizer": {"recodeagent": 66.7, "oxidizer_baseline": 40.0},
-    "alphatrans": {"recodeagent": 75.0, "alphatrans_baseline": 52.0},
-    "skel": {"recodeagent": 81.3, "skeleton_baseline": 63.5},
+    "crust": {
+        "recodeagent_tpr": 88.0,
+        "sweagent_tpr": 78.3,
+        "recodeagent_cs": "89/100",
+    },
+    "oxidizer": {"recodeagent_tpr": 100.0, "oxidizer_tpr": 67.2},
+    "skel": {"recodeagent_tpr": 100.0, "skel_tpr": 93.2},
+    "alphatrans": {"recodeagent_tpr": "subset (Table 1)", "alphatrans_tpr": "subset"},
+    "overall": {"recodeagent_tpr": 86.5, "competing_tpr": 25.7, "recodeagent_cs": 99.4},
 }
 
 
@@ -179,16 +188,26 @@ def main() -> int:
             ),
             "not run",
         )
-        theirs = numbers.get("recodeagent", "?")
+        theirs = numbers.get("recodeagent_tpr", "?")
         baseline_name = next(
-            (k for k in numbers if k != "recodeagent"), None
+            (
+                k
+                for k in numbers
+                if k not in ("recodeagent_tpr", "recodeagent_cs")
+            ),
+            None,
         )
         baseline = (
-            f"{baseline_name}: {numbers[baseline_name]}%"
+            f"{baseline_name.replace('_tpr', '').replace('_', ' ')}: "
+            f"{numbers[baseline_name]}%"
             if baseline_name
             else "n/a"
         )
-        report.append(f"| {family} | {ours} | {theirs}% | {baseline} |")
+        cs = numbers.get("recodeagent_cs", "")
+        theirs_text = f"{theirs}%" if isinstance(theirs, (int, float)) else str(theirs)
+        if cs:
+            theirs_text += f" (CS {cs})"
+        report.append(f"| {family} | {ours} | {theirs_text} | {baseline} |")
 
     report += [
         "",
