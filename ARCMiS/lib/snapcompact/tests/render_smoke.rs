@@ -63,6 +63,7 @@ fn serializes_and_renders_frames() {
 fn compact_keeps_recent_and_archives_rest() {
     let font = snapcompact::load_font();
     let history = synthetic_history(300);
+    #[allow(unused_variables)]
     let before: u32 = history.iter().map(snapcompact::message_tokens_public).sum();
     let opts = CompactOptions {
         keep_recent_tokens: 2000,

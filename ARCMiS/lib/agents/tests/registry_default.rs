@@ -2,7 +2,6 @@
 //! resolve, and the fleet ladder promotes and demotes.
 
 use agents::mas::fleet::Fleet;
-use agents::mas::registry;
 use agents::mas::roles::Role;
 use agents::util::config::Run;
 use std::collections::BTreeMap;

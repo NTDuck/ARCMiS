@@ -15,10 +15,10 @@ fn mas_config_yml_parses() {
     assert_eq!(config.source.target.language, "rust");
     assert_eq!(config.mas.max_rounds, 60);
     assert_eq!(config.mas.max_repairs, 2);
-    assert_eq!(config.mas.stagnation_rounds, 3);
+    assert_eq!(config.mas.stagnation_rounds, 6);
     assert_eq!(config.mas.plan_cap, 4000);
     assert_eq!(config.mas.notes_cap, 8000);
-    assert_eq!(config.mas.model_ladder.len(), 2);
+    assert_eq!(config.mas.model_ladder.len(), 1);
     assert_eq!(config.mas.max_generated_tests_per_module, 4);
 }
 
