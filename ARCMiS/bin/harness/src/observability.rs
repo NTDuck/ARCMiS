@@ -42,45 +42,9 @@ impl EventLog {
     }
 }
 
-/// RFC 3339 UTC timestamp with second precision.
+/// RFC 3339 UTC timestamp with millisecond precision.
 fn timestamp() -> String {
     let now = time::OffsetDateTime::now_utc();
-    let seconds = now.unix_timestamp();
     let millis = now.millisecond();
-    format!("{}.{millis:03}Z", rfc3339_seconds(seconds))
-}
-
-/// Render Unix seconds as an RFC 3339 UTC timestamp (no offset math needed:
-/// pure seconds-to-Y-M-D conversion).
-fn rfc3339_seconds(seconds: i64) -> String {
-    let days = seconds.div_euclid(86_400);
-    let time = seconds.rem_euclid(86_400);
-    let (year, month, day) = civil_from_days(days);
-    format!("{year:04}-{month:02}-{day:02}T{:02}:{:02}:{:02}", time / 3600, (time % 3600) / 60, time % 60)
-}
-
-/// Days-since-epoch to civil date (Howard Hinnant's algorithm).
-fn civil_from_days(days: i64) -> (i64, u32, u32) {
-    let z = days + 719_468;
-    let era = z.div_euclid(146_097);
-    let doe = z.rem_euclid(146_097);
-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
-    let y = yoe + era * 400;
-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
-    let mp = (5 * doy + 2) / 153;
-    let d = (doy - (153 * mp + 2) / 5 + 1) as u32;
-    let m = if mp < 10 {
-        mp + 3
-    } else {
-        mp - 9
-    } as u32;
-    (
-        if m <= 2 {
-            y + 1
-        } else {
-            y
-        },
-        m,
-        d,
-    )
+    format!("{}.{millis:03}Z", now.format(&time::format_description::well_known::Rfc3339).unwrap_or_default())
 }

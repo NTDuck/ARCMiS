@@ -4,9 +4,10 @@
 
 use anyhow::Context as _;
 use blackboard::Manifest;
+use std::path::Path;
 
 /// Write `manifest.json` into the experiment directory before the run.
-pub fn write_pre_run(dir: &std::path::Path, manifest: &Manifest) -> anyhow::Result<()> {
+pub fn write_pre_run(dir: &Path, manifest: &Manifest) -> anyhow::Result<()> {
     blackboard::manifest::write(dir, manifest)?;
     tracing::info!(dir = %dir.display(), harness_id = %manifest.harness_id, "experiment manifest written");
     Ok(())
@@ -14,7 +15,7 @@ pub fn write_pre_run(dir: &std::path::Path, manifest: &Manifest) -> anyhow::Resu
 
 /// Write `result/aggregate.yml` after the run: pass/fail per phase, task
 /// counts, and the token estimate.
-pub fn write_result(dir: &std::path::Path, aggregate: &Aggregate) -> anyhow::Result<()> {
+pub fn write_result(dir: &Path, aggregate: &Aggregate) -> anyhow::Result<()> {
     let result_dir = dir.join("result");
     std::fs::create_dir_all(&result_dir)?;
     let text = serde_yaml::to_string(aggregate)?;

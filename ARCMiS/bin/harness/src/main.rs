@@ -18,6 +18,7 @@ use blackboard::Workspace;
 use orchestrator::manager::ManagerLoop;
 use orchestrator::manager::RoundOutcome;
 use orchestrator::state_machine;
+use std::path::Path;
 use std::path::PathBuf;
 use std::process::ExitCode;
 use std::time::Instant;
@@ -31,7 +32,7 @@ async fn main() -> ExitCode {
     match run().await {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
-            eprintln!("harness failed: {error:#}");
+            tracing::error!(error = format!("{error:#}"), "harness failed");
             ExitCode::FAILURE
         },
     }
@@ -249,10 +250,10 @@ async fn run() -> anyhow::Result<()> {
         if progress.done_tasks > progress_before.done_tasks {
             breaker_state.record_productive_round();
             breaker_state.record_progress();
-            manager_loop_ledger_progress(&run_dir);
+            manager_loop_ledger_round(&run_dir, false);
         } else {
             breaker_state.record_stalled_round();
-            manager_loop_ledger_stall(&run_dir);
+            manager_loop_ledger_round(&run_dir, true);
         }
         let state = blackboard::state::read(&run_dir)?.expect("state present");
         match breaker_state.check(state.phase, &config.mas) {
@@ -276,7 +277,7 @@ async fn run() -> anyhow::Result<()> {
         tasks_done: progress.done_tasks,
         tasks_total: progress.total_tasks,
         stop_reason,
-        duration_seconds: u64::try_from(started.elapsed().as_secs()).unwrap_or(u64::MAX),
+        duration_seconds: started.elapsed().as_secs(),
     };
     let result_target = invocation.experiment_dir.clone().unwrap_or_else(|| output_dir.clone());
     experiment::write_result(&result_target, &aggregate)?;
@@ -291,72 +292,30 @@ async fn run() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Record productive-round progress in the ledger.
-fn manager_loop_ledger_progress(run_dir: &std::path::Path) {
+/// Record a round-progress observation in the ledger. `stalled` selects the
+/// stalled-round kind instead of the productive-round one.
+fn manager_loop_ledger_round(run_dir: &Path, stalled: bool) {
     let ledger = Ledger::new(run_dir.join("ledgers"));
     let _ = ledger.append_observation(&blackboard::Observation {
         at: now_rfc3339(),
-        kind: "round_progress".into(),
-        detail: serde_json::json!({}),
-    });
-}
-
-/// Record a stalled round in the ledger.
-fn manager_loop_ledger_stall(run_dir: &std::path::Path) {
-    let ledger = Ledger::new(run_dir.join("ledgers"));
-    let _ = ledger.append_observation(&blackboard::Observation {
-        at: now_rfc3339(),
-        kind: "round_stalled".into(),
+        kind: if stalled {
+            "round_stalled"
+        } else {
+            "round_progress"
+        }
+        .into(),
         detail: serde_json::json!({}),
     });
 }
 
 /// Compact timestamp for ids: YYYYMMDDHHMMSS.
 fn now_compact() -> String {
-    let seconds = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|duration| duration.as_secs())
-        .unwrap_or(0);
-    let days = i64::try_from(seconds / 86_400).unwrap_or(0);
-    let time = seconds % 86_400;
-    let (year, month, day) = civil_from_days(days);
-    format!("{year:04}{month:02}{day:02}{h:02}{m:02}{s:02}", h = time / 3600, m = (time % 3600) / 60, s = time % 60)
+    time::OffsetDateTime::now_utc()
+        .format(time::macros::format_description!("[year][month][day][hour][minute][second]"))
+        .expect("fixed-format timestamp")
 }
 
 /// RFC 3339 UTC now.
 fn now_rfc3339() -> String {
-    let seconds = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|duration| duration.as_secs())
-        .unwrap_or(0);
-    let days = i64::try_from(seconds / 86_400).unwrap_or(0);
-    let time = seconds % 86_400;
-    let (year, month, day) = civil_from_days(days);
-    format!("{year:04}-{month:02}-{day:02}T{:02}:{:02}:{:02}Z", time / 3600, (time % 3600) / 60, time % 60)
-}
-
-/// Days-since-epoch to civil date (Howard Hinnant's algorithm).
-fn civil_from_days(days: i64) -> (i64, u32, u32) {
-    let z = days + 719_468;
-    let era = z.div_euclid(146_097);
-    let doe = z.rem_euclid(146_097);
-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
-    let y = yoe + era * 400;
-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
-    let mp = (5 * doy + 2) / 153;
-    let d = (doy - (153 * mp + 2) / 5 + 1) as u32;
-    let m = if mp < 10 {
-        mp + 3
-    } else {
-        mp - 9
-    } as u32;
-    (
-        if m <= 2 {
-            y + 1
-        } else {
-            y
-        },
-        m,
-        d,
-    )
+    time::OffsetDateTime::now_utc().format(&time::format_description::well_known::Rfc3339).expect("rfc3339 timestamp")
 }
