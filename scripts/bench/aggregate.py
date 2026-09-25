@@ -211,7 +211,7 @@ def main() -> int:
         "## Method",
         "",
         "The ARCMiS MAS (manager + 10 specialist roles over a blackboard,",
-        "qwen3.8:27b-mtp-q4_K_M via ollama) ran one migration cell per",
+        "the config's local model via ollama) ran one migration cell per",
         "(family, project, source→target) pair from ReCodeAgent's",
         "`tool_projects` dataset, with generous ceilings (400 rounds, 200",
         "worker turns, unlimited stagnation) and a per-cell wall-clock",

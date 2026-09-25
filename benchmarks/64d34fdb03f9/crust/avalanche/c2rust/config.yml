@@ -6,7 +6,7 @@
 
 run:
   provider: ollama
-  model: smtek/Swift-Qwen3.8-27B:map-k4v
+  model: qwen3.8:27b-mtp-q4_K_M
   # Per-agent-call model turns (rig trips MaxTurnsError at the ceiling).
   max_turns: 200
   num_ctx: 65536
@@ -16,14 +16,14 @@ run:
   temperature: 0.2
 
 output:
-  dir: __OUTPUT_DIR__
+  dir: .artifacts/bench/crust/avalanche/c2rust
 
 source:
-  language: __SRC_LANG__
-  root: __SOURCE_ROOT__
+  language: c
+  root: assets/ReCodeAgent/data/tool_projects/crust/avalanche/c
   target:
-    language: __DST_LANG__
-    test_command: __TEST_COMMAND__
+    language: rust
+    test_command: cargo test
 
 mas:
   # Driver round range 0..max_rounds; 0 would mean zero rounds, so use a high
@@ -42,5 +42,5 @@ mas:
   plan_cap: 6000
   notes_cap: 12000
   model_ladder:
-    - smtek/Swift-Qwen3.8-27B:map-k4v
+    - qwen3.8:27b-mtp-q4_K_M
   max_generated_tests_per_module: 8

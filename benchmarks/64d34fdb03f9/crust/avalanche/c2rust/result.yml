@@ -1,0 +1,15 @@
+# One benchmark cell: crust/avalanche c->rust
+family: crust
+project: avalanche
+source_language: c
+target_language: rust
+commit: 64d34fdb03f9
+config: benchmarks/64d34fdb03f9/crust/avalanche/c2rust/config.yml
+output_dir: .artifacts/bench/crust/avalanche/c2rust
+duration_seconds: 5400
+harness_exit: 124
+score_status: timeout
+compilation_status: error
+tests_pass: 0
+tests_fail: 0
+test_pass_rate: null
