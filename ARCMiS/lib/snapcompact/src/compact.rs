@@ -114,8 +114,13 @@ fn message_tokens(message: &Message) -> u32 {
 #[must_use]
 pub fn message_tokens_public(message: &Message) -> u32 {
     match message {
-        Message::System { content, .. } => estimate_tokens(&content),
-        Message::User { content } => content
+        Message::System {
+            content,
+            ..
+        } => estimate_tokens(&content),
+        Message::User {
+            content,
+        } => content
             .iter()
             .map(|item| match item {
                 rig::message::UserContent::Text(text) => estimate_tokens(&text.text),
@@ -133,19 +138,23 @@ pub fn message_tokens_public(message: &Message) -> u32 {
                 _ => 16,
             })
             .sum(),
-        Message::Assistant { content, .. } => content
+        Message::Assistant {
+            content,
+            ..
+        } => content
             .iter()
             .map(|item| match item {
                 rig::message::AssistantContent::Text(text) => estimate_tokens(&text.text),
-                rig::message::AssistantContent::ToolCall(call) => {
-                    estimate_tokens(&call.function.arguments.to_string())
-                },
+                rig::message::AssistantContent::ToolCall(call) => estimate_tokens(&call.function.arguments.to_string()),
                 rig::message::AssistantContent::Reasoning(reasoning) => {
                     let bytes: usize = reasoning
                         .content
                         .iter()
                         .map(|block| match block {
-                            rig::message::ReasoningContent::Text { text, .. } => text.len(),
+                            rig::message::ReasoningContent::Text {
+                                text,
+                                ..
+                            } => text.len(),
                             _ => 8,
                         })
                         .sum();

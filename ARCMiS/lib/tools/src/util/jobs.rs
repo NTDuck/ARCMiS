@@ -72,15 +72,18 @@ impl JobRegistry {
     /// Register a running job and return its uuid id.
     pub fn register(&mut self, job_type: &str, label: &str) -> String {
         let id = uuid::Uuid::new_v4().to_string();
-        self.jobs.insert(id.clone(), JobEntry {
-            id: id.clone(),
-            job_type: job_type.to_owned(),
-            label: label.to_owned(),
-            status: JobStatus::Running,
-            result_text: None,
-            error_text: None,
-            updated_at: now_seconds(),
-        });
+        self.jobs.insert(
+            id.clone(),
+            JobEntry {
+                id: id.clone(),
+                job_type: job_type.to_owned(),
+                label: label.to_owned(),
+                status: JobStatus::Running,
+                result_text: None,
+                error_text: None,
+                updated_at: now_seconds(),
+            },
+        );
         id
     }
 

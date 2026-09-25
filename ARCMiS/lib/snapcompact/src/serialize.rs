@@ -40,12 +40,17 @@ pub fn serialize_history(messages: &[Message], opts: &SerializeOptions) -> Strin
     let mut out = String::new();
     for message in messages {
         match message {
-            Message::System { content, .. } => {
+            Message::System {
+                content,
+                ..
+            } => {
                 out.push_str("SYSTEM: ");
                 out.push_str(&one_line(content));
                 out.push('\n');
             },
-            Message::User { content } => {
+            Message::User {
+                content,
+            } => {
                 for item in content {
                     match item {
                         UserContent::Text(text) => {
@@ -66,7 +71,10 @@ pub fn serialize_history(messages: &[Message], opts: &SerializeOptions) -> Strin
                     }
                 }
             },
-            Message::Assistant { content, .. } => {
+            Message::Assistant {
+                content,
+                ..
+            } => {
                 for item in content {
                     match item {
                         AssistantContent::Text(text) => {
@@ -78,11 +86,7 @@ pub fn serialize_history(messages: &[Message], opts: &SerializeOptions) -> Strin
                             out.push_str(&format!(
                                 "TOOL_CALL {}: {}\n",
                                 call.function.name,
-                                truncate(
-                                    &call.function.arguments.to_string(),
-                                    opts.arg_total_cap,
-                                    opts.head_ratio
-                                )
+                                truncate(&call.function.arguments.to_string(), opts.arg_total_cap, opts.head_ratio)
                             ));
                         },
                         AssistantContent::Reasoning(reasoning) => {
@@ -90,7 +94,10 @@ pub fn serialize_history(messages: &[Message], opts: &SerializeOptions) -> Strin
                                 .content
                                 .iter()
                                 .map(|block| match block {
-                                    rig::message::ReasoningContent::Text { text, .. } => text.as_str(),
+                                    rig::message::ReasoningContent::Text {
+                                        text,
+                                        ..
+                                    } => text.as_str(),
                                     _ => "",
                                 })
                                 .collect::<Vec<_>>()
@@ -123,7 +130,9 @@ fn tool_result_text(result: &rig::message::ToolResult) -> String {
         .map(|block| match block {
             rig::message::ToolResultContent::Text(text) => text.text.clone(),
             rig::message::ToolResultContent::Image(_) => "[image]".to_owned(),
-            rig::message::ToolResultContent::Json { .. } => "[json]".to_owned(),
+            rig::message::ToolResultContent::Json {
+                ..
+            } => "[json]".to_owned(),
         })
         .collect::<Vec<_>>()
         .join(" ")

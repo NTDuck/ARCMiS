@@ -2,9 +2,10 @@
 //! call, and tool result at `{output_dir}/traces/turns.jsonl`. The hook is
 //! observe-only: every callback returns `Continue`.
 
-use rig::agent::hook::{AgentHook, CompletionCall, CompletionCallAction, CompletionResponse,
-    HookContext, ObservationAction, ToolCall, ToolCallAction, ToolResultAction,
-    ToolResultEvent};
+use rig::agent::hook::{
+    AgentHook, CompletionCall, CompletionCallAction, CompletionResponse, HookContext, ObservationAction, ToolCall,
+    ToolCallAction, ToolResultAction, ToolResultEvent,
+};
 use serde_json::Value;
 use std::io::Write as _;
 use std::path::{Path, PathBuf};
@@ -51,11 +52,7 @@ impl TraceSink {
         });
         let line = record.to_string();
         let _guard = self.writer.lock();
-        let Ok(mut handle) = std::fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&self.path)
-        else {
+        let Ok(mut handle) = std::fs::OpenOptions::new().create(true).append(true).open(&self.path) else {
             return;
         };
         let _ = handle.write_all(line.as_bytes());
@@ -86,16 +83,15 @@ pub struct TraceHook {
 impl TraceHook {
     /// Attach the hook for one named agent.
     pub fn new(agent: &'static str, sink: std::sync::Arc<TraceSink>) -> Self {
-        Self { agent, sink }
+        Self {
+            agent,
+            sink,
+        }
     }
 }
 
 impl AgentHook for TraceHook {
-    async fn on_completion_call(
-        &self,
-        _ctx: &HookContext,
-        event: CompletionCall<'_>,
-    ) -> CompletionCallAction {
+    async fn on_completion_call(&self, _ctx: &HookContext, event: CompletionCall<'_>) -> CompletionCallAction {
         self.sink.append(
             "model_call",
             serde_json::json!({
@@ -106,11 +102,7 @@ impl AgentHook for TraceHook {
         CompletionCallAction::Continue
     }
 
-    async fn on_completion_response(
-        &self,
-        _ctx: &HookContext,
-        event: CompletionResponse<'_>,
-    ) -> ObservationAction {
+    async fn on_completion_response(&self, _ctx: &HookContext, event: CompletionResponse<'_>) -> ObservationAction {
         self.sink.append(
             "model_response",
             serde_json::json!({
@@ -149,11 +141,7 @@ impl AgentHook for TraceHook {
         ToolCallAction::run()
     }
 
-    async fn on_tool_result(
-        &self,
-        _ctx: &HookContext,
-        event: ToolResultEvent<'_>,
-    ) -> ToolResultAction {
+    async fn on_tool_result(&self, _ctx: &HookContext, event: ToolResultEvent<'_>) -> ToolResultAction {
         self.sink.append(
             "tool_result",
             serde_json::json!({

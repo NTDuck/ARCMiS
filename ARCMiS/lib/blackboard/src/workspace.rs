@@ -19,7 +19,9 @@ impl Workspace {
     /// Bind a workspace at `root` (typically `{output_dir}/workspace`).
     #[must_use]
     pub fn new(root: PathBuf) -> Self {
-        Self { root }
+        Self {
+            root,
+        }
     }
 
     /// Workspace root.

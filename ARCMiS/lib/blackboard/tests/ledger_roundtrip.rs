@@ -94,9 +94,7 @@ fn state_and_plan_files() {
         },
     )
     .expect("write state");
-    let state = blackboard::state::read(dir.path())
-        .expect("read state")
-        .expect("state present");
+    let state = blackboard::state::read(dir.path()).expect("read state").expect("state present");
     assert_eq!(state.phase, Phase::Migration);
     assert_eq!(state.current_batch.as_deref(), Some("batch-2"));
 
@@ -116,9 +114,7 @@ fn tasks_lifecycle_and_dedup() {
 
     let id = tasks.add("translate src/lib.rs", &[]).expect("add t1");
     assert_eq!(id, "t1");
-    let id2 = tasks
-        .add("translate src/main.rs", &["t1".into()])
-        .expect("add t2");
+    let id2 = tasks.add("translate src/main.rs", &["t1".into()]).expect("add t2");
     assert_eq!(id2, "t2");
 
     tasks.set_status("t1", TaskStatus::InProgress).expect("set status");
@@ -186,12 +182,8 @@ fn graph_batches_and_scc() {
     let batches = graph.topological_batches();
     assert!(!batches.is_empty());
     // m1 must land in an earlier batch than m2, m2 before m3.
-    let position = |id: &str| {
-        batches
-            .iter()
-            .position(|batch| batch.iter().any(|member| member == id))
-            .expect("node in batches")
-    };
+    let position =
+        |id: &str| batches.iter().position(|batch| batch.iter().any(|member| member == id)).expect("node in batches");
     assert!(position("module:m1") < position("module:m2"));
     assert!(position("module:m2") < position("module:m3"));
     assert!(batches.iter().any(|batch| batch.contains(&"module:m4".to_owned())));

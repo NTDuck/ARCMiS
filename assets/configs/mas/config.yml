@@ -31,6 +31,7 @@ mas:
   manager_turns: 20
   # Specialist turn budget per delegation.
   worker_turns: 40
+  judge_turns: 60
   # Repair attempts per diagnosed failure before escalation.
   max_repairs: 2
   # Consecutive rounds with no completed task before the manager escalates.

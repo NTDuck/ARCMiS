@@ -1,1 +1,3 @@
 RUN crust/2dpartint c->rust
+DONE crust/2dpartint c->rust status=timeout dur=5400s
+RUN crust/42-kocaeli-printf c->rust

@@ -77,6 +77,10 @@ pub struct MasConfig {
     pub manager_turns: usize,
     /// Specialist turn budget per delegation.
     pub worker_turns: usize,
+    /// Turn budget for the judge roles (validator, critic, fleet analyst):
+    /// they read, run the suite, and write one verdict; a small ceiling keeps
+    /// a validation pass from consuming a translator-sized budget.
+    pub judge_turns: usize,
     /// Repair attempts per diagnosed failure before escalation.
     pub max_repairs: usize,
     /// Consecutive stalled rounds before the manager escalates.
@@ -96,6 +100,7 @@ impl Default for MasConfig {
             max_rounds: 60,
             manager_turns: 20,
             worker_turns: 40,
+            judge_turns: 40,
             max_repairs: 2,
             stagnation_rounds: 3,
             plan_cap: 4000,

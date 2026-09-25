@@ -40,7 +40,6 @@ impl EventLog {
         handle.flush()?;
         Ok(())
     }
-
 }
 
 /// RFC 3339 UTC timestamp with second precision.
@@ -57,12 +56,7 @@ fn rfc3339_seconds(seconds: i64) -> String {
     let days = seconds.div_euclid(86_400);
     let time = seconds.rem_euclid(86_400);
     let (year, month, day) = civil_from_days(days);
-    format!(
-        "{year:04}-{month:02}-{day:02}T{:02}:{:02}:{:02}",
-        time / 3600,
-        (time % 3600) / 60,
-        time % 60
-    )
+    format!("{year:04}-{month:02}-{day:02}T{:02}:{:02}:{:02}", time / 3600, (time % 3600) / 60, time % 60)
 }
 
 /// Days-since-epoch to civil date (Howard Hinnant's algorithm).
@@ -75,6 +69,18 @@ fn civil_from_days(days: i64) -> (i64, u32, u32) {
     let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
     let mp = (5 * doy + 2) / 153;
     let d = (doy - (153 * mp + 2) / 5 + 1) as u32;
-    let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;
-    (if m <= 2 { y + 1 } else { y }, m, d)
+    let m = if mp < 10 {
+        mp + 3
+    } else {
+        mp - 9
+    } as u32;
+    (
+        if m <= 2 {
+            y + 1
+        } else {
+            y
+        },
+        m,
+        d,
+    )
 }

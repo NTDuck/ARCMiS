@@ -14,10 +14,7 @@ pub fn write_pre_run(dir: &std::path::Path, manifest: &Manifest) -> anyhow::Resu
 
 /// Write `result/aggregate.yml` after the run: pass/fail per phase, task
 /// counts, and the token estimate.
-pub fn write_result(
-    dir: &std::path::Path,
-    aggregate: &Aggregate,
-) -> anyhow::Result<()> {
+pub fn write_result(dir: &std::path::Path, aggregate: &Aggregate) -> anyhow::Result<()> {
     let result_dir = dir.join("result");
     std::fs::create_dir_all(&result_dir)?;
     let text = serde_yaml::to_string(aggregate)?;

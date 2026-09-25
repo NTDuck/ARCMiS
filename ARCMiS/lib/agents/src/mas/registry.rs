@@ -41,6 +41,7 @@ pub fn build<C, F>(
     run: &Run,
     tools_for_role: F,
     trace_sink: Option<Arc<crate::mas::trace::TraceSink>>,
+    turns_for_role: impl Fn(Role) -> usize,
 ) -> anyhow::Result<MasAgents>
 where
     C: CompletionClient,
@@ -56,7 +57,7 @@ where
             .preamble(&prompt)
             .temperature(run.temperature)
             .max_tokens(run.max_output_tokens)
-            .default_max_turns(run.max_turns);
+            .default_max_turns(turns_for_role(role));
         if let Some(sink) = &trace_sink {
             builder = builder.add_hook(crate::mas::trace::TraceHook::new(role.name(), sink.clone()));
         }

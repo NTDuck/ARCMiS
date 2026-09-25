@@ -2,9 +2,9 @@
 //! assert the PNG output is non-empty and decodable.
 
 use snapcompact::compact;
+use snapcompact::estimate_tokens;
 use snapcompact::CompactOptions;
 use snapcompact::SerializeOptions;
-use snapcompact::estimate_tokens;
 
 fn synthetic_history(turns: usize) -> Vec<rig::message::Message> {
     use rig::completion::Message;
@@ -33,11 +33,7 @@ fn serializes_and_renders_frames() {
     let history = synthetic_history(500);
     let opts = SerializeOptions::default();
     let transcript = snapcompact::serialize_history(&history, &opts);
-    assert!(
-        transcript.len() > 50_000,
-        "transcript should be dense, got {} bytes",
-        transcript.len()
-    );
+    assert!(transcript.len() > 50_000, "transcript should be dense, got {} bytes", transcript.len());
     let frames = snapcompact::render_frames(
         &transcript,
         &font,
@@ -53,9 +49,7 @@ fn serializes_and_renders_frames() {
         assert_eq!(decoded.height(), snapcompact::DEFAULT_FRAME_HEIGHT);
     }
     // Ink check: frame 0 must contain black pixels (text was drawn).
-    let has_ink = frames[0]
-        .pixels()
-        .any(|p| p[0] == 0 && p[1] == 0 && p[2] == 0);
+    let has_ink = frames[0].pixels().any(|p| p[0] == 0 && p[1] == 0 && p[2] == 0);
     assert!(has_ink, "frame 0 has no ink; rendering produced blank output");
 }
 
@@ -75,10 +69,6 @@ fn compact_keeps_recent_and_archives_rest() {
     assert!(!result.frames.is_empty(), "older history must be archived");
     assert!(result.frames.len() <= 8, "frame cap violated");
     assert!(result.tokens_after < result.tokens_before);
-    assert!(
-        result.summary_text.contains("archived"),
-        "summary should name the archive: {}",
-        result.summary_text
-    );
+    assert!(result.summary_text.contains("archived"), "summary should name the archive: {}", result.summary_text);
     let _ = estimate_tokens("x"); // re-export reachability check.
 }

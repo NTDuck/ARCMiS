@@ -32,7 +32,11 @@ pub fn render_frames(
 ) -> Vec<ImageBuffer<Rgba<u8>, Vec<u8>>> {
     let rows_per_frame = ((frame_height - 2 * MARGIN_Y) / GLYPH_PITCH_Y).max(1) as usize;
     let lines: Vec<&str> = text.lines().collect();
-    let lines = if lines.is_empty() { vec![""] } else { lines };
+    let lines = if lines.is_empty() {
+        vec![""]
+    } else {
+        lines
+    };
 
     let mut frames = Vec::new();
     for chunk in lines.chunks(rows_per_frame) {

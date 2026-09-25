@@ -268,8 +268,9 @@ fn clamp_timeout(value: Option<u64>, default: u64, minimum: u64, maximum: u64) -
 /// Reject actions whose required arguments are missing.
 fn validate(action: LspAction, args: &LspArgs) -> Result<(), ToolExecutionError> {
     match action {
-        LspAction::Rename | LspAction::RenameFile =>
-            require(args.new_name.is_some(), "new_name is required for a rename action"),
+        LspAction::Rename | LspAction::RenameFile => {
+            require(args.new_name.is_some(), "new_name is required for a rename action")
+        },
         LspAction::Request => require(args.query.is_some(), "query is required for the request action"),
         LspAction::Diagnostics
         | LspAction::Definition

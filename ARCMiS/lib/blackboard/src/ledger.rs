@@ -62,7 +62,9 @@ impl Ledger {
     /// Bind a ledger to `dir`.
     #[must_use]
     pub fn new(dir: PathBuf) -> Self {
-        Self { dir }
+        Self {
+            dir,
+        }
     }
 
     /// Append one decision to `decisions.jsonl`.
@@ -124,10 +126,7 @@ impl Ledger {
             if line.trim().is_empty() {
                 continue;
             }
-            values.push(
-                serde_json::from_str(line)
-                    .with_context(|| format!("{} line {}", path.display(), index + 1))?,
-            );
+            values.push(serde_json::from_str(line).with_context(|| format!("{} line {}", path.display(), index + 1))?);
         }
         Ok(values)
     }

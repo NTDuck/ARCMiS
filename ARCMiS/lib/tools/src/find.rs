@@ -100,11 +100,12 @@ struct FoundFile {
 fn build_matchers(paths: &Option<Vec<String>>) -> Result<globset::GlobSet, String> {
     let mut builder = globset::GlobSetBuilder::new();
     match paths {
-        Some(paths) if !paths.is_empty() =>
+        Some(paths) if !paths.is_empty() => {
             for pattern in paths {
                 let glob = globset::Glob::new(pattern).map_err(|error| format!("bad glob '{pattern}': {error}"))?;
                 builder.add(glob);
-            },
+            }
+        },
         _ => {
             let glob = globset::Glob::new("**/*").map_err(|error| format!("bad default glob: {error}"))?;
             builder.add(glob);

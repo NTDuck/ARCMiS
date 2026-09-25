@@ -137,22 +137,20 @@ pub fn build_tools(root: &PathBuf, allow: &[&str]) -> Vec<Named> {
 /// Build one named adapter from a tool's metadata and an execute closure.
 fn named<T, F, Fut>(tool: &Arc<T>, callback: F) -> Named
 where
-    T: rig::tool::Tool<Args: serde::de::DeserializeOwned, Output = rig::tool::ToolOutput, Error = rig::tool::ToolExecutionError>
-        + 'static,
+    T: rig::tool::Tool<
+            Args: serde::de::DeserializeOwned,
+            Output = rig::tool::ToolOutput,
+            Error = rig::tool::ToolExecutionError,
+        > + 'static,
     F: Fn(serde_json::Value) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = Result<rig::tool::ToolOutput, rig::tool::ToolExecutionError>> + Send + 'static,
 {
     Named {
         name: T::NAME,
-        tool: PortableDynamicTool::new(
-            T::NAME,
-            tool.description(),
-            tool.parameters(),
-            move |args| {
-                let callback = &callback;
-                Box::pin(callback(args))
-            },
-        ),
+        tool: PortableDynamicTool::new(T::NAME, tool.description(), tool.parameters(), move |args| {
+            let callback = &callback;
+            Box::pin(callback(args))
+        }),
     }
 }
 
@@ -161,9 +159,13 @@ where
 /// the per-call context carries nothing.
 async fn execute<T>(tool: &T, args: serde_json::Value) -> Result<rig::tool::ToolOutput, rig::tool::ToolExecutionError>
 where
-    T: rig::tool::Tool<Args: serde::de::DeserializeOwned, Output = rig::tool::ToolOutput, Error = rig::tool::ToolExecutionError>,
+    T: rig::tool::Tool<
+        Args: serde::de::DeserializeOwned,
+        Output = rig::tool::ToolOutput,
+        Error = rig::tool::ToolExecutionError,
+    >,
 {
-    let args: T::Args = serde_json::from_value(args)
-        .map_err(|error| rig::tool::ToolExecutionError::from_error(error))?;
+    let args: T::Args =
+        serde_json::from_value(args).map_err(|error| rig::tool::ToolExecutionError::from_error(error))?;
     tool.call(&mut rig::tool::ToolContext::new(), args).await
 }

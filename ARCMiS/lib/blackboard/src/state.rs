@@ -62,8 +62,7 @@ pub struct State {
 pub fn write(dir: &Path, state: &State) -> anyhow::Result<()> {
     std::fs::create_dir_all(dir)?;
     let text = serde_json::to_string_pretty(state)?;
-    std::fs::write(dir.join("state.json"), text)
-        .with_context(|| format!("write state.json in {}", dir.display()))
+    std::fs::write(dir.join("state.json"), text).with_context(|| format!("write state.json in {}", dir.display()))
 }
 
 /// Read `state.json` from `dir`. `None` before the first write.

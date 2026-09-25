@@ -106,10 +106,7 @@ impl Graph {
     /// nodes the analyst has not produced.
     pub fn add_edge(&mut self, edge: GraphEdge) {
         if self.nodes.contains_key(&edge.from) && self.nodes.contains_key(&edge.to) {
-            self.adjacency
-                .entry(edge.from.clone())
-                .or_default()
-                .insert(edge.to.clone(), edge.kind);
+            self.adjacency.entry(edge.from.clone()).or_default().insert(edge.to.clone(), edge.kind);
         }
         self.edges.push(edge);
     }
@@ -144,12 +141,7 @@ impl Graph {
         let digraph = self.petgraph_view();
         petgraph::algo::tarjan_scc(&digraph)
             .into_iter()
-            .map(|component| {
-                component
-                    .into_iter()
-                    .map(|index| digraph[index].clone())
-                    .collect()
-            })
+            .map(|component| component.into_iter().map(|index| digraph[index].clone()).collect())
             .collect()
     }
 
@@ -162,9 +154,7 @@ impl Graph {
         }
         for (from, targets) in &self.adjacency {
             for (to, kind) in targets {
-                if let (Some(&from_index), Some(&to_index)) =
-                    (indices.get(from), indices.get(to))
-                {
+                if let (Some(&from_index), Some(&to_index)) = (indices.get(from), indices.get(to)) {
                     digraph.add_edge(from_index, to_index, *kind);
                 }
             }
@@ -185,8 +175,7 @@ impl Graph {
         // module-level endpoints.
         let module_ids: Vec<String> = modules.iter().map(|node| node.id.clone()).collect();
         let module_set: std::collections::BTreeSet<&String> = module_ids.iter().collect();
-        let mut module_adjacency: BTreeMap<String, BTreeMap<String, GraphEdgeKind>> =
-            BTreeMap::new();
+        let mut module_adjacency: BTreeMap<String, BTreeMap<String, GraphEdgeKind>> = BTreeMap::new();
         for id in &module_ids {
             module_adjacency.entry(id.clone()).or_default();
         }
@@ -198,10 +187,7 @@ impl Graph {
                     continue;
                 }
                 if module_set.contains(&from) && module_set.contains(&to) {
-                    module_adjacency
-                        .entry(from)
-                        .or_default()
-                        .insert(to, edge.kind);
+                    module_adjacency.entry(from).or_default().insert(to, edge.kind);
                 }
             }
         }
@@ -233,15 +219,13 @@ impl Graph {
             edges: self.edges.clone(),
         };
         let text = serde_json::to_string_pretty(&payload)?;
-        std::fs::write(dir.join(format!("{name}.graph.json")), text)
-            .with_context(|| format!("write {name}.graph.json"))
+        std::fs::write(dir.join(format!("{name}.graph.json")), text).with_context(|| format!("write {name}.graph.json"))
     }
 
     /// Reconstruct a graph from `{dir}/graphs/{name}.graph.json`.
     pub fn read(dir: &Path, name: &str) -> anyhow::Result<Self> {
         let path = dir.join("graphs").join(format!("{name}.graph.json"));
-        let text = std::fs::read_to_string(&path)
-            .with_context(|| format!("read {}", path.display()))?;
+        let text = std::fs::read_to_string(&path).with_context(|| format!("read {}", path.display()))?;
         let file: GraphFile = serde_json::from_str(&text)?;
         let mut graph = Self::new();
         for node in file.nodes {
@@ -263,10 +247,7 @@ struct GraphFile {
 /// Kahn layers over an adjacency map: repeatedly emit nodes with no
 /// unemitted predecessors. A cycle emits its members in one terminal batch
 /// so the caller still gets a total order.
-fn kahn_layers(
-    all: &[String],
-    adjacency: &BTreeMap<String, BTreeMap<String, GraphEdgeKind>>,
-) -> Vec<Vec<String>> {
+fn kahn_layers(all: &[String], adjacency: &BTreeMap<String, BTreeMap<String, GraphEdgeKind>>) -> Vec<Vec<String>> {
     let mut emitted: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
     let mut layers = Vec::new();
     while emitted.len() < all.len() {
@@ -277,18 +258,12 @@ fn kahn_layers(
                 adjacency
                     .iter()
                     .filter(|(from, _)| !emitted.contains(*from))
-                    .all(|(from, targets)| {
-                        !targets.contains_key(*id) || from.as_str() == id.as_str()
-                    })
+                    .all(|(from, targets)| !targets.contains_key(*id) || from.as_str() == id.as_str())
             })
             .cloned()
             .collect();
         if layer.is_empty() {
-            let rest: Vec<String> = all
-                .iter()
-                .filter(|id| !emitted.contains(*id))
-                .cloned()
-                .collect();
+            let rest: Vec<String> = all.iter().filter(|id| !emitted.contains(*id)).cloned().collect();
             layers.push(rest);
             break;
         }

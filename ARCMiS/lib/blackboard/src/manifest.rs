@@ -53,8 +53,7 @@ pub struct Manifest {
 pub fn write(dir: &Path, manifest: &Manifest) -> anyhow::Result<()> {
     std::fs::create_dir_all(dir)?;
     let text = serde_json::to_string_pretty(manifest)?;
-    std::fs::write(dir.join("manifest.json"), text)
-        .with_context(|| format!("write manifest.json in {}", dir.display()))
+    std::fs::write(dir.join("manifest.json"), text).with_context(|| format!("write manifest.json in {}", dir.display()))
 }
 
 /// Read `manifest.json` from `dir`.

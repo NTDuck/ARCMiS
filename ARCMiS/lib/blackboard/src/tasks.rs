@@ -87,10 +87,7 @@ impl TaskList {
     /// Set one task's status.
     pub fn set_status(&self, id: &str, status: TaskStatus) -> anyhow::Result<()> {
         let mut tasks = self.read()?;
-        let task = tasks
-            .iter_mut()
-            .find(|task| task.id == id)
-            .with_context(|| format!("task {id} not found"))?;
+        let task = tasks.iter_mut().find(|task| task.id == id).with_context(|| format!("task {id} not found"))?;
         task.status = status;
         self.write(&tasks)
     }
@@ -101,9 +98,9 @@ impl TaskList {
         let mut tasks = self.read()?;
         let mut added = Vec::new();
         for task in incoming {
-            let duplicate = tasks.iter().any(|existing| {
-                existing.description == task.description && existing.depends_on == task.depends_on
-            });
+            let duplicate = tasks
+                .iter()
+                .any(|existing| existing.description == task.description && existing.depends_on == task.depends_on);
             if duplicate {
                 continue;
             }

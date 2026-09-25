@@ -8,8 +8,8 @@ mod observability;
 mod offload;
 
 use agents::util::provider::Provider;
-use blackboard::Budgets;
 use agents::Fleet;
+use blackboard::Budgets;
 use blackboard::Ledger;
 use blackboard::Manifest;
 use blackboard::Phase;
@@ -54,17 +54,13 @@ fn parse_cli() -> anyhow::Result<Invocation> {
     while index < args.len() {
         match args[index].as_str() {
             "--experiment" => {
-                let id = args
-                    .get(index + 1)
-                    .ok_or_else(|| anyhow::anyhow!("--experiment needs an id"))?;
+                let id = args.get(index + 1).ok_or_else(|| anyhow::anyhow!("--experiment needs an id"))?;
                 experiment_dir = Some(PathBuf::from(format!(".artifacts/experiments/{id}")));
                 index += 2;
             },
             "--config" => {
-                config_path = PathBuf::from(
-                    args.get(index + 1)
-                        .ok_or_else(|| anyhow::anyhow!("--config needs a path"))?,
-                );
+                config_path =
+                    PathBuf::from(args.get(index + 1).ok_or_else(|| anyhow::anyhow!("--config needs a path"))?);
                 index += 2;
             },
             other => anyhow::bail!("unknown argument {other}; expected --config or --experiment"),
@@ -112,10 +108,7 @@ async fn run() -> anyhow::Result<()> {
             max_rounds: config.mas.max_rounds,
         },
         config_path: invocation.config_path.display().to_string(),
-        problem_set: source_root
-            .parent()
-            .map(|parent| parent.display().to_string())
-            .unwrap_or_default(),
+        problem_set: source_root.parent().map(|parent| parent.display().to_string()).unwrap_or_default(),
         source_language: config.source.language.clone(),
         target_language: config.source.target.language.clone(),
         git_revision: String::new(),
@@ -128,10 +121,7 @@ async fn run() -> anyhow::Result<()> {
     // target language and toolchain come from here, not from guessing.
     let workspace_meta = output_dir.join("workspace").join("meta");
     std::fs::create_dir_all(&workspace_meta)?;
-    std::fs::write(
-        workspace_meta.join("run.json"),
-        serde_json::to_string_pretty(&manifest)?,
-    )?;
+    std::fs::write(workspace_meta.join("run.json"), serde_json::to_string_pretty(&manifest)?)?;
     if let Some(dir) = &invocation.experiment_dir {
         experiment::write_pre_run(dir, &manifest)?;
     }
@@ -160,17 +150,31 @@ async fn run() -> anyhow::Result<()> {
     // against this root; prompts direct specialists at source/ and target/.
     let workspace_root = output_dir.join("workspace");
     let trace_sink = agents::mas::trace::sink(&output_dir)?;
+    let mas = config.mas.clone();
+    let turns_for_role = |role: agents::Role| -> usize {
+        match role {
+            agents::Role::Manager => mas.manager_turns,
+            agents::Role::Validator | agents::Role::Critic | agents::Role::FleetAnalyst => mas.judge_turns,
+            _ => mas.worker_turns,
+        }
+    };
     let agents_set = match &clients {
-        agents::util::provider::Clients::Ollama(client) => {
-            agents::mas::registry::build(client, &fleet, &config.run, |role| {
-                tools::build_tools(&workspace_root, role.allowed_tools())
-            }, Some(trace_sink.clone()))?
-        },
-        agents::util::provider::Clients::Netmind(client) => {
-            agents::mas::registry::build(client, &fleet, &config.run, |role| {
-                tools::build_tools(&workspace_root, role.allowed_tools())
-            }, Some(trace_sink.clone()))?
-        },
+        agents::util::provider::Clients::Ollama(client) => agents::mas::registry::build(
+            client,
+            &fleet,
+            &config.run,
+            |role| tools::build_tools(&workspace_root, role.allowed_tools()),
+            Some(trace_sink.clone()),
+            turns_for_role,
+        )?,
+        agents::util::provider::Clients::Netmind(client) => agents::mas::registry::build(
+            client,
+            &fleet,
+            &config.run,
+            |role| tools::build_tools(&workspace_root, role.allowed_tools()),
+            Some(trace_sink.clone()),
+            turns_for_role,
+        )?,
     };
 
     // Initial state + task list.
@@ -218,13 +222,14 @@ async fn run() -> anyhow::Result<()> {
         let progress = orchestrator::progress::snapshot(&run_dir)?;
 
         match &outcome {
-            RoundOutcome::Delegated { role, task, .. } => {
+            RoundOutcome::Delegated {
+                role,
+                task,
+                ..
+            } => {
                 delegations += 1;
                 cli_sink::emit("delegate", &format!("{} <- {}", role.name(), task));
-                events.record(
-                    "delegation",
-                    serde_json::json!({"role": role.name(), "task": task}),
-                )?;
+                events.record("delegation", serde_json::json!({"role": role.name(), "task": task}))?;
             },
             RoundOutcome::Replanned => cli_sink::emit("replan", "manager rewrote the plan"),
             RoundOutcome::Escalated(reason) => {
@@ -277,10 +282,7 @@ async fn run() -> anyhow::Result<()> {
         stop_reason,
         duration_seconds: u64::try_from(started.elapsed().as_secs()).unwrap_or(u64::MAX),
     };
-    let result_target = invocation
-        .experiment_dir
-        .clone()
-        .unwrap_or_else(|| output_dir.clone());
+    let result_target = invocation.experiment_dir.clone().unwrap_or_else(|| output_dir.clone());
     experiment::write_result(&result_target, &aggregate)?;
     events.record("done", serde_json::json!({"aggregate": &aggregate}))?;
     cli_sink::emit(
@@ -322,12 +324,7 @@ fn now_compact() -> String {
     let days = i64::try_from(seconds / 86_400).unwrap_or(0);
     let time = seconds % 86_400;
     let (year, month, day) = civil_from_days(days);
-    format!(
-        "{year:04}{month:02}{day:02}{h:02}{m:02}{s:02}",
-        h = time / 3600,
-        m = (time % 3600) / 60,
-        s = time % 60
-    )
+    format!("{year:04}{month:02}{day:02}{h:02}{m:02}{s:02}", h = time / 3600, m = (time % 3600) / 60, s = time % 60)
 }
 
 /// RFC 3339 UTC now.
@@ -339,12 +336,7 @@ fn now_rfc3339() -> String {
     let days = i64::try_from(seconds / 86_400).unwrap_or(0);
     let time = seconds % 86_400;
     let (year, month, day) = civil_from_days(days);
-    format!(
-        "{year:04}-{month:02}-{day:02}T{:02}:{:02}:{:02}Z",
-        time / 3600,
-        (time % 3600) / 60,
-        time % 60
-    )
+    format!("{year:04}-{month:02}-{day:02}T{:02}:{:02}:{:02}Z", time / 3600, (time % 3600) / 60, time % 60)
 }
 
 /// Days-since-epoch to civil date (Howard Hinnant's algorithm).
@@ -357,6 +349,18 @@ fn civil_from_days(days: i64) -> (i64, u32, u32) {
     let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
     let mp = (5 * doy + 2) / 153;
     let d = (doy - (153 * mp + 2) / 5 + 1) as u32;
-    let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;
-    (if m <= 2 { y + 1 } else { y }, m, d)
+    let m = if mp < 10 {
+        mp + 3
+    } else {
+        mp - 9
+    } as u32;
+    (
+        if m <= 2 {
+            y + 1
+        } else {
+            y
+        },
+        m,
+        d,
+    )
 }
