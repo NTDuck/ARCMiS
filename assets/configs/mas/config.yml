@@ -46,3 +46,16 @@ mas:
     - qwen3.8:27b-mtp-q4_K_M
   # Characterization tests the tester may write per module.
   max_generated_tests_per_module: 4
+  # Dynamic orchestration (ADR 0022): ready-set breadth per round and the
+  # turn budget for one team collective member.
+  fanout: 2
+  collective_turns: 40
+  # Jev-as-a-guard: the model-arbitration tier stays off while the caller's
+  # model is the only one available; deny patterns ride the code defaults.
+  guard:
+    ask_model: false
+
+# Snapcompact PNG-frame archival for all agents (0 disables).
+snapcompact:
+  threshold_tokens: 12000
+  keep_recent_tokens: 4000

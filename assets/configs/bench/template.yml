@@ -44,3 +44,26 @@ mas:
   model_ladder:
     - smtek/Swift-Qwen3.8-27B:map-k4v
   max_generated_tests_per_module: 8
+  # Dynamic orchestration (ADR 0022): ready-set breadth per round and the
+  # turn budget for one team collective member.
+  fanout: 2
+  collective_turns: 200
+  # Jev-as-a-guard: deterministic deny patterns; the model-arbitration tier
+  # stays off while the caller's model is the only one available.
+  guard:
+    deny:
+      - "rm -rf"
+      - "git push"
+      - "git reset --hard"
+      - "curl "
+      - "wget "
+      - "pip install"
+      - "cargo install"
+      - "npm install"
+      - "sudo "
+    ask_model: false
+
+# Snapcompact PNG-frame archival for all agents (0 disables).
+snapcompact:
+  threshold_tokens: 24000
+  keep_recent_tokens: 8000
