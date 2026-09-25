@@ -1,11 +1,11 @@
 //! Jev-as-a-guard: the tool gateway as an `on_tool_call` hook. Every call
 //! from every agent passes the deterministic tier first — role allowlist,
-//! path policy (`source/` read-only, workspace containment), deny
-//! patterns, expensive-tool budget. Rejections return
-//! `ToolCallAction::Skip(feedback)` so the model sees the reason and can
-//! self-correct; the breaker counts repeats. Calls the deterministic tier
-//! marks `Ask` fall to the model-arbitration tier (the Jev slot), which is
-//! deny-by-default until an arbiter is configured (`guard.ask_model`).
+//! path policy (`source/` read-only), deny patterns for bash. Rejections
+//! return `ToolCallAction::Skip(feedback)` so the model sees the reason and
+//! can self-correct; the breaker counts repeats. Calls the deterministic
+//! tier marks `Ask` fall to the model-arbitration tier (the Jev slot),
+//! which is deny-by-default until an arbiter is configured
+//! (`guard.ask_model`).
 
 use crate::guard::Guard;
 use agents::util::config::GuardConfig;
@@ -14,6 +14,7 @@ use rig::agent::hook::{AgentHook, HookContext, ToolCall, ToolCallAction};
 use std::path::PathBuf;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
+use std::sync::Arc;
 use std::sync::Mutex;
 
 /// The tool gateway over one role. Built per delegation; the registry does
@@ -24,12 +25,12 @@ pub struct GuardHook {
     policy: GuardConfig,
     /// Consecutive rejections inside this delegation; the manager sees the
     /// count when the delegation ends.
-    rejections: std::sync::Arc<AtomicUsize>,
+    rejections: Arc<AtomicUsize>,
     /// Last rejection feedback (for the delegation report).
-    last_rejection: std::sync::Arc<Mutex<Option<String>>>,
+    last_rejection: Arc<Mutex<Option<String>>>,
     /// Tool calls executed so far in this delegation; the policy cap denies
     /// further calls once this crosses `max_tool_calls`.
-    calls: std::sync::Arc<AtomicUsize>,
+    calls: Arc<AtomicUsize>,
 }
 
 impl GuardHook {
@@ -39,9 +40,9 @@ impl GuardHook {
         Self {
             inner: Guard::new(role.allowed_tools().to_vec(), workspace),
             policy,
-            rejections: std::sync::Arc::new(AtomicUsize::new(0)),
-            last_rejection: std::sync::Arc::new(Mutex::new(None)),
-            calls: std::sync::Arc::new(AtomicUsize::new(0)),
+            rejections: Arc::new(AtomicUsize::new(0)),
+            last_rejection: Arc::new(Mutex::new(None)),
+            calls: Arc::new(AtomicUsize::new(0)),
         }
     }
 
@@ -58,7 +59,7 @@ impl GuardHook {
     }
 
     /// Deterministic verdict for one call. `None` means allow. Tiers, in
-    /// order: allowlist, path policy, deny patterns, expensive budget.
+    /// order: allowlist, path policy, deny patterns.
     fn deterministic(&self, tool_name: &str, args: &str) -> Option<String> {
         if !self.inner.permits_tool(tool_name) {
             return Some(format!(
@@ -86,7 +87,8 @@ impl GuardHook {
 
 impl AgentHook for GuardHook {
     async fn on_tool_call(&self, _ctx: &HookContext, event: ToolCall<'_>) -> ToolCallAction {
-        if let Some(reason) = self.deterministic(event.tool_name, event.args) {
+        let verdict = self.deterministic(event.tool_name, event.args).or_else(|| self.budget_verdict());
+        if let Some(reason) = verdict {
             self.rejections.fetch_add(1, Ordering::Relaxed);
             if let Ok(mut slot) = self.last_rejection.lock() {
                 *slot = Some(format!("{}: {}", event.tool_name, reason));
@@ -97,16 +99,6 @@ impl AgentHook for GuardHook {
             return ToolCallAction::Skip(format!(
                 "GUARD REFUSAL: {reason}. Stay inside the role's tools and the workspace layout."
             ));
-        }
-        // Tool-call budget: when the policy sets a cap, deny every call past
-        // it so the delegation ends with a verdict instead of burning its
-        // whole turn budget on repeated commands.
-        if let Some(reason) = self.budget_verdict() {
-            self.rejections.fetch_add(1, Ordering::Relaxed);
-            if let Ok(mut slot) = self.last_rejection.lock() {
-                *slot = Some(format!("{}: {}", event.tool_name, reason));
-            }
-            return ToolCallAction::Skip(format!("GUARD REFUSAL: {reason}."));
         }
         ToolCallAction::Run
     }

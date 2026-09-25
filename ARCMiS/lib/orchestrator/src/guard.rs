@@ -1,9 +1,10 @@
 //! Tool guard: the allowlist and source-readonly enforcement between a
-//! specialist and its tools. The guard checks every call the registry's
-//! metadata marks as a write against the role's allowlist and the workspace
-//! rule (source/ is read-only).
+//! specialist and its tools. The guard checks each path-shaped tool argument
+//! against the role's allowlist and the workspace rule (source/ is
+//! read-only).
 
 use blackboard::Workspace;
+use std::path::Path;
 
 /// Guard over one role's tool calls.
 #[derive(Clone)]
@@ -38,7 +39,7 @@ impl Guard {
 
     /// Whether the role may write this path. Read-only tools pass; write
     /// tools must target outside `source/`.
-    pub fn permits_path(&self, tool_name: &str, path: &std::path::Path) -> anyhow::Result<()> {
+    pub fn permits_path(&self, tool_name: &str, path: &Path) -> anyhow::Result<()> {
         anyhow::ensure!(self.permits_tool(tool_name), "tool '{tool_name}' is not allowed for this role");
         self.workspace.assert_source_readonly(path)
     }
