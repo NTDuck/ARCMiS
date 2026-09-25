@@ -58,6 +58,10 @@ pub fn parse_diagnosis(text: &str) -> Option<Diagnosis> {
 
 /// Parse the validator's or critic's verdict line:
 /// `VALIDATION: pass|fail | <reason>` / `CRITIQUE: pass|fail | <reason>`.
+/// Models often render the format's `|` separator as an em-dash in prose
+/// (`CRITIQUE: PASS — the code matches`); accept any dash run after the
+/// verdict word as the separator, so a correct verdict is not scored as a
+/// missing line.
 #[must_use]
 pub fn parse_verdict(text: &str, keyword: &str) -> Option<(bool, String)> {
     let prefix = format!("{keyword}:");
@@ -66,10 +70,21 @@ pub fn parse_verdict(text: &str, keyword: &str) -> Option<(bool, String)> {
         .rev()
         .find(|line| line.trim_start().to_ascii_uppercase().starts_with(&prefix.to_ascii_uppercase()))?;
     let body = line.trim_start()[prefix.len()..].trim();
-    let mut parts = body.splitn(2, '|');
-    let verdict = parts.next()?.trim().to_ascii_lowercase();
-    let reason = parts.next().unwrap_or("").trim().to_owned();
-    match verdict.as_str() {
+    // The verdict word ends at the format's `|`, a dash run (em-dash, en-dash,
+    // or `--`), or the end of the line. `char_indices` keeps the split on a
+    // char boundary (em-dash is 3 bytes).
+    let split = body
+        .char_indices()
+        .find(|(_, character)| matches!(character, '|' | '—' | '–'))
+        .map(|(index, character)| (index, character.len_utf8()));
+    let (verdict, reason) = match split {
+        Some((index, dash_len)) => (
+            &body[..index],
+            body[index + dash_len..].trim_start_matches(['-', '—', '–', ' ']).to_owned(),
+        ),
+        None => (body, String::new()),
+    };
+    match verdict.trim().to_ascii_lowercase().as_str() {
         "pass" => Some((true, reason)),
         "fail" => Some((false, reason)),
         _ => None,
@@ -77,14 +92,24 @@ pub fn parse_verdict(text: &str, keyword: &str) -> Option<(bool, String)> {
 }
 
 /// Parse the repairer's line: `REPAIR: applied|conflict|failed | <text>`.
+/// The verdict word may be followed by a dash run instead of `|` (models
+/// render the format's pipe as an em-dash in prose).
 #[must_use]
 pub fn parse_repair(text: &str) -> Option<(&'static str, String)> {
     let line = text.lines().rev().find(|line| line.trim_start().to_ascii_uppercase().starts_with("REPAIR:"))?;
     let body = line.trim_start()["REPAIR:".len()..].trim();
-    let mut parts = body.splitn(2, '|');
-    let verdict = parts.next()?.trim().to_ascii_lowercase();
-    let detail = parts.next().unwrap_or("").trim().to_owned();
-    let word = match verdict.as_str() {
+    let split = body
+        .char_indices()
+        .find(|(_, character)| matches!(character, '|' | '—' | '–'))
+        .map(|(index, character)| (index, character.len_utf8()));
+    let (verdict, detail) = match split {
+        Some((index, dash_len)) => (
+            &body[..index],
+            body[index + dash_len..].trim_start_matches(['-', '—', '–', ' ']).to_owned(),
+        ),
+        None => (body, String::new()),
+    };
+    let word = match verdict.trim().to_ascii_lowercase().as_str() {
         "applied" => "applied",
         "conflict" => "conflict",
         "failed" => "failed",
@@ -98,5 +123,45 @@ fn reason_of(word: &str, detail: String) -> String {
         word.to_owned()
     } else {
         detail
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_pipe_verdict() {
+        let (passed, reason) = parse_verdict("analysis\nCRITIQUE: pass | all good", "CRITIQUE").expect("pipe verdict parses");
+        assert!(passed);
+        assert_eq!(reason, "all good");
+    }
+
+    #[test]
+    fn parses_em_dash_verdict() {
+        // Observed on the GildedRose e2e: the model writes the format's pipe
+        // as an em-dash, and the run scored a correct PASS as "no verdict
+        // line" three times before the run stalled out.
+        let text = "review body\nCRITIQUE: PASS — the repaired update_quality matches the C source";
+        let (passed, reason) = parse_verdict(text, "CRITIQUE").expect("em-dash verdict parses");
+        assert!(passed);
+        assert!(reason.contains("matches the C source"));
+    }
+
+    #[test]
+    fn parses_em_dash_fail_verdict() {
+        let (passed, _) = parse_verdict("CRITIQUE: FAIL — quality drifts after expiry", "CRITIQUE").expect("parses");
+        assert!(!passed);
+    }
+
+    #[test]
+    fn still_rejects_garbage_verdict_word() {
+        assert!(parse_verdict("CRITIQUE: maybe — dunno", "CRITIQUE").is_none());
+    }
+
+    #[test]
+    fn repair_line_with_em_dash_parses() {
+        let (word, _) = parse_repair("REPAIR: applied — rewrote update_quality").expect("parses");
+        assert_eq!(word, "applied");
     }
 }
