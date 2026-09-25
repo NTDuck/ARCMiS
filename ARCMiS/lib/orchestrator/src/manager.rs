@@ -2,9 +2,7 @@
 //! blackboard, decides, and the orchestrator executes the decision
 //! mechanically (delegate, replan, escalate, done).
 
-use crate::guard::Guard;
 use crate::judges;
-use crate::router;
 use crate::state_machine;
 use agents::util::config::MasConfig;
 use agents::MasAgents;
@@ -15,7 +13,6 @@ use blackboard::Phase;
 use blackboard::TaskList;
 use blackboard::TaskStatus;
 use blackboard::Workspace;
-use std::sync::Arc;
 
 /// Outcome of one manager round.
 #[derive(Debug, Clone)]
@@ -73,20 +70,75 @@ impl ManagerLoop {
         let manager = self.agents.agent(Role::Manager).ok_or_else(|| anyhow::anyhow!("manager agent missing"))?;
 
         // The manager answers with one verb line: `DECISION: <verb> [args]`.
-        let answer = prompt_with_retries(manager, &prompt, self.max_retries).await?;
-        let decision =
-            parse_decision(&answer).ok_or_else(|| anyhow::anyhow!("manager gave no DECISION line: {answer:?}"))?;
+        let answer = prompt_with_retries(manager, &prompt, self.max_retries, None, self.config.manager_turns).await?;
+        let decisions = parse_decisions(&answer);
+        if decisions.is_empty() {
+            return Err(anyhow::anyhow!("manager gave no DECISION line: {answer:?}"));
+        }
 
+        // The dynamic layer: several delegate decisions register into the
+        // task graph and the ready set runs under the fan-out cap. Non-
+        // delegate verbs short-circuit as before (a round that escalates or
+        // declares done runs nothing).
+        let delegates: Vec<_> = decisions
+            .iter()
+            .filter_map(|decision| match decision {
+                DecisionVerb::Delegate {
+                    role,
+                    task,
+                } => Some(crate::taskgraph::parse_delegation(role.clone(), task.clone())),
+                _ => None,
+            })
+            .collect();
+        if !delegates.is_empty() {
+            let outcome = crate::taskgraph::execute(
+                &self.agents.clone(),
+                &self.config,
+                &self.workspace.clone(),
+                &self.ledger,
+                &self.run_dir,
+                state.phase,
+                delegates,
+            )
+            .await?;
+            let mut state = snapshot_phase(&self.run_dir)?;
+            for result in &outcome.results {
+                if result.passed {
+                    state.phase_delegations += 1;
+                }
+            }
+            blackboard::state::write(&self.run_dir, &state)?;
+            let summary: Vec<String> = outcome
+                .results
+                .iter()
+                .map(|result| {
+                    format!(
+                        "{} [{}] {}",
+                        result.id,
+                        result.role.name(),
+                        if result.passed {
+                            "pass"
+                        } else {
+                            "fail"
+                        }
+                    )
+                })
+                .collect();
+            return Ok(RoundOutcome::Delegated {
+                role: outcome.results.first().map(|result| result.role).unwrap_or(Role::Translator),
+                task: summary.join("; "),
+                output: outcome.results.iter().map(|result| result.output.clone()).collect::<Vec<_>>().join("\n\n"),
+            });
+        }
+
+        // Single non-delegate decision (first one wins).
+        let decision = &decisions[0];
         match decision {
             DecisionVerb::Delegate {
-                role,
-                task,
+                ..
             } => {
-                // Every delegation runs under a tracked task; the task list
-                // is the progress signal the breaker reads.
-                let tasks = TaskList::new(&self.run_dir);
-                let task_id = tasks.add(task.trim(), &[])?;
-                self.execute_delegation(role, &task, &task_id).await
+                // Delegates ran through the task-graph executor above.
+                Ok(RoundOutcome::Replanned)
             },
             DecisionVerb::Replan => {
                 self.ledger.append_decision(&Decision {
@@ -108,7 +160,7 @@ impl ManagerLoop {
                     detail: serde_json::json!({"round": self.round}),
                     reasoning: reason.clone(),
                 })?;
-                Ok(RoundOutcome::Escalated(reason))
+                Ok(RoundOutcome::Escalated(reason.clone()))
             },
             DecisionVerb::Done => {
                 // A phase advances on evidence: at least one completed
@@ -136,103 +188,7 @@ impl ManagerLoop {
             },
             DecisionVerb::Finish {
                 reason,
-            } => Ok(RoundOutcome::Finished(reason)),
-        }
-    }
-
-    /// Delegate one task: route, build the guard, run the specialist, judge.
-    async fn execute_delegation(
-        &mut self,
-        role_hint: Option<String>,
-        task: &str,
-        task_id: &str,
-    ) -> anyhow::Result<RoundOutcome> {
-        let state = blackboard::state::read(&self.run_dir)?.expect("state read above");
-        // Route: keyword pass first, model fallback.
-        let role = role_hint
-            .as_deref()
-            .and_then(Role::from_name)
-            .or_else(|| router::route_by_keywords(task))
-            .unwrap_or(Role::Translator);
-
-        // The judge roles are read-only; everything else writes target/.
-        // The harness wraps each specialist's tools in a GuardedTool before
-        // the delegation; the guard here re-checks the allowlist.
-        let _guard = Arc::new(Guard::new(role.allowed_tools().to_vec(), self.workspace.clone()));
-
-        // Append the delegation decision.
-        self.ledger.append_decision(&Decision {
-            at: now(),
-            phase: format!("{:?}", state.phase),
-            action: "delegate".into(),
-            detail: serde_json::json!({"role": role.name(), "task": task}),
-            reasoning: "manager round".into(),
-        })?;
-
-        // Run the specialist with its turn budget.
-        let agent = self.agents.agent(role).ok_or_else(|| anyhow::anyhow!("agent for {} missing", role.name()))?;
-        let instruction = format!(
-            "{task}\n\nRun phase: {:?}. Guard: edit only inside target/ (tool paths resolve from the workspace root; meta/ is the blackboard). When the deliverable is written, append a 3-5 line summary of what you did and where the deliverable lives to meta/notes.md (create it if missing), then stop. Do not re-read your own output.",
-            state.phase
-        );
-        let output = match prompt_with_retries(agent, &instruction, self.max_retries).await {
-            Ok(output) => output,
-            // A spent turn budget is a failed delegation, not a dead run: the
-            // work up to the cap persists (tool writes already landed), the
-            // judge marks the task blocked, and the manager re-delegates.
-            Err(error) => {
-                self.ledger.append_failure(&blackboard::Failure {
-                    at: now(),
-                    phase: format!("{:?}", state.phase),
-                    category: "budget".into(),
-                    root_cause: format!("{}: {error}", role.name()),
-                    suggested_action: "split the task or re-delegate the remainder".into(),
-                })?;
-                return Ok(RoundOutcome::Delegated {
-                    role,
-                    task: task.to_owned(),
-                    output: format!("DELEGATION FAILED: {error}"),
-                });
-            },
-        };
-
-        // Judge the output by the role's contract line.
-        let verdict = judge_output(role, &output);
-
-        match verdict {
-            Judged::Pass => {
-                let tasks = TaskList::new(&self.run_dir);
-                tasks.set_status(task_id, TaskStatus::Done)?;
-                let mut state = snapshot_phase(&self.run_dir)?;
-                state.phase_delegations += 1;
-                blackboard::state::write(&self.run_dir, &state)?;
-                self.ledger.append_observation(&blackboard::Observation {
-                    at: now(),
-                    kind: "delegation_pass".into(),
-                    detail: serde_json::json!({"role": role.name(), "task": task_id}),
-                })?;
-                Ok(RoundOutcome::Delegated {
-                    role,
-                    task: task.to_owned(),
-                    output,
-                })
-            },
-            Judged::Fail(reason) => {
-                let tasks = TaskList::new(&self.run_dir);
-                tasks.set_status(task_id, TaskStatus::Blocked)?;
-                self.ledger.append_failure(&blackboard::Failure {
-                    at: now(),
-                    phase: format!("{:?}", state.phase),
-                    category: "model".into(),
-                    root_cause: reason.clone(),
-                    suggested_action: "re-delegate with a tighter instruction".into(),
-                })?;
-                Ok(RoundOutcome::Delegated {
-                    role,
-                    task: task.to_owned(),
-                    output: format!("FAILED: {reason}\n{output}"),
-                })
-            },
+            } => Ok(RoundOutcome::Finished(reason.clone())),
         }
     }
 
@@ -249,7 +205,7 @@ impl ManagerLoop {
             .map(|failure| format!("- [{}] {}: {}", failure.phase, failure.category, failure.root_cause))
             .collect();
         Ok(format!(
-            "ROUND {}\n\nSTATE: phase={:?} batch={:?} model={}\n\nPLAN:\n{}\n\nNOTES:\n{}\n\nRECENT FAILURES:\n{}\n\nTASKS:\n{}\n\nDecide the next action. Answer with one line exactly in one of these forms (plain words, no angle brackets, no function-call syntax):\nDECISION: delegate ROLE | TASK TEXT\nDECISION: replan\nDECISION: escalate | REASON\nDECISION: done\nDECISION: finish | REASON\nROLE is one of: analyst, architect, planner, translator, validator, tester, failure-analyst, critic, repairer, fleet-analyst.",
+            "ROUND {}\n\nSTATE: phase={:?} batch={:?} model={}\n\nPLAN:\n{}\n\nNOTES:\n{}\n\nRECENT FAILURES:\n{}\n\nTASKS:\n{}\n\nDecide the next action. Answer with one or more DECISION lines (plain words, no angle brackets, no function-call syntax):\nDECISION: delegate ROLE | TASK TEXT\nDECISION: delegate ROLE | TASK TEXT | after:t2,t3\nDECISION: delegate ROLE | TASK TEXT | team\nDECISION: replan\nDECISION: escalate | REASON\nDECISION: done\nDECISION: finish | REASON\nROLE is one of: analyst, architect, planner, translator, validator, tester, failure-analyst, critic, repairer, fleet-analyst.\nYou MAY emit several delegate lines in one round when the tasks are independent; the harness runs up to {fanout} of them in parallel and queues the rest. `after:` lists task ids this one waits on; `team` runs the translation collective (translate, validate, repair) end to end under one task.",
             self.round,
             state.phase,
             state.current_batch,
@@ -266,13 +222,14 @@ impl ManagerLoop {
                     task.description
                 ))
                 .collect::<Vec<_>>()
-                .join("\n")
+                .join("\n"),
+            fanout = self.config.fanout,
         ))
     }
 }
 
 /// The manager's decision verbs.
-enum DecisionVerb {
+pub(crate) enum DecisionVerb {
     /// Delegate to a role (named or router-chosen).
     Delegate {
         role: Option<String>,
@@ -292,10 +249,23 @@ enum DecisionVerb {
     },
 }
 
-/// Parse the manager's `DECISION:` line.
-fn parse_decision(answer: &str) -> Option<DecisionVerb> {
-    let line = answer.lines().rev().find(|line| line.trim_start().to_ascii_uppercase().starts_with("DECISION:"))?;
-    let body = line.trim_start()["DECISION:".len()..].trim();
+/// Parse every `DECISION:` line; the manager may emit several delegates in
+/// one round (the task-graph executor orders and gates them).
+pub(crate) fn parse_decisions(answer: &str) -> Vec<DecisionVerb> {
+    answer
+        .lines()
+        .filter(|line| line.trim_start().to_ascii_uppercase().starts_with("DECISION:"))
+        .filter_map(parse_decision_line)
+        .collect()
+}
+
+fn parse_decision_line(line: &str) -> Option<DecisionVerb> {
+    let line = line.trim_start();
+    let upper = line.to_ascii_uppercase();
+    if !upper.starts_with("DECISION:") {
+        return None;
+    }
+    let body = line["DECISION:".len()..].trim();
     let (verb, rest) = body.split_once(char::is_whitespace).unwrap_or((body, ""));
     match verb.to_ascii_lowercase().as_str() {
         "delegate" => {
@@ -322,6 +292,20 @@ fn parse_decision(answer: &str) -> Option<DecisionVerb> {
         }),
         _ => None,
     }
+}
+
+/// Judge a specialist's final text by its contract line. `Ok` on a pass;
+/// the error carries the failure reason.
+pub(crate) fn judge_output_public(role: Role, output: &str) -> Result<(), String> {
+    match judge_output(role, output) {
+        Judged::Pass => Ok(()),
+        Judged::Fail(reason) => Err(reason),
+    }
+}
+
+/// RFC 3339 UTC timestamp for ledger entries.
+pub(crate) fn now_string() -> String {
+    now()
 }
 
 /// Judge a specialist's final text by its contract line.
@@ -376,13 +360,24 @@ enum Judged {
 /// Prompt one agent, retrying transient provider failures up to `max_retries`
 /// times. Transport- and server-side failures (HTTP 4xx/5xx wrapped in
 /// `HttpError`, provider 500s) are retryable; a run that exhausted its budget
-/// or was cancelled is not.
-async fn prompt_with_retries(agent: &rig::agent::Agent, prompt: &str, max_retries: u32) -> anyhow::Result<String> {
+/// or was cancelled is not. `hook`, when set, rides every attempt (the guard
+/// gateway) and a turn cap bounds the run.
+pub(crate) async fn prompt_with_retries(
+    agent: &rig::agent::Agent,
+    prompt: &str,
+    max_retries: u32,
+    hook: Option<crate::guard_hook::GuardHook>,
+    default_max_turns: usize,
+) -> anyhow::Result<String> {
     use rig::completion::Prompt as _;
     let mut attempt = 0;
     loop {
-        match agent.prompt(prompt.to_owned()).await {
-            Ok(answer) => return Ok(answer),
+        let mut request = agent.prompt(prompt.to_owned()).max_turns(default_max_turns);
+        if let Some(hook) = hook.clone() {
+            request = request.add_hook(hook);
+        }
+        match request.extended_details().await {
+            Ok(details) => return Ok(details.output),
             Err(error) if attempt < max_retries && is_transient(&error) => {
                 attempt += 1;
                 tracing::warn!(
