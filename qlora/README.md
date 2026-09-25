@@ -1,9 +1,23 @@
 # QLoRA fine-tuning on ReCodeAgent traces
 
-Fine-tune `ukisai/Swift-Qwen3.8-27b` (the sweep model family) on the
+Fine-tune the sweep model family on the
 ReCodeAgent paper's published experiment traces (Claude-CLI `stream-json`
 logs from Zenodo DOI 10.5281/zenodo.21842351), then serve the merged model
 through ollama for A/B benchmarking against the base model.
+
+## Model matrix
+
+| # | Model (ollama)  | HF base repo                          | Config                                | Output dir                      |
+|---|-----------------|---------------------------------------|---------------------------------------|---------------------------------|
+| 1 | `qwen3.8:27b-mtp-q4_K_M` (`swift k4v`) | `ukisai/Swift-Qwen3.8-27b`            | `configs/recodeagent-qlora.yml`       | `runs/recodeagent-sft`          |
+| 2 | Ternary Bonsai 2 27B (`ternary bonsai 2`) | `fraserprice/Ternary-Bonsai-2-27B-vllm` | `configs/ternary-bonsai2-qlora.yml` | `runs/ternary-bonsai2-sft`      |
+
+Model 2 is Prism ML's ternary (~1.72 bits/weight, Hadamard-rotated g128)
+Bonsai 2 27B; the `fraserprice/...-vllm` repo is the only HF-safetensors
+pack of it. Because the weights are already sub-2-bit, the config trains
+plain LoRA (bf16) instead of 4-bit NF4 QLoRA — see the comment block at the
+top of `configs/ternary-bonsai2-qlora.yml` for why, plus the loader caveat
+(prism_ternary kernels are required; there is no NF4 path).
 
 ## Layout
 
@@ -41,7 +55,10 @@ python3 qlora/scripts/build_dataset.py \
     --out-dir qlora/datasets/recodeagent
 
 # 3. Train (after axolotl is installed).
-bash qlora/scripts/train.sh
+#    Model 1 — swift k4v (ukisai/Swift-Qwen3.8-27b):
+axolotl train qlora/configs/recodeagent-qlora.yml
+#    Model 2 — ternary bonsai 2 (LoRA bf16, not NF4; see config header):
+axolotl train qlora/configs/ternary-bonsai2-qlora.yml
 
 # 4. Merge adapters, quantize Q4_K_M, register in ollama as recodeagent-sft.
 bash qlora/scripts/merge_and_export.sh
