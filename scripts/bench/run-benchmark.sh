@@ -28,11 +28,19 @@ while [ $# -gt 0 ]; do
         --limit) LIMIT="$2"; shift 2 ;;
         --force) FORCE=1; shift ;;
         --timeout) TIMEOUT="$2"; shift 2 ;;
+        --commit) COMMIT_PIN="$2"; shift 2 ;;
         *) echo "unknown arg $1"; exit 1 ;;
     esac
 done
 
-COMMIT=$(git rev-parse --short=12 HEAD)
+# Commit dir for results. --commit pins it; default is HEAD. Pin when
+# restarting mid-sweep after result-scoring commits moved HEAD, so the
+# driver resumes the existing cell set instead of starting a fresh dir.
+if [ -z "$COMMIT_PIN" ]; then
+    COMMIT=$(git rev-parse --short=12 HEAD)
+else
+    COMMIT="$COMMIT_PIN"
+fi
 BENCH_ROOT="benchmarks/$COMMIT"
 mkdir -p "$BENCH_ROOT"
 
