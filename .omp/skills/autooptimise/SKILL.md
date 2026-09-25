@@ -74,9 +74,11 @@ tests passed, tests failed). Exit 2 when nothing scored.
    working tree — the experiment dir keeps its own copy of every
    artifact, including the rendered candidate config.
 5. **Rescore**: `frontier.py`. Keep the frontier, not a champion.
-6. **Repeat** from 2 until the iteration budget (default 20) or the
-   wall-clock budget ends the search. Report the frontier and the
-   holdout plan: never tune against a future test set.
+6. **Stop**: no improvement in the frontier's primary metric (pass
+   rate, then tests passed) over 3 consecutive propose→evaluate
+   cycles, or after the 20-iteration budget — whichever first.
+7. **Report** the frontier and the holdout plan: never tune against a
+   future test set.
 
 ## Leakage rules
 
