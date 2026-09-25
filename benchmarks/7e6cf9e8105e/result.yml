@@ -1,0 +1,32 @@
+commit: 7e6cf9e8105e
+cells_completed: 2
+families:
+- family: crust
+  cells: 2
+  compiled: 2
+  tests_green: 1
+  avg_test_pass_rate: 97.5
+  median_duration_seconds: 5400
+cells:
+- family: crust
+  project: 2dpartint
+  source_language: c
+  target_language: rust
+  score_status: tests_failed
+  compilation_status: ok
+  tests_pass: 42
+  tests_fail: 2
+  test_pass_rate: 95
+  duration_seconds: 5400
+  cell_dir: /home/ayin/projs/ARCMiS/benchmarks/7e6cf9e8105e/crust/2dpartint/c2rust
+- family: crust
+  project: 42-kocaeli-printf
+  source_language: c
+  target_language: rust
+  score_status: tests_green
+  compilation_status: ok
+  tests_pass: 24
+  tests_fail: 0
+  test_pass_rate: 100
+  duration_seconds: 1598
+  cell_dir: /home/ayin/projs/ARCMiS/benchmarks/7e6cf9e8105e/crust/42-kocaeli-printf/c2rust

@@ -1,4 +1,3 @@
-# One benchmark cell: crust/leftpad c->rust
 family: crust
 project: leftpad
 source_language: c
@@ -8,8 +7,8 @@ config: benchmarks/cafe8be44df5/crust/leftpad/c2rust/config.yml
 output_dir: .artifacts/bench/crust/leftpad/c2rust
 duration_seconds: 2100
 harness_exit: 124
-score_status: timeout
-compilation_status: error
+score_status: compile_failed
+compilation_status: failed
 tests_pass: 0
 tests_fail: 0
 test_pass_rate: null

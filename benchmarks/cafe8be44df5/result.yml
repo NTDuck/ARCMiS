@@ -12,8 +12,8 @@ cells:
   project: leftpad
   source_language: c
   target_language: rust
-  score_status: timeout
-  compilation_status: error
+  score_status: compile_failed
+  compilation_status: failed
   tests_pass: 0
   tests_fail: 0
   test_pass_rate: null
@@ -25,7 +25,7 @@ cells:
   target_language: rust
   score_status: tests_green
   compilation_status: ok
-  tests_pass: 2
+  tests_pass: 4
   tests_fail: 0
   test_pass_rate: 100
   duration_seconds: 1657

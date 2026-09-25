@@ -1,4 +1,3 @@
-# One benchmark cell: crust/nandc c->rust (scored post-hoc)
 family: crust
 project: nandc
 source_language: c
@@ -10,16 +9,27 @@ duration_seconds: 1657
 harness_exit: 0
 score_status: tests_green
 compilation_status: ok
-tests_pass: 2
+tests_pass: 4
 tests_fail: 0
 test_pass_rate: 100
-aggregate: |
-  harness_id: mas-20260925004816
+aggregate: 'harness_id: mas-20260925004816
+
   final_phase: Done
+
   completed: true
+
   rounds: 30
+
   delegations: 17
+
   tasks_done: 17
+
   tasks_total: 17
-  stop_reason: 'All phases complete: 4/4 batches translated and validated, integration suite 4/4 passing, critic verdict pass, and final toolchain gate (cargo build && cargo test) exited 0 on the target workspace.'
+
+  stop_reason: ''All phases complete: 4/4 batches translated and validated, integration
+  suite 4/4 passing, critic verdict pass, and final toolchain gate (cargo build &&
+  cargo test) exited 0 on the target workspace.''
+
   duration_seconds: 1657
+
+  '

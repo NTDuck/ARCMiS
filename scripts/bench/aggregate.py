@@ -10,7 +10,12 @@ Reads benchmarks/{commit}/{family}/{project}/{src}2{dst}/result.yml and emits:
                                    ReCodeAgent paper (TransCoder, AlphaTrans,
                                    CodeT, Oxidizer, skel-style skeletons).
 
-Usage: scripts/bench/aggregate.py [COMMIT]
+Usage: scripts/bench/aggregate.py [--rescore] [COMMIT]
+
+--rescore re-runs the toolchain score (compile + tests) for every cell
+whose workspace exists, overwriting the cell's result.yml scoring fields.
+Scoring is deterministic and cheap (cargo is incremental), so the report
+always reflects the produced workspaces, not the sweep-time scorer.
 """
 from __future__ import annotations
 
@@ -55,8 +60,57 @@ def load_cell(path: Path) -> dict | None:
         return None
 
 
+def rescore(record: dict) -> None:
+    """Re-run the toolchain score in the produced workspace and update fields."""
+    import subprocess
+
+    cell_dir = Path(record["_cell_dir"])
+    output_dir = ROOT / record.get("output_dir", "")
+    workspace = output_dir / "workspace" / "target"
+    # Rust cells build in workspace/target; others in workspace.
+    if not (workspace / "Cargo.toml").exists():
+        workspace = output_dir / "workspace"
+    if not workspace.exists():
+        return
+    logdir = cell_dir / "logs"
+    logdir.mkdir(parents=True, exist_ok=True)
+    build = subprocess.run(
+        ["cargo", "build"], cwd=workspace, capture_output=True, timeout=600
+    )
+    (logdir / "build.log").write_bytes(build.stderr)
+    if build.returncode != 0:
+        record["score_status"] = "compile_failed"
+        record["compilation_status"] = "failed"
+        record["tests_pass"] = 0
+        record["tests_fail"] = 0
+        record["test_pass_rate"] = None
+        return
+    record["compilation_status"] = "ok"
+    test = subprocess.run(
+        ["cargo", "test"], cwd=workspace, capture_output=True, timeout=600
+    )
+    (logdir / "test.log").write_bytes(test.stderr)
+    stdout = test.stdout.decode(errors="ignore") + test.stderr.decode(errors="ignore")
+    passed = sum(
+        int(n)
+        for n in __import__("re").findall(r"(\d+) passed", stdout)
+    )
+    failed = sum(
+        int(n)
+        for n in __import__("re").findall(r"(\d+) failed", stdout)
+    )
+    record["tests_pass"] = passed
+    record["tests_fail"] = failed
+    total = passed + failed
+    record["test_pass_rate"] = (passed * 100 // total) if total else None
+    record["score_status"] = "tests_green" if test.returncode == 0 else "tests_failed"
+
+
 def main() -> int:
-    commit = sys.argv[1] if len(sys.argv) > 1 else None
+    args = [a for a in sys.argv[1:]]
+    rescore_mode = "--rescore" in args
+    args = [a for a in args if a != "--rescore"]
+    commit = args[0] if args else None
     bench_root = ROOT / "benchmarks"
     if commit is None:
         commits = sorted(p for p in bench_root.iterdir() if p.is_dir())
@@ -67,6 +121,15 @@ def main() -> int:
     commit_dir = bench_root / commit
     cells = sorted(commit_dir.glob("*/*/*/result.yml"))
     records = [r for c in cells if (r := load_cell(c))]
+    if rescore_mode:
+        for record in records:
+            rescore(record)
+            # Persist the refreshed scoring fields back into result.yml.
+            refreshed = {k: v for k, v in record.items() if not k.startswith("_")}
+            (Path(record["_cell_dir"]) / "result.yml").write_text(
+                yaml.safe_dump(refreshed, sort_keys=False)
+            )
+        print(f"rescored {len(records)} cells")
 
     if not records:
         print(f"no cells under {commit_dir}")

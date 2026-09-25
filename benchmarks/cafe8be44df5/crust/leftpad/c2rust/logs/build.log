@@ -1,0 +1,3 @@
+error: can't find bin `leftpad` at path `/home/ayin/projs/ARCMiS/.artifacts/bench/crust/leftpad/c2rust/workspace/target/src/main.rs`
+ --> /home/ayin/projs/ARCMiS/.artifacts/bench/crust/leftpad/c2rust/workspace/target/Cargo.toml
+error: could not compile due to 1 previous target resolution error

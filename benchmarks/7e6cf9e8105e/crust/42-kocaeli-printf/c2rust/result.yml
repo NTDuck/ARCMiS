@@ -1,4 +1,3 @@
-# One benchmark cell: crust/42-kocaeli-printf c->rust
 family: crust
 project: 42-kocaeli-printf
 source_language: c
@@ -8,18 +7,29 @@ config: benchmarks/7e6cf9e8105e/crust/42-kocaeli-printf/c2rust/config.yml
 output_dir: .artifacts/bench/crust/42-kocaeli-printf/c2rust
 duration_seconds: 1598
 harness_exit: 0
-score_status: compile_failed
-compilation_status: failed
-tests_pass: 0
+score_status: tests_green
+compilation_status: ok
+tests_pass: 24
 tests_fail: 0
-test_pass_rate: null
-aggregate: |
-  harness_id: mas-20260925033916
+test_pass_rate: 100
+aggregate: 'harness_id: mas-20260925033916
+
   final_phase: Done
+
   completed: true
+
   rounds: 37
+
   delegations: 15
+
   tasks_done: 14
+
   tasks_total: 15
-  stop_reason: 'All phases complete: contract validated, both batches translated and tested, full suite passes (24/24, 0 warnings), Hardening verdict PASS (t14), and FinalValidation gate commands exit zero (t15). No open tasks or failures remain.'
+
+  stop_reason: ''All phases complete: contract validated, both batches translated
+  and tested, full suite passes (24/24, 0 warnings), Hardening verdict PASS (t14),
+  and FinalValidation gate commands exit zero (t15). No open tasks or failures remain.''
+
   duration_seconds: 1596
+
+  '

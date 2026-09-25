@@ -1,4 +1,3 @@
-# One benchmark cell: crust/2dpartint c->rust
 family: crust
 project: 2dpartint
 source_language: c
@@ -8,8 +7,8 @@ config: benchmarks/7e6cf9e8105e/crust/2dpartint/c2rust/config.yml
 output_dir: .artifacts/bench/crust/2dpartint/c2rust
 duration_seconds: 5400
 harness_exit: 124
-score_status: timeout
-compilation_status: error
-tests_pass: 0
-tests_fail: 0
-test_pass_rate: null
+score_status: tests_failed
+compilation_status: ok
+tests_pass: 42
+tests_fail: 2
+test_pass_rate: 95

@@ -1,0 +1,5 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.01s
+     Running unittests src/lib.rs (target/debug/deps/twodpartint-b1f39c96b67337fe)
+     Running unittests src/main.rs (target/debug/deps/2DpartInt-d0a9b505e0d738e6)
+     Running tests/physics_spec.rs (target/debug/deps/physics_spec-190d085d5244cd4e)
+error: test failed, to rerun pass `--test physics_spec`
