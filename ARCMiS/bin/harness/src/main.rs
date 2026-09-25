@@ -5,7 +5,6 @@
 mod cli_sink;
 mod experiment;
 mod observability;
-mod offload;
 
 use agents::util::provider::Provider;
 use agents::Fleet;
@@ -166,6 +165,7 @@ async fn run() -> anyhow::Result<()> {
             |role| tools::build_tools(&workspace_root, role.allowed_tools()),
             Some(trace_sink.clone()),
             turns_for_role,
+            Some(&config.snapcompact),
         )?,
         agents::util::provider::Clients::Netmind(client) => agents::mas::registry::build(
             client,
@@ -174,6 +174,7 @@ async fn run() -> anyhow::Result<()> {
             |role| tools::build_tools(&workspace_root, role.allowed_tools()),
             Some(trace_sink.clone()),
             turns_for_role,
+            Some(&config.snapcompact),
         )?,
     };
 
@@ -189,11 +190,6 @@ async fn run() -> anyhow::Result<()> {
     };
     blackboard::state::write(&run_dir, &state)?;
     TaskList::new(&run_dir).write(&[])?;
-
-    // Snapcompact offload hook: compact when the projected input passes half
-    // the context window.
-    let frame_budget = u32::try_from(config.run.num_ctx / 2).unwrap_or(u32::MAX);
-    let _offload_hook = offload::hook(frame_budget);
 
     // The run loop.
     let events = observability::EventLog::new(&output_dir)?;
