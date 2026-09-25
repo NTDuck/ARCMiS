@@ -24,6 +24,30 @@ pub struct Config {
     /// MAS method configuration. Ignored by the other methods.
     #[serde(default)]
     pub mas: MasConfig,
+    /// Snapcompact archival policy for the agents (PNG-frame compaction).
+    #[serde(default)]
+    pub snapcompact: SnapcompactConfig,
+}
+
+/// Snapcompact section: when an agent's projected input crosses the token
+/// threshold, the hook compacts the discarded history into PNG frames and
+/// attaches them to the next model call.
+#[derive(Debug, Clone, Deserialize, serde::Serialize)]
+#[serde(default)]
+pub struct SnapcompactConfig {
+    /// Projection threshold that triggers compaction. 0 disables the hook.
+    pub threshold_tokens: u32,
+    /// Recent tokens kept verbatim; the rest is archived into frames.
+    pub keep_recent_tokens: u32,
+}
+
+impl Default for SnapcompactConfig {
+    fn default() -> Self {
+        Self {
+            threshold_tokens: 12000,
+            keep_recent_tokens: 4000,
+        }
+    }
 }
 
 /// Run section: model identity and agent budget.
@@ -93,6 +117,45 @@ pub struct MasConfig {
     pub model_ladder: Vec<String>,
     /// Test generations the tester may write per module (coverage-gap cap).
     pub max_generated_tests_per_module: usize,
+    /// Parallel specialist executions the orchestrator may interleave in
+    /// one round (bounded by the single ollama slot; 2 = two turn streams).
+    pub fanout: usize,
+    /// Turn budget for one team collective sub-loop (translator →
+    /// validator → tester on one batch), nested under one delegation.
+    pub collective_turns: usize,
+    /// Guard policy: deterministic deny patterns and the model-arbitration
+    /// switch (the Jev slot; off until a second model exists).
+    pub guard: GuardConfig,
+}
+
+/// Deterministic + model-arbitrated tool gateway policy.
+#[derive(Debug, Clone, Deserialize, serde::Serialize)]
+#[serde(default)]
+pub struct GuardConfig {
+    /// Bash command substrings that are always denied.
+    pub deny: Vec<String>,
+    /// Enable the model arbitration tier for Ask-class calls. Off while
+    /// the only model is the caller's own.
+    pub ask_model: bool,
+}
+
+impl Default for GuardConfig {
+    fn default() -> Self {
+        Self {
+            deny: vec![
+                "rm -rf".into(),
+                "git push".into(),
+                "git reset --hard".into(),
+                "curl ".into(),
+                "wget ".into(),
+                "pip install".into(),
+                "cargo install".into(),
+                "npm install".into(),
+                "sudo ".into(),
+            ],
+            ask_model: false,
+        }
+    }
 }
 impl Default for MasConfig {
     fn default() -> Self {
@@ -107,6 +170,9 @@ impl Default for MasConfig {
             notes_cap: 8000,
             model_ladder: Vec::new(),
             max_generated_tests_per_module: 4,
+            fanout: 2,
+            collective_turns: 40,
+            guard: GuardConfig::default(),
         }
     }
 }

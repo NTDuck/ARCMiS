@@ -42,6 +42,7 @@ pub fn build<C, F>(
     tools_for_role: F,
     trace_sink: Option<Arc<crate::mas::trace::TraceSink>>,
     turns_for_role: impl Fn(Role) -> usize,
+    snapcompact: Option<&crate::util::config::SnapcompactConfig>,
 ) -> anyhow::Result<MasAgents>
 where
     C: CompletionClient,
@@ -49,6 +50,8 @@ where
     F: Fn(Role) -> Vec<tools::portable::Named>,
 {
     let mut agents = BTreeMap::new();
+    // Parse the BDF font once; the snapcompact hook shares it across roles.
+    let snapcompact_font = std::sync::Arc::new(snapcompact::load_font());
     for role in Role::ALL {
         let model = fleet.model_for(role);
         let prompt = crate::mas::roles::prompt_text(role)?;
@@ -62,6 +65,17 @@ where
             builder = builder.add_hook(crate::mas::trace::TraceHook::new(role.name(), sink.clone()));
         }
         builder = builder.add_hook(crate::mas::continuation::TrailingUserMessageHook);
+        // Snapcompact for every agent (ADR 0022): threshold 0 disables.
+        if let Some(config) = snapcompact.filter(|config| config.threshold_tokens > 0) {
+            builder = builder.add_hook(snapcompact::SnapcompactHook {
+                threshold_tokens: config.threshold_tokens,
+                options: snapcompact::CompactOptions {
+                    keep_recent_tokens: config.keep_recent_tokens,
+                    ..snapcompact::CompactOptions::default()
+                },
+                font: snapcompact_font.clone(),
+            });
+        }
         if let Some(params) = extra_params(run) {
             builder = builder.additional_params(params);
         }

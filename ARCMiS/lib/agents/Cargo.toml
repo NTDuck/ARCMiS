@@ -11,6 +11,7 @@ name = "agents"
 [dependencies]
 anyhow.workspace = true
 tools = { package = "ARCMiS-tools", path = "../tools" }
+snapcompact = { package = "ARCMiS-snapcompact", path = "../snapcompact" }
 rig = "0.42.0"
 serde.workspace = true
 serde_json.workspace = true

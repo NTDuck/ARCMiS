@@ -68,7 +68,15 @@ impl Workspace {
     /// whose metadata says WriteLocal targets the source tree.
     pub fn assert_source_readonly(&self, path: &Path) -> anyhow::Result<()> {
         let source = self.source();
-        let canonical_target = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
+        // Tool paths resolve from the workspace root (relative paths like
+        // `source/main.c` are the common case); absolutize before comparing
+        // so a relative path cannot bypass the check.
+        let absolute = if path.is_absolute() {
+            path.to_path_buf()
+        } else {
+            self.root.join(path)
+        };
+        let canonical_target = absolute.canonicalize().unwrap_or(absolute);
         let canonical_source = source.canonicalize().unwrap_or(source);
         if canonical_target.starts_with(&canonical_source) {
             anyhow::bail!(
