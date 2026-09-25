@@ -1,0 +1,32 @@
+commit: cafe8be44df5
+cells_completed: 2
+families:
+- family: crust
+  cells: 2
+  compiled: 1
+  tests_green: 1
+  avg_test_pass_rate: 100.0
+  median_duration_seconds: 2100
+cells:
+- family: crust
+  project: leftpad
+  source_language: c
+  target_language: rust
+  score_status: timeout
+  compilation_status: error
+  tests_pass: 0
+  tests_fail: 0
+  test_pass_rate: null
+  duration_seconds: 2100
+  cell_dir: /home/ayin/projs/ARCMiS/benchmarks/cafe8be44df5/crust/leftpad/c2rust
+- family: crust
+  project: nandc
+  source_language: c
+  target_language: rust
+  score_status: tests_green
+  compilation_status: ok
+  tests_pass: 2
+  tests_fail: 0
+  test_pass_rate: 100
+  duration_seconds: 1657
+  cell_dir: /home/ayin/projs/ARCMiS/benchmarks/cafe8be44df5/crust/nandc/c2rust

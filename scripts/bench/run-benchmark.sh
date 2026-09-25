@@ -220,10 +220,29 @@ run_cell() {
 cells=$(emit_cells)
 total=$(echo "$cells" | grep -c .)
 index=0
+consecutive_failures=0
+MAX_CONSECUTIVE_FAILURES="${MAX_CONSECUTIVE_FAILURES:-3}"
 while read -r family proj src dst; do
     [ -n "$family" ] || continue
     index=$((index + 1))
     if [ "$LIMIT" -gt 0 ] && [ "$index" -gt "$LIMIT" ]; then break; fi
     run_cell "$family" "$proj" "$src" "$dst"
+    status=$(grep -oP '(?<=^score_status: ).*' "$BENCH_ROOT/$family/$proj/${src}2${dst}/result.yml" 2>/dev/null || echo "harness_failed")
+    if [ "$status" = "harness_failed" ] || [ "$status" = "compile_failed" ]; then
+        consecutive_failures=$((consecutive_failures + 1))
+        echo "FAILURE $consecutive_failures/$MAX_CONSECUTIVE_FAILURES at $family/$proj ($status)"
+        if [ "$consecutive_failures" -ge "$MAX_CONSECUTIVE_FAILURES" ]; then
+            {
+                echo "Sweep aborted after $consecutive_failures consecutive failed cells."
+                echo "Last failing cell: $family/$proj $src->$dst (status=$status)"
+                echo "Diagnosis hints:"
+                tail -20 "$BENCH_ROOT/$family/$proj/${src}2${dst}/logs/harness-stderr.log" 2>/dev/null
+            } > "$BENCH_ROOT/ABORT.md"
+            echo "ABORT: $consecutive_failures consecutive failures; see $BENCH_ROOT/ABORT.md"
+            exit 2
+        fi
+    else
+        consecutive_failures=0
+    fi
 done <<< "$cells"
 echo "ALL CELLS COMPLETE ($total total)"
