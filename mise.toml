@@ -1,6 +1,16 @@
 # Command aliases for this repository. Run with: mise run <name>
 # These replace the cargo aliases that lived in .cargo/config.toml. See docs/adr/0004.
 
+# Declared toolchains for the benchmark sweep (scripts/bench/). All-or-none
+# rule: every scoring toolchain the sweep uses is listed here.
+[tools]
+rust = "stable"
+go = "latest"
+node = "latest"
+java = "temurin-21"
+python = "3.13"
+uv = "latest"
+
 [tasks.dev]
 run = "RUST_LOG=debug cargo run --bin harness"
 
