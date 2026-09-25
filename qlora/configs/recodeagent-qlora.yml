@@ -1,0 +1,70 @@
+# QLoRA fine-tune of Swift-Qwen3.8-27B on ReCodeAgent traces.
+# Invoke via: axolotl train qlora/configs/recodeagent-qlora.yml
+#
+# Hardware target: 1x RTX 3090 (24 GB). 27B at 4-bit NF4 + LoRA adapters +
+# gradient checkpointing + 8-bit optimizer fits with the sequence cap below;
+# reduce `sequence_len` to 2048 or `micro_batch_size` to 1 if you still hit
+# OOM on long code samples.
+base_model: ukisai/Swift-Qwen3.8-27b
+
+# Model + quantization -------------------------------------------------------
+load_in_4bit: true
+adapter: qlora
+lora_r: 32
+lora_alpha: 64
+lora_dropout: 0.05
+lora_target_linear: true
+lora_fan_in_fan_out: false
+
+# Sequence -------------------------------------------------------------------
+sequence_len: 4096
+sample_packing: true
+pad_to_sequence_len: true
+
+# Data -----------------------------------------------------------------------
+datasets:
+  - path: qlora/datasets/recodeagent/train.jsonl
+    type: chat_template
+    chat_template: chatml
+    field_messages: messages
+    message_property_mappings:
+      role: role
+      content: content
+val_set_size: 0.02
+dataset_prepared_path: qlora/runs/prepared
+
+# Chat template --------------------------------------------------------------
+chat_template: chatml
+
+# Training schedule ----------------------------------------------------------
+num_epochs: 2
+micro_batch_size: 1
+gradient_accumulation_steps: 16
+warmup_steps: 40
+learning_rate: 0.0002
+lr_scheduler: cosine
+optimizer: paged_adamw_8bit
+weight_decay: 0.0
+max_grad_norm: 1.0
+bf16: true
+tf32: true
+gradient_checkpointing: true
+
+# Eval + output --------------------------------------------------------------
+output_dir: qlora/runs/recodeagent-sft
+logging_steps: 5
+save_steps: 200
+save_total_limit: 3
+eval_steps: 100
+eval_table_size: 0
+eval_causal_lm_metrics: []
+early_stopping_patience: 3
+hub_model_id: ""
+test_datasets:
+  - path: qlora/datasets/recodeagent/val.jsonl
+    type: chat_template
+    chat_template: chatml
+    field_messages: messages
+    message_property_mappings:
+      role: role
+      content: content

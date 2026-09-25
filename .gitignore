@@ -23,3 +23,7 @@ target/
 # Migration run outputs
 .artifacts/
 __pycache__/
+
+# QLoRA: datasets and model weights are large artifacts, never in git.
+qlora/datasets/
+qlora/runs/
