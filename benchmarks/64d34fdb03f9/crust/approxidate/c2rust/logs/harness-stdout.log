@@ -1,3 +1,4 @@
 [preflight] snapshot 6 files from assets/ReCodeAgent/data/tool_projects/crust/approxidate/c
-[delegate] analyst <- Analyze the source codebase: map every module, its public API, dependencies, and behavior; produce the source map and a brief covering all modules.
+[delegate] analyst <- Analyze the source codebase, identify all modules, and produce a source map and brief in meta/plan.md and meta/notes.md.
 [phase] Contract
+[delegate] architect <- Produce the target-language contract at analysis/brief.md from analysis/source-map.md: define the Rust crate layout, public API (approxidate, approxidate_relative), error handling strategy, integer-width choices for time_t/ULONG_MAX, how to model out-params and struct timeval/tm, the function-pointer table replacement, and the full set of 18 flagged C-to-Rust gaps with their chosen resolutions.
