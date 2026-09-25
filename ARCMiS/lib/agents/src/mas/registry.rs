@@ -51,7 +51,7 @@ where
 {
     let mut agents = BTreeMap::new();
     // Parse the BDF font once; the snapcompact hook shares it across roles.
-    let snapcompact_font = std::sync::Arc::new(snapcompact::load_font());
+    let snapcompact_font = Arc::new(snapcompact::load_font());
     for role in Role::ALL {
         let model = fleet.model_for(role);
         let prompt = crate::mas::roles::prompt_text(role)?;

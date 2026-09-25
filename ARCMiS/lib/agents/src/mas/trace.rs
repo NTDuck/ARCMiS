@@ -9,6 +9,7 @@ use rig::agent::hook::{
 use serde_json::Value;
 use std::io::Write as _;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::sync::Mutex;
 
 /// Append-only per-turn trace sink.
@@ -77,12 +78,12 @@ fn cap_string(value: &mut Value, cap: usize) {
 /// Which named agent emitted the events; set at build time.
 pub struct TraceHook {
     agent: &'static str,
-    sink: std::sync::Arc<TraceSink>,
+    sink: Arc<TraceSink>,
 }
 
 impl TraceHook {
     /// Attach the hook for one named agent.
-    pub fn new(agent: &'static str, sink: std::sync::Arc<TraceSink>) -> Self {
+    pub fn new(agent: &'static str, sink: Arc<TraceSink>) -> Self {
         Self {
             agent,
             sink,
@@ -155,6 +156,6 @@ impl AgentHook for TraceHook {
 }
 
 /// Open the trace file lazily on append; a failed open drops the record.
-pub fn sink(path: &Path) -> anyhow::Result<std::sync::Arc<TraceSink>> {
-    Ok(std::sync::Arc::new(TraceSink::new(path)?))
+pub fn sink(path: &Path) -> anyhow::Result<Arc<TraceSink>> {
+    Ok(Arc::new(TraceSink::new(path)?))
 }

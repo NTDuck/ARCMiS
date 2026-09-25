@@ -45,16 +45,3 @@ pub fn route_by_keywords(description: &str) -> Option<Role> {
     }
     None
 }
-
-/// Classify with the router model. One-word answer; invalid words retry once
-/// with the keyword fallback as the floor.
-pub async fn route_by_model(agent: &rig::agent::Agent, description: &str) -> anyhow::Result<Role> {
-    use rig::completion::Prompt as _;
-    let answer = agent.prompt(format!("Classify this task into exactly one role name:\n{description}")).await?;
-    if let Some(role) = Role::from_name(answer.trim()) {
-        return Ok(role);
-    }
-    // One retry with the raw answer constrained harder.
-    let answer = agent.prompt(format!("Answer with one word, the role name only. Task:\n{description}")).await?;
-    Role::from_name(answer.trim()).ok_or_else(|| anyhow::anyhow!("router returned no role: {answer:?}"))
-}
