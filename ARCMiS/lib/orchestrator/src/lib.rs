@@ -4,16 +4,18 @@
 
 pub mod breaker;
 pub mod guard;
+pub mod guard_hook;
 pub mod judges;
 pub mod manager;
 pub mod progress;
 pub mod router;
 pub mod state_machine;
+pub mod taskgraph;
 
 pub use breaker::Breaker;
 pub use breaker::BreakerState;
 pub use guard::Guard;
-pub use guard::GuardedTool;
+pub use guard_hook::GuardHook;
 pub use judges::parse_diagnosis;
 pub use judges::parse_repair;
 pub use judges::parse_verdict;
