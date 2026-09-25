@@ -179,12 +179,16 @@ async fn run_single(
     delegation: &Delegation,
 ) -> TaskResult {
     let role = resolve_role(delegation, &delegation.task);
-    // Judges promise a small tool budget in their prompts; the guard
-    // enforces it (a judge that loops bash otherwise burns the full turn
-    // budget and dies without a verdict).
+    // Roles with a promised or verifiable-by-construction stop condition get
+    // an enforced tool budget: a specialist that loops verification bash
+    // otherwise burns the full turn budget and dies without a report.
     let mut policy = config.guard.clone();
     match role {
         Role::Validator | Role::Critic => policy.max_tool_calls = 12,
+        // The tester's job is bounded (build, test, one sim run); 40 calls
+        // absorb retries without letting re-verification loops eat the
+        // 40-turn delegation budget (observed: 84 calls after a PASS).
+        Role::Tester => policy.max_tool_calls = 40,
         _ => {},
     }
     let guard = GuardHook::new(role, workspace.clone(), policy);
