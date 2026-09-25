@@ -11,8 +11,9 @@ use blackboard::Decision;
 use blackboard::Ledger;
 use blackboard::Phase;
 use blackboard::TaskList;
-use blackboard::TaskStatus;
 use blackboard::Workspace;
+use std::path::Path;
+use std::path::PathBuf;
 
 /// Outcome of one manager round.
 #[derive(Debug, Clone)]
@@ -42,7 +43,7 @@ pub enum RoundOutcome {
 /// The manager loop context: everything one round touches.
 pub struct ManagerLoop {
     /// Run directory holding the blackboard files.
-    pub run_dir: std::path::PathBuf,
+    pub run_dir: PathBuf,
     /// The built agents.
     pub agents: MasAgents,
     /// MAS config.
@@ -92,9 +93,9 @@ impl ManagerLoop {
             .collect();
         if !delegates.is_empty() {
             let outcome = crate::taskgraph::execute(
-                &self.agents.clone(),
+                &self.agents,
                 &self.config,
-                &self.workspace.clone(),
+                &self.workspace,
                 &self.ledger,
                 &self.run_dir,
                 state.phase,
@@ -124,25 +125,33 @@ impl ManagerLoop {
                     )
                 })
                 .collect();
-            return Ok(RoundOutcome::Delegated {
-                role: outcome.results.first().map(|result| result.role).unwrap_or(Role::Translator),
-                task: summary.join("; "),
-                output: outcome.results.iter().map(|result| result.output.clone()).collect::<Vec<_>>().join("\n\n"),
-            });
+            if let Some(first) = outcome.results.first() {
+                return Ok(RoundOutcome::Delegated {
+                    role: first.role,
+                    task: summary.join("; "),
+                    output: outcome.results.iter().map(|result| result.output.clone()).collect::<Vec<_>>().join("\n\n"),
+                });
+            }
+            // Every delegation queued behind its dependencies; the manager's
+            // next round sees the pending tasks. Report replan, not a
+            // delegation with a fabricated role.
+            return Ok(RoundOutcome::Replanned);
         }
 
-        // Single non-delegate decision (first one wins).
+        // Single non-delegate decision (first one wins). `Delegate` cannot
+        // appear here: a non-empty delegate set ran through the task-graph
+        // executor above, so decisions[0] is a non-delegate verb.
         let decision = &decisions[0];
         match decision {
+            // Unreachable: a non-empty delegate set ran through the
+            // task-graph executor above, so decisions[0] is a non-delegate
+            // verb. The arm only satisfies exhaustiveness.
             DecisionVerb::Delegate {
                 ..
-            } => {
-                // Delegates ran through the task-graph executor above.
-                Ok(RoundOutcome::Replanned)
-            },
+            } => Ok(RoundOutcome::Replanned),
             DecisionVerb::Replan => {
                 self.ledger.append_decision(&Decision {
-                    at: now(),
+                    at: now_string(),
                     phase: format!("{:?}", state.phase),
                     action: "replan".into(),
                     detail: serde_json::json!({"round": self.round}),
@@ -154,7 +163,7 @@ impl ManagerLoop {
                 reason,
             } => {
                 self.ledger.append_decision(&Decision {
-                    at: now(),
+                    at: now_string(),
                     phase: format!("{:?}", state.phase),
                     action: "escalate".into(),
                     detail: serde_json::json!({"round": self.round}),
@@ -169,7 +178,7 @@ impl ManagerLoop {
                 // Integration in 18 s with no validation work).
                 if state.phase_delegations == 0 {
                     self.ledger.append_failure(&blackboard::Failure {
-                        at: now(),
+                        at: now_string(),
                         phase: format!("{:?}", state.phase),
                         category: "gate".into(),
                         root_cause: "done claimed with no completed delegation in this phase; advance needs at least one judged pass".into(),
@@ -296,65 +305,54 @@ fn parse_decision_line(line: &str) -> Option<DecisionVerb> {
 
 /// Judge a specialist's final text by its contract line. `Ok` on a pass;
 /// the error carries the failure reason.
-pub(crate) fn judge_output_public(role: Role, output: &str) -> Result<(), String> {
-    match judge_output(role, output) {
-        Judged::Pass => Ok(()),
-        Judged::Fail(reason) => Err(reason),
-    }
-}
-
-/// RFC 3339 UTC timestamp for ledger entries.
-pub(crate) fn now_string() -> String {
-    now()
-}
-
-/// Judge a specialist's final text by its contract line.
-fn judge_output(role: Role, output: &str) -> Judged {
+pub(crate) fn judge_output(role: Role, output: &str) -> Result<(), String> {
     // A delegation that never returned (budget spent, model failure) fails its
     // task regardless of role contract: the deliverable is unverified.
     if let Some(rest) = output.strip_prefix("DELEGATION FAILED: ") {
-        return Judged::Fail(rest.to_owned());
+        return Err(rest.to_owned());
     }
     match role {
         Role::Validator => match judges::parse_verdict(output, "VALIDATION") {
-            Some((true, _)) => Judged::Pass,
-            Some((false, reason)) => Judged::Fail(format!("validation failed: {reason}")),
-            None => Judged::Fail("validator produced no VALIDATION line".into()),
+            Some((true, _)) => Ok(()),
+            Some((false, reason)) => Err(format!("validation failed: {reason}")),
+            None => Err("validator produced no VALIDATION line".into()),
         },
         Role::Critic => match judges::parse_verdict(output, "CRITIQUE") {
-            Some((true, _)) => Judged::Pass,
-            Some((false, reason)) => Judged::Fail(format!("critique failed: {reason}")),
-            None => Judged::Fail("critic produced no CRITIQUE line".into()),
+            Some((true, _)) => Ok(()),
+            Some((false, reason)) => Err(format!("critique failed: {reason}")),
+            None => Err("critic produced no CRITIQUE line".into()),
         },
         Role::Repairer => match judges::parse_repair(output) {
-            Some(("applied", _)) => Judged::Pass,
-            Some((word, detail)) => Judged::Fail(format!("repair {word}: {detail}")),
-            None => Judged::Fail("repairer produced no REPAIR line".into()),
+            Some(("applied", _)) => Ok(()),
+            Some((word, detail)) => Err(format!("repair {word}: {detail}")),
+            None => Err("repairer produced no REPAIR line".into()),
         },
         Role::FailureAnalyst => {
             if judges::parse_diagnosis(output).is_some() {
-                Judged::Pass
+                Ok(())
             } else {
-                Judged::Fail("failure analyst produced no DIAGNOSIS line".into())
+                Err("failure analyst produced no DIAGNOSIS line".into())
             }
         },
         // Declarative roles pass when they produced nonempty output.
         _ => {
             if output.trim().is_empty() {
-                Judged::Fail("empty specialist output".into())
+                Err("empty specialist output".into())
             } else {
-                Judged::Pass
+                Ok(())
             }
         },
     }
 }
 
-/// Judged output.
-enum Judged {
-    /// The specialist met its contract.
-    Pass,
-    /// The specialist failed its contract; the string says why.
-    Fail(String),
+/// Compact UTC timestamp for ledger ordering (`unix:<seconds>`). The ledger
+/// only needs monotone-ish ordering; the harness logs carry full precision.
+pub(crate) fn now_string() -> String {
+    let seconds = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|duration| duration.as_secs())
+        .unwrap_or(0);
+    format!("unix:{seconds}")
 }
 
 /// Prompt one agent, retrying transient provider failures up to `max_retries`
@@ -396,20 +394,18 @@ pub(crate) async fn prompt_with_retries(
 /// response-encoding hiccups. Budget exhaustion and cancellation are not.
 fn is_transient(error: &rig::completion::PromptError) -> bool {
     match error {
-        rig::completion::PromptError::CompletionError(error) => match error {
-            // Transport- and server-side only. `ResponseError` covers
-            // deterministic failures (budget exhaustion, malformed output);
-            // retrying one restarts the conversation from scratch and burns
-            // the same budget again.
-            rig::completion::CompletionError::HttpError(_) | rig::completion::CompletionError::ProviderError(_) => true,
-            _ => false,
-        },
+        // Transport- and server-side only. `ResponseError` covers
+        // deterministic failures (budget exhaustion, malformed output);
+        // retrying one restarts the conversation from scratch and burns
+        // the same budget again.
+        rig::completion::PromptError::CompletionError(rig::completion::CompletionError::HttpError(_))
+        | rig::completion::PromptError::CompletionError(rig::completion::CompletionError::ProviderError(_)) => true,
         _ => false,
     }
 }
 
 /// Read a file or empty string when absent.
-fn read_or_empty(path: &std::path::Path) -> anyhow::Result<String> {
+fn read_or_empty(path: &Path) -> anyhow::Result<String> {
     match std::fs::read_to_string(path) {
         Ok(text) => Ok(text),
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(String::new()),
@@ -426,26 +422,8 @@ fn truncate(text: &str, cap: usize) -> String {
     format!("{kept}\n...[truncated]")
 }
 
-/// RFC 3339 UTC now (no external time dep in this crate: blackboard carries
-/// the formatting feature; reuse its re-exported time types through serde).
-fn now() -> String {
-    let now = time_now();
-    now
-}
-
-/// Bridge to the time crate through blackboard's dependency version.
-fn time_now() -> String {
-    // Cheap UTC timestamp from the Unix epoch; the ledger only needs
-    // monotone-ish ordering, and the harness logs carry full precision.
-    let seconds = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|duration| duration.as_secs())
-        .unwrap_or(0);
-    format!("unix:{seconds}")
-}
-
 /// Load the state fresh for a phase transition write.
-fn snapshot_phase(run_dir: &std::path::Path) -> anyhow::Result<blackboard::State> {
+fn snapshot_phase(run_dir: &Path) -> anyhow::Result<blackboard::State> {
     blackboard::state::read(run_dir)?.ok_or_else(|| anyhow::anyhow!("state missing in {run_dir:?}"))
 }
 
@@ -480,6 +458,3 @@ impl ManagerLoop {
         Ok(())
     }
 }
-
-/// Task status alias for the judge module.
-pub type TaskStatusAlias = TaskStatus;

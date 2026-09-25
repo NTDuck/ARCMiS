@@ -68,9 +68,11 @@ fn progress_orders_phases() {
 
 #[test]
 fn breaker_trips_on_repeated_failure_and_stagnation() {
-    let mut config = MasConfig::default();
-    config.max_repairs = 2;
-    config.stagnation_rounds = 3;
+    let mut config = MasConfig {
+        max_repairs: 2,
+        stagnation_rounds: 3,
+        ..MasConfig::default()
+    };
 
     let mut breaker = BreakerState::new();
     // Two failures with max_repairs=2 are still inside budget.

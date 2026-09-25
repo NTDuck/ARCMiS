@@ -68,7 +68,7 @@ impl BreakerState {
             ));
         }
         // Repeated failure in one phase: the phase cannot absorb more repair.
-        if self.consecutive_failures >= config.max_repairs + 1 {
+        if self.consecutive_failures > config.max_repairs {
             return Breaker::Trip(format!(
                 "phase {phase:?} failed {} consecutive times; stopping",
                 self.consecutive_failures

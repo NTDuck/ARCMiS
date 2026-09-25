@@ -7,7 +7,7 @@
 //! validator → tester, repairer re-entry) as a nested loop under one task.
 
 use crate::guard_hook::GuardHook;
-use crate::manager::{judge_output_public, now_string, prompt_with_retries};
+use crate::manager::{judge_output, now_string, prompt_with_retries};
 use agents::util::config::MasConfig;
 use agents::MasAgents;
 use agents::Role;
@@ -15,6 +15,7 @@ use blackboard::Ledger;
 use blackboard::TaskList;
 use blackboard::TaskStatus;
 use blackboard::Workspace;
+use std::path::Path;
 
 /// One parsed `delegate` decision.
 #[derive(Debug, Clone)]
@@ -41,9 +42,9 @@ pub fn parse_delegation(role: Option<String>, task: String) -> Delegation {
     // Split trailing `| clause` segments. A segment is a clause only when it
     // matches the grammar (`team` or `after:<ids>`); anything else is task
     // text that happens to contain a pipe and stays in the instruction.
-    let mut segments = task.split('|').map(str::trim).peekable();
+    let segments = task.split('|').map(str::trim);
     let mut task_parts: Vec<String> = Vec::new();
-    while let Some(segment) = segments.next() {
+    for segment in segments {
         if segment == "team" {
             delegation.team = true;
         } else if let Some(list) = segment.strip_prefix("after:") {
@@ -62,6 +63,8 @@ pub fn parse_delegation(role: Option<String>, task: String) -> Delegation {
 pub struct BatchOutcome {
     /// Per-task results in execution order.
     pub results: Vec<TaskResult>,
+    /// Registrations that stayed queued behind unfinished dependencies.
+    pub queued: usize,
 }
 
 /// One task's execution result.
@@ -83,14 +86,34 @@ pub async fn execute(
     config: &MasConfig,
     workspace: &Workspace,
     ledger: &Ledger,
-    run_dir: &std::path::Path,
+    run_dir: &Path,
     phase: blackboard::Phase,
     delegations: Vec<Delegation>,
 ) -> anyhow::Result<BatchOutcome> {
     let tasks = TaskList::new(run_dir);
+    let existing = tasks.read()?;
+    // Re-delegation dedupe: (id, task text, deps) of tasks still queued. A
+    // re-delegation of a Pending task reuses its id instead of forking a
+    // duplicate entry; a Done or Blocked task earns a fresh id, because the
+    // retry is a new, judged attempt.
+    let mut queued: Vec<(String, String, Vec<String>)> = existing
+        .iter()
+        .filter(|task| task.status == TaskStatus::Pending)
+        .map(|task| (task.id.clone(), task.description.clone(), task.depends_on.clone()))
+        .collect();
     let mut registered: Vec<(String, Delegation)> = Vec::new();
     for delegation in delegations {
-        let id = tasks.add(&delegation.task, &delegation.depends_on)?;
+        let id = match queued
+            .iter()
+            .find(|(_, task, depends_on)| *task == delegation.task && *depends_on == delegation.depends_on)
+        {
+            Some((id, _, _)) => id.clone(),
+            None => {
+                let id = tasks.add(&delegation.task, &delegation.depends_on)?;
+                queued.push((id.clone(), delegation.task.clone(), delegation.depends_on.clone()));
+                id
+            },
+        };
         registered.push((id, delegation));
     }
 
@@ -100,6 +123,7 @@ pub async fn execute(
     let known = tasks.read()?;
     let done: Vec<String> =
         known.iter().filter(|task| task.status == TaskStatus::Done).map(|task| task.id.clone()).collect();
+    let registered_count = registered.len();
     let mut ready: Vec<(String, Delegation)> = registered
         .into_iter()
         .filter(|(_, delegation)| {
@@ -126,6 +150,7 @@ pub async fn execute(
         results.push(result);
     }
     Ok(BatchOutcome {
+        queued: registered_count,
         results,
     })
 }
@@ -154,7 +179,15 @@ async fn run_single(
     delegation: &Delegation,
 ) -> TaskResult {
     let role = resolve_role(delegation, &delegation.task);
-    let guard = GuardHook::new(role, workspace.clone(), config.guard.clone());
+    // Judges promise a small tool budget in their prompts; the guard
+    // enforces it (a judge that loops bash otherwise burns the full turn
+    // budget and dies without a verdict).
+    let mut policy = config.guard.clone();
+    match role {
+        Role::Validator | Role::Critic => policy.max_tool_calls = 12,
+        _ => {},
+    }
+    let guard = GuardHook::new(role, workspace.clone(), policy);
     ledger
         .append_decision(&blackboard::Decision {
             at: now_string(),
@@ -198,7 +231,7 @@ async fn run_collective(
     config: &MasConfig,
     workspace: &Workspace,
     ledger: &Ledger,
-    run_dir: &std::path::Path,
+    run_dir: &Path,
     phase: blackboard::Phase,
     task_id: &str,
     delegation: &Delegation,
@@ -275,7 +308,7 @@ async fn run_collective(
 
 /// Write the verdict to the ledger.
 fn finish_task(ledger: &Ledger, task_id: &str, role: Role, output: &str) -> TaskResult {
-    let verdict = judge_output_public(role, output);
+    let verdict = judge_output(role, output);
     let passed = verdict.is_ok();
     if passed {
         ledger
