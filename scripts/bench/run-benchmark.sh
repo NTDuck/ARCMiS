@@ -111,7 +111,7 @@ run_cell() {
     cell_dir="$BENCH_ROOT/$family/$proj/${src}2${dst}"
     result_yml="$cell_dir/result.yml"
     if [ -f "$result_yml" ] && [ "$FORCE" = 0 ]; then
-        echo "SKIP $family/$proj/$src2$dst (already scored)"
+        echo "SKIP $family/$proj/${src}2${dst} (already scored)"
         return 0
     fi
     mkdir -p "$cell_dir/logs"
