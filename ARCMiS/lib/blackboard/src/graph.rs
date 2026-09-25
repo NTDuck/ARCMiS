@@ -117,7 +117,6 @@ impl Graph {
     }
 
     /// All nodes.
-    #[must_use]
     pub fn nodes(&self) -> impl Iterator<Item = &GraphNode> {
         self.nodes.values()
     }

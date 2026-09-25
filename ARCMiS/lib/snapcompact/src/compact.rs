@@ -117,7 +117,7 @@ pub fn message_tokens_public(message: &Message) -> u32 {
         Message::System {
             content,
             ..
-        } => estimate_tokens(&content),
+        } => estimate_tokens(content),
         Message::User {
             content,
         } => content
