@@ -1,5 +1,5 @@
 # Benchmark run configuration, generated per sample by
-# scripts/bench/run-benchmark.sh. Generous ceilings: a run must not end from a
+# bench/run-benchmarks.sh. Generous ceilings: a run must not end from a
 # model failure, a context overflow (snapcompact absorbs it), or a turn/round
 # ceiling. Values are high finite numbers because 0 means "zero" in both the
 # rig turn loop and the driver round range, not "unlimited".

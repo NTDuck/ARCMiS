@@ -1,7 +1,7 @@
 # Command aliases for this repository. Run with: mise run <name>
 # These replace the cargo aliases that lived in .cargo/config.toml. See docs/adr/0004.
 
-# Declared toolchains for the benchmark sweep (scripts/bench/). The sweep
+# Declared toolchains for the benchmark sweep (bench/). The sweep
 # scores with the SYSTEM toolchains, not mise-managed ones; this table is the
 # declaration of record (all-or-none rule). Verify before a sweep:
 #   cargo --version && go version && node --version && java -version
