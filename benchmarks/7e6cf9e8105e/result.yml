@@ -1,12 +1,12 @@
 commit: 7e6cf9e8105e
-cells_completed: 2
+cells_completed: 3
 families:
 - family: crust
-  cells: 2
-  compiled: 2
-  tests_green: 1
-  avg_test_pass_rate: 97.5
-  median_duration_seconds: 5400
+  cells: 3
+  compiled: 3
+  tests_green: 2
+  avg_test_pass_rate: 98.3
+  median_duration_seconds: 3675
 cells:
 - family: crust
   project: 2dpartint
@@ -30,3 +30,14 @@ cells:
   test_pass_rate: 100
   duration_seconds: 1598
   cell_dir: /home/ayin/projs/ARCMiS/benchmarks/7e6cf9e8105e/crust/42-kocaeli-printf/c2rust
+- family: crust
+  project: aes128-simd
+  source_language: c
+  target_language: rust
+  score_status: tests_green
+  compilation_status: ok
+  tests_pass: 66
+  tests_fail: 0
+  test_pass_rate: 100
+  duration_seconds: 3675
+  cell_dir: /home/ayin/projs/ARCMiS/benchmarks/7e6cf9e8105e/crust/aes128-simd/c2rust

@@ -1,0 +1,4 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.01s
+     Running unittests src/lib.rs (target/debug/deps/aes128-45c11d407338188c)
+     Running tests/roundtrip.rs (target/debug/deps/roundtrip-2cd15c67d7c3d5d6)
+   Doc-tests aes128

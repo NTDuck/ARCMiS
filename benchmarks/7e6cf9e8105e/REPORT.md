@@ -14,7 +14,7 @@ workspace, judged by the harness, never by agent self-report.
 
 | family | cells | compiled | tests green | avg pass rate | median time |
 |---|---|---|---|---|---|
-| crust | 2 | 2 | 1 | 97.5% | 5400s |
+| crust | 3 | 3 | 2 | 98.3% | 3675s |
 
 ## Comparison with ReCodeAgent (per family)
 
@@ -26,7 +26,7 @@ a local 27B model and scores with the produced crate's own suite.
 
 | family | ARCMiS MAS (this sweep) | ReCodeAgent | best baseline in paper |
 |---|---|---|---|
-| crust | 97.5% pass, 2/2 compiled | 88.0% (CS 89/100) | sweagent: 78.3% |
+| crust | 98.3% pass, 3/3 compiled | 88.0% (CS 89/100) | sweagent: 78.3% |
 | oxidizer | not run | 100.0% | oxidizer: 67.2% |
 | skel | not run | 100.0% | skel: 93.2% |
 | alphatrans | not run | subset (Table 1) | alphatrans: subset% |
@@ -59,3 +59,4 @@ as an upper-bound estimate for our system.
 |---|---|---|---|---|---|---|---|
 | crust | 2dpartint | c→rust | tests_failed | ok | 42/44 | 95% | 5400s |
 | crust | 42-kocaeli-printf | c→rust | tests_green | ok | 24/24 | 100% | 1598s |
+| crust | aes128-simd | c→rust | tests_green | ok | 66/66 | 100% | 3675s |
