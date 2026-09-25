@@ -27,6 +27,9 @@ pub struct GuardHook {
     rejections: std::sync::Arc<AtomicUsize>,
     /// Last rejection feedback (for the delegation report).
     last_rejection: std::sync::Arc<Mutex<Option<String>>>,
+    /// Tool calls executed so far in this delegation; the policy cap denies
+    /// further calls once this crosses `max_tool_calls`.
+    calls: std::sync::Arc<AtomicUsize>,
 }
 
 impl GuardHook {
@@ -38,6 +41,7 @@ impl GuardHook {
             policy,
             rejections: std::sync::Arc::new(AtomicUsize::new(0)),
             last_rejection: std::sync::Arc::new(Mutex::new(None)),
+            calls: std::sync::Arc::new(AtomicUsize::new(0)),
         }
     }
 
@@ -94,7 +98,31 @@ impl AgentHook for GuardHook {
                 "GUARD REFUSAL: {reason}. Stay inside the role's tools and the workspace layout."
             ));
         }
+        // Tool-call budget: when the policy sets a cap, deny every call past
+        // it so the delegation ends with a verdict instead of burning its
+        // whole turn budget on repeated commands.
+        if let Some(reason) = self.budget_verdict() {
+            self.rejections.fetch_add(1, Ordering::Relaxed);
+            if let Ok(mut slot) = self.last_rejection.lock() {
+                *slot = Some(format!("{}: {}", event.tool_name, reason));
+            }
+            return ToolCallAction::Skip(format!("GUARD REFUSAL: {reason}."));
+        }
         ToolCallAction::Run
+    }
+}
+
+impl GuardHook {
+    /// Budget verdict for the next tool call. `None` means allow (and
+    /// counts the call); `Some` denies with the budget-exhausted reason.
+    fn budget_verdict(&self) -> Option<String> {
+        let cap = self.policy.max_tool_calls;
+        if cap > 0 && self.calls.load(Ordering::Relaxed) >= cap {
+            Some(format!("tool-call budget exhausted ({cap} calls used); write the final verdict now"))
+        } else {
+            self.calls.fetch_add(1, Ordering::Relaxed);
+            None
+        }
     }
 }
 
@@ -159,5 +187,27 @@ mod tests {
         // Malformed args must not panic the gateway; the tool itself will
         // surface the parse error.
         assert!(hook.deterministic("write", "not json").is_none());
+    }
+
+    #[test]
+    fn denies_tool_calls_past_budget() {
+        let policy = GuardConfig {
+            max_tool_calls: 2,
+            ..GuardConfig::default()
+        };
+        let hook = GuardHook::new(Role::Validator, workspace(), policy);
+        assert!(hook.budget_verdict().is_none(), "first call allowed");
+        assert!(hook.budget_verdict().is_none(), "second call allowed");
+        let verdict = hook.budget_verdict().expect("third call denied");
+        assert!(verdict.contains("budget"));
+        assert!(verdict.contains("verdict"));
+    }
+
+    #[test]
+    fn zero_budget_disables_cap() {
+        let hook = GuardHook::new(Role::Validator, workspace(), GuardConfig::default());
+        for _ in 0..5 {
+            assert!(hook.budget_verdict().is_none());
+        }
     }
 }

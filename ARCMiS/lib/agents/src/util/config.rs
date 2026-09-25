@@ -137,6 +137,11 @@ pub struct GuardConfig {
     /// Enable the model arbitration tier for Ask-class calls. Off while
     /// the only model is the caller's own.
     pub ask_model: bool,
+    /// Tool calls allowed per delegation before the guard denies further
+    /// calls. 0 disables the cap. Judges (validator, critic) promise a
+    /// small call budget in their prompts; the guard enforces it because
+    /// the model alone will loop otherwise.
+    pub max_tool_calls: usize,
 }
 
 impl Default for GuardConfig {
@@ -154,6 +159,7 @@ impl Default for GuardConfig {
                 "sudo ".into(),
             ],
             ask_model: false,
+            max_tool_calls: 0,
         }
     }
 }
