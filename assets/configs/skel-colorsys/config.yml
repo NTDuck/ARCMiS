@@ -1,0 +1,18 @@
+run:
+  model: qwen3.8:27b-mtp-q4_K_M
+  max_turns: 14
+  num_ctx: 16384
+  max_output_tokens: 4096
+  max_retries: 1
+  think: true
+  temperature: 0.2
+output:
+  dir: .artifacts/experiments/skel-colorsys/workspace
+source:
+  language: python
+  root: assets/ReCodeAgent/data/tool_projects/skel/colorsys/python
+  target:
+    language: javascript
+    test_command: sh -c 'find target -name "*.js" -exec node --check {} \;'
+mas:
+  max_rounds: 20
