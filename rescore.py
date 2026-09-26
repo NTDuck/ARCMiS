@@ -31,7 +31,7 @@ def parse_test_counts(text):
     return p, f
 
 
-def find_project_root(workspace: Path, target_language: str) -> Path:
+def find_project_root(workspace: Path, target_language: str) -> Path | None:
     target = workspace / "target"
     if target.is_dir():
         if target_language == "rust" and (target / "Cargo.toml").is_file():
@@ -40,7 +40,7 @@ def find_project_root(workspace: Path, target_language: str) -> Path:
             return target
         if target_language == "javascript" and any(target.rglob("package.json")):
             return target
-    return workspace
+    return None
 
 
 def rescore(exp_dir: Path) -> dict:
@@ -62,6 +62,15 @@ def rescore(exp_dir: Path) -> dict:
     project_root = find_project_root(workspace, target_language)
     record = {"problem": "workspace", "success": False, "stage": "evaluate",
               "tests_passed": 0, "tests_failed": 0, "detail": ""}
+
+    if project_root is None:
+        # No translated project under target/: the run never reached the
+        # migration phase. Without this guard the toolchain command runs
+        # from the workspace and walks up to the ARCMiS repo itself,
+        # scoring the repo's tests instead of the translated code.
+        record["stage"] = "translate"
+        record["detail"] = "no translated project under workspace/target"
+        return record
 
     if target_language == "rust":
         rc, out = run(["cargo", "build"], cwd=project_root, timeout=900)
