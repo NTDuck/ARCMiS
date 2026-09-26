@@ -27,6 +27,7 @@ __pycache__/
 # QLoRA: datasets and model weights are large artifacts, never in git.
 qlora/datasets/
 qlora/runs/
+.venv-axolotl/
 
 # Benchmark sweeps: committed records (result.yml, logs, traces) live under
 # benchmarks/; raw runs (workspace, run/ blackboard, per-run config) stay

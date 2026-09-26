@@ -37,7 +37,10 @@ qlora/
 
 - axolotl installed (separate setup window) with CUDA bf16 support.
 - `huggingface-cli` authenticated if the base repo needs it (it is public).
-- ~20 GB disk for the zip, dataset, merged fp16 weights, and GGUF.
+- ~90 GB free disk: ~54 GB fp16 base weights (HF cache), ~6 GB QLoRA
+  training footprint on disk over the run, dataset artifacts, and ~15 GB
+  for the merged fp16 copy + Q4_K_M GGUF. (Earlier ~20 GB estimate
+  undercounted the fp16 base.)
 - The traces zip: `assets/ReCodeAgent/data/results.zip` (1.45 GB, already
   downloaded; md5 `5df332d2a1477ec30f719dd7d0ff2470`).
 
