@@ -68,8 +68,14 @@ impl GuardHook {
             ));
         }
         if let Some(path) = arg_path_str(args) {
-            if let Err(error) = self.inner.permits_path(tool_name, &PathBuf::from(&path)) {
-                return Some(error.to_string());
+            // The source/ readonly rule constrains mutations only. Applying
+            // it to read-class tools makes `source/` unreadable by the very
+            // roles whose job is to analyze and translate it (baseline
+            // 20260926T211000Z: every analyst read of source/ was skipped).
+            if is_write_tool(tool_name) {
+                if let Err(error) = self.inner.permits_path(tool_name, &PathBuf::from(&path)) {
+                    return Some(error.to_string());
+                }
             }
         }
         if tool_name == "bash" {
@@ -131,6 +137,12 @@ fn command_str(args: &str) -> Option<String> {
     value.get("command").and_then(serde_json::Value::as_str).map(str::to_owned)
 }
 
+/// Whether the tool can mutate the workspace. Only these meet the source/
+/// readonly rule; read-class tools pass the path check untouched.
+fn is_write_tool(tool_name: &str) -> bool {
+    matches!(tool_name, "write" | "edit" | "ast_edit")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -179,6 +191,15 @@ mod tests {
         // Malformed args must not panic the gateway; the tool itself will
         // surface the parse error.
         assert!(hook.deterministic("write", "not json").is_none());
+    }
+
+    #[test]
+    fn allows_reads_of_source() {
+        // Regression: the readonly rule once blocked reads of source/, so
+        // the analyst could never see the codebase it must map.
+        let hook = GuardHook::new(Role::Analyst, workspace(), GuardConfig::default());
+        assert!(hook.deterministic("read", r#"{"path":"source/source.py"}"#).is_none());
+        assert!(hook.deterministic("read", r#"{"path":"source"}"#).is_none());
     }
 
     #[test]
