@@ -8,7 +8,13 @@
 base_model: ukisai/Swift-Qwen3.8-27b
 
 # Model + quantization -------------------------------------------------------
+# low_cpu_mem_usage + device_map force per-tensor streaming: each shard is
+# quantized to NF4 on the GPU as it loads instead of materializing the full
+# 52 GB bf16 checkpoint in system RAM first (this machine has 15 GB RAM;
+# without these keys the loader is killed by systemd-oomd after weight load).
 load_in_4bit: true
+low_cpu_mem_usage: true
+device_map: cuda:0
 adapter: qlora
 lora_r: 32
 lora_alpha: 64
@@ -30,7 +36,7 @@ datasets:
     message_property_mappings:
       role: role
       content: content
-val_set_size: 0.02
+val_set_size: 0.0
 dataset_prepared_path: qlora/runs/prepared
 
 # Chat template --------------------------------------------------------------
