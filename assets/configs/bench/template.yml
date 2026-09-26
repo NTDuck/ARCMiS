@@ -6,7 +6,7 @@
 
 run:
   provider: ollama
-  model: smtek/Swift-Qwen3.8-27B:map-k4v
+  model: qwen3.8:27b-mtp-q4_K_M
   # Per-agent-call model turns (rig trips MaxTurnsError at the ceiling).
   max_turns: 200
   num_ctx: 65536
@@ -42,7 +42,7 @@ mas:
   plan_cap: 6000
   notes_cap: 12000
   model_ladder:
-    - smtek/Swift-Qwen3.8-27B:map-k4v
+    - qwen3.8:27b-mtp-q4_K_M
   max_generated_tests_per_module: 8
   # Dynamic orchestration (ADR 0022): ready-set breadth per round and the
   # turn budget for one team collective member.
