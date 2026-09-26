@@ -17,6 +17,12 @@ def main():
     path = Path(sys.argv[1])
     parents_raw = sys.argv[2] if len(sys.argv) > 2 else ""
     hypothesis = sys.argv[3] if len(sys.argv) > 3 else ""
+    if not path.is_file():
+        # A run that failed before the harness wrote the manifest (preflight
+        # model check, config load) has no manifest to patch. The failure is
+        # already recorded in stdout.log; lineage stays empty for it.
+        print(f"lineage: {path} missing; run failed before manifest write")
+        return
     manifest = json.loads(path.read_text())
     manifest["parents"] = [p.strip() for p in parents_raw.split(",") if p.strip()]
     manifest["hypothesis"] = hypothesis

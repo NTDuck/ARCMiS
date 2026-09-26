@@ -28,20 +28,22 @@ if [ -e "$OUT" ]; then
 fi
 mkdir -p "$OUT"
 
-# Render the config: the workspace lives inside the experiment dir so
-# every artifact of one candidate sits in one place.
+# Render the config: output.dir points at the experiment dir itself. The
+# harness derives workspace/ (source, target, analysis), run/ (blackboard),
+# and traces/ from it, so every artifact of one candidate sits in one place.
 cfg="$OUT/config.yml"
 CONFIG_PATH="$CONFIG_SRC"
 case "$CONFIG_SRC" in
   /*) ;;
   *) CONFIG_PATH="$REPO/$CONFIG_SRC" ;;
 esac
-sed "s#^[[:space:]]*dir:[[:space:]].*#  dir: $OUT/workspace#" "$CONFIG_PATH" > "$cfg"
+sed "s#^[[:space:]]*dir:[[:space:]].*#  dir: $OUT#" "$CONFIG_PATH" > "$cfg"
 
 # Lineage: the manifest written by the harness carries parents and
 # hypothesis as plain text. Patch them in after the run.
 OLLAMA_API_BASE_URL="${OLLAMA_API_BASE_URL:-http://localhost:11434}" \
-  timeout 3600 cargo run --quiet -p harness --manifest-path "$REPO/Cargo.toml" -- "$cfg" "$OUT" \
+  timeout 3600 cargo run --quiet -p harness --manifest-path "$REPO/Cargo.toml" -- \
+    --config "$cfg" --experiment "$CANDIDATE" \
   > "$OUT/stdout.log" 2> "$OUT/stderr.log"
 rc=$?
 
