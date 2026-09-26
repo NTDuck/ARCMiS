@@ -19,6 +19,7 @@ serde_yaml.workspace = true
 tokio = { workspace = true, features = ["process", "macros"] }
 tracing.workspace = true
 schemars = "1"
+reqwest.workspace = true
 
 [lints]
 workspace = true

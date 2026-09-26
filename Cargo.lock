@@ -9,6 +9,7 @@ dependencies = [
  "ARCMiS-snapcompact",
  "ARCMiS-tools",
  "anyhow",
+ "reqwest 0.13.5",
  "rig",
  "schemars 1.2.2",
  "serde",

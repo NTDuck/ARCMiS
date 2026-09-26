@@ -28,6 +28,7 @@ qlora/
   scripts/build_dataset.py        messages.jsonl -> train/val.jsonl (axolotl)
   scripts/train.sh                axolotl train invocation
   scripts/merge_and_export.sh     adapters -> merged fp16 -> Q4_K_M GGUF -> ollama
+  scripts/smoke_tuned.sh          one-prompt servability check before a sweep
   scripts/eval_smoke.sh           qualitative base-vs-tuned smoke report
   datasets/                       large artifacts, gitignored
   runs/                           training runs, gitignored
@@ -66,7 +67,10 @@ axolotl train qlora/configs/ternary-bonsai2-qlora.yml
 # 4. Merge adapters, quantize Q4_K_M, register in ollama as recodeagent-sft.
 bash qlora/scripts/merge_and_export.sh
 
-# 5. Qualitative smoke check.
+# 5. Verify the tuned model is servable (bench template lists it first).
+bash qlora/scripts/smoke_tuned.sh
+
+# 6. Qualitative smoke check.
 bash qlora/scripts/eval_smoke.sh
 ```
 

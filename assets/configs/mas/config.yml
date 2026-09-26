@@ -5,7 +5,9 @@
 run:
   # Provider: ollama (native protocol) or netmind (OpenAI-compatible).
   provider: ollama
-  model: qwen3.8:27b-mtp-q4_K_M
+  model: recodeagent-sft
+  # Base fallback when the fine-tuned model is absent:
+  # qwen3.8:27b-mtp-q4_K_M (see qlora/scripts/merge_and_export.sh).
   max_turns: 60
   num_ctx: 65536
   max_output_tokens: 16384

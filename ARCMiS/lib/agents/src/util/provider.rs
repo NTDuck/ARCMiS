@@ -106,3 +106,63 @@ pub enum Clients {
     /// OpenAI chat-completions client over the netmind gateway.
     Netmind(openai::CompletionsClient),
 }
+
+impl Provider {
+    /// Resolve the ollama base URL the same way the rig client builder
+    /// does: explicit flag, then `OLLAMA_API_BASE_URL`, then the daemon
+    /// default.
+    fn ollama_base_url(&self) -> Option<String> {
+        match self {
+            Self::Ollama {
+                base_url,
+            } => Some(
+                base_url
+                    .clone()
+                    .or_else(|| std::env::var("OLLAMA_API_BASE_URL").ok())
+                    .unwrap_or_else(|| "http://localhost:11434".to_owned()),
+            ),
+            Self::Netmind { .. } => None,
+        }
+    }
+
+    /// Preflight the model registry: every configured model must exist on
+    /// the daemon before the run starts. A missing model fails here with
+    /// the fix, not as a cryptic 404 from the first turn.
+    pub async fn check_models(&self, models: &[String]) -> anyhow::Result<()> {
+        let Some(base_url) = self.ollama_base_url() else {
+            return Ok(());
+        };
+        let url = format!("{base_url}/api/tags");
+        let response = reqwest::get(&url)
+            .await
+            .with_context(|| format!("ollama daemon unreachable at {base_url}; start it with 'ollama serve'"))?;
+        let status = response.status();
+        let body: serde_json::Value = response
+            .json()
+            .await
+            .with_context(|| format!("ollama /api/tags returned HTTP {status}; expected a model list"))?;
+        let served: Vec<String> = body["models"]
+            .as_array()
+            .map(|models| {
+                models
+                    .iter()
+                    .filter_map(|model| model["name"].as_str().map(str::to_owned))
+                    .collect()
+            })
+            .unwrap_or_default();
+        let missing: Vec<&String> = models
+            .iter()
+            .filter(|model| {
+                // Untagged names register as `name:latest`.
+                !served.iter().any(|name| name == *model || name == &format!("{model}:latest"))
+            })
+            .collect();
+        if missing.is_empty() {
+            return Ok(());
+        }
+        let list = missing.iter().map(|model| model.as_str()).collect::<Vec<_>>().join(", ");
+        anyhow::bail!(
+            "ollama does not serve model(s): {list}. Fix: bash qlora/scripts/merge_and_export.sh (runs 'ollama create <model>'), or set run.model / mas.model_ladder to a model from 'ollama list'."
+        )
+    }
+}

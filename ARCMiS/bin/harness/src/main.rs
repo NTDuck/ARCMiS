@@ -116,6 +116,15 @@ async fn run() -> anyhow::Result<()> {
         hypothesis: String::new(),
         created_at: now_rfc3339(),
     };
+    // Preflight the model registry before any agent runs: every configured
+    // model must exist on the daemon, or the run fails here with the fix.
+    let models: Vec<String> = if config.mas.model_ladder.is_empty() {
+        vec![config.run.model.clone()]
+    } else {
+        config.mas.model_ladder.clone()
+    };
+    provider.check_models(&models).await?;
+
     blackboard::manifest::write(&run_dir, &manifest)?;
     // The workspace copy is the specialists' view of the run contract:
     // target language and toolchain come from here, not from guessing.

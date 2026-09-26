@@ -9,7 +9,7 @@ fn mas_config_yml_parses() {
         .expect("config file");
     let config: Config = serde_yaml::from_str(&text).expect("parse");
     assert_eq!(config.run.provider, "ollama");
-    assert_eq!(config.run.model, "qwen3.8:27b-mtp-q4_K_M");
+    assert_eq!(config.run.model, "recodeagent-sft");
     assert!(config.run.provider_is_ollama());
     assert_eq!(config.source.language, "c");
     assert_eq!(config.source.target.language, "rust");

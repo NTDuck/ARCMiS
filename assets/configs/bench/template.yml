@@ -42,6 +42,9 @@ mas:
   plan_cap: 6000
   notes_cap: 12000
   model_ladder:
+    # Fine-tuned swift (qlora/scripts/merge_and_export.sh); the harness
+    # preflight fails fast when absent.
+    - recodeagent-sft
     - smtek/Swift-Qwen3.8-27B:map-k4v
   max_generated_tests_per_module: 8
   # Dynamic orchestration (ADR 0022): ready-set breadth per round and the
