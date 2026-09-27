@@ -13,6 +13,9 @@ base_model: ukisai/Swift-Qwen3.8-27b
 # 52 GB bf16 checkpoint in system RAM first (this machine has 15 GB RAM;
 # without these keys the loader is killed by systemd-oomd after weight load).
 load_in_4bit: true
+# Skip the post-load fp32 upcast of the 2.54B-param embedding/LM-head
+# (a 4.7 GiB spike on top of the ~19 GB NF4 model — OOMs a 24 GB card).
+embeddings_skip_upcast: true
 low_cpu_mem_usage: true
 device_map: cuda:0
 adapter: qlora
@@ -21,6 +24,11 @@ lora_alpha: 64
 lora_dropout: 0.05
 lora_target_linear: true
 lora_fan_in_fan_out: false
+# 154k-vocab logits at packed seq_len don't fit alongside the NF4 model:
+# ForCausalLMLoss upcasts the full logits tensor to fp32 (+3.8 GiB spike).
+# Chunked CE computes loss over 8 slices, never materializing the full upcast.
+chunked_cross_entropy: true
+chunked_cross_entropy_num_chunks: 8
 
 # Sequence -------------------------------------------------------------------
 sequence_len: 4096
