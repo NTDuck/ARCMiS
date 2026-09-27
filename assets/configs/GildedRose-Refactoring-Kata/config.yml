@@ -1,5 +1,5 @@
 run:
-  model: qwen3.8:27b-mtp-q4_K_M
+  model: smtek/Swift-Qwen3.8-27B:map-k4v
   max_turns: 14
   num_ctx: 16384
   max_output_tokens: 4096
