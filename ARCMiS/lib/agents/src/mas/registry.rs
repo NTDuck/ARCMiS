@@ -2,11 +2,12 @@
 //! model assignment, and the tool instances. One agent per role; the
 //! orchestrator wires the concrete tool set per delegation.
 
+use std::collections::BTreeMap;
+use std::sync::Arc;
+
 use rig::agent::Agent;
 use rig::client::completion::CompletionClient;
 use rig::client::AgentClientExt;
-use std::collections::BTreeMap;
-use std::sync::Arc;
 
 use crate::mas::fleet::Fleet;
 use crate::mas::roles::Role;
@@ -65,7 +66,9 @@ where
             builder = builder.add_hook(crate::mas::trace::TraceHook::new(role.name(), sink.clone()));
         }
         builder = builder.add_hook(crate::mas::continuation::TrailingUserMessageHook);
-        // Snapcompact for every agent (ADR 0022): threshold 0 disables.
+        // Snapcompact for every agent (ADR 0022): threshold 0 disables. The
+        // trailing query keeps the continuation hook's user-query guarantee
+        // alive when compaction replaces the history (ollama 500 otherwise).
         if let Some(config) = snapcompact.filter(|config| config.threshold_tokens > 0) {
             builder = builder.add_hook(snapcompact::SnapcompactHook {
                 threshold_tokens: config.threshold_tokens,
@@ -74,6 +77,7 @@ where
                     ..snapcompact::CompactOptions::default()
                 },
                 font: snapcompact_font.clone(),
+                trailing_user_query: Some(crate::mas::continuation::CONTINUATION_QUERY.to_owned()),
             });
         }
         if let Some(params) = extra_params(run) {
