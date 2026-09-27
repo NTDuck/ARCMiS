@@ -351,7 +351,7 @@ role one rung on repeated failure.
 
 A run succeeds only when the evaluator reruns the target toolchain
 (\texttt{cargo build} + \texttt{cargo test} for Rust targets,
-\texttt{pytest} for Python, or \texttt{node --check} for JavaScript
+\texttt{pytest} for Python, or \texttt{node --c{}heck} for JavaScript
 syntax) in the produced workspace and every test passes. Agent
 self-reports are recorded but never trusted. This rule exists because the
 surveys caught real self-report traps. In the 220926 sweep, three ledger
@@ -432,7 +432,7 @@ alphatrans/commons-validator & Java & Python & 28{,}110 \\
 \end{tabular}
 \caption{The cycle-1 autooptimise problem sets (measured on source trees,
 headers excluded for C). Test commands come from the config:
-\texttt{cargo test}, \texttt{pytest}, or \texttt{node --check}.}
+\texttt{cargo test}, \texttt{pytest}, or \texttt{node --c{}heck}.}
 \label{tab:problems}
 \end{table}
 \paragraph{Budgets.}
