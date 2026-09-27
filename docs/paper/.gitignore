@@ -1,5 +1,9 @@
-paper.aux
-paper.log
-paper.out
-paper.blg
+# LaTeX build intermediates
+*.aux
+*.log
+*.out
+*.blg
+*.fls
+*.fdb_latexmk
+*.synctex.gz
 missfont.log
