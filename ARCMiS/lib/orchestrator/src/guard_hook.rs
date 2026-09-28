@@ -2,10 +2,10 @@
 //! from every agent passes the deterministic tier first — role allowlist,
 //! path policy (`source/` read-only), deny patterns for bash. Rejections
 //! return `ToolCallAction::Skip(feedback)` so the model sees the reason and
-//! can self-correct; the breaker counts repeats. Calls the deterministic
-//! tier marks `Ask` fall to the model-arbitration tier (the Jev slot),
-//! which is deny-by-default until an arbiter is configured
-//! (`guard.ask_model`).
+//! can self-correct; the breaker counts repeats. Denied Ask-class calls
+//! (the `ask` tool) may arbitrate through the laya-backed Jev judge
+//! (ADR 0023); every other denial, and budget exhaustion, is final.
+//! Without an enabled judge the Ask slot stays deny-by-default.
 
 use std::path::PathBuf;
 use std::sync::atomic::AtomicU64;
@@ -146,17 +146,26 @@ impl AgentHook for GuardHook {
     }
 
     async fn on_tool_call(&self, _ctx: &HookContext, event: ToolCall<'_>) -> ToolCallAction {
-        let verdict = self.deterministic(event.tool_name, event.args).or_else(|| self.budget_verdict());
+        self.gate_call(event.tool_name, event.args)
+    }
+}
+
+impl GuardHook {
+    /// The tool gateway: deterministic tier first, then budget. A denied
+    /// Ask-class call may arbitrate through the Jev judge (ADR 0023).
+    /// Budget exhaustion and every non-ask denial are never arbitrable.
+    fn gate_call(&self, tool_name: &str, args: &str) -> ToolCallAction {
+        let verdict = self.deterministic(tool_name, args).or_else(|| self.budget_verdict());
         if let Some(reason) = verdict {
             // The Jev slot (ADR 0023): a confident judge verdict can allow
-            // a call the deterministic tier flagged. Fallback keeps the
-            // deny.
-            if self.arbitrate_ask(event.tool_name, event.args) {
+            // a denied Ask-class call. Budget exhaustion and every other
+            // denial are never arbitrable. Fallback keeps the deny.
+            if tool_name == "ask" && self.arbitrate_ask(tool_name, args) {
                 return ToolCallAction::Run;
             }
             self.rejections.fetch_add(1, Ordering::Relaxed);
             if let Ok(mut slot) = self.last_rejection.lock() {
-                *slot = Some(format!("{}: {}", event.tool_name, reason));
+                *slot = Some(format!("{tool_name}: {reason}"));
             }
             return ToolCallAction::Skip(format!(
                 "GUARD REFUSAL: {reason}. Stay inside the role's tools and the workspace layout."
@@ -164,13 +173,12 @@ impl AgentHook for GuardHook {
         }
         ToolCallAction::Run
     }
-}
 
-impl GuardHook {
-    /// Consult the Jev judge on a denied call. True when the judge is
-    /// confident the call fits the role. Any fallback (disabled judge,
-    /// load or inference error, low confidence, foreign labels) keeps the
-    /// deterministic denial (arXiv:2609.26550 §7: unsure always defers).
+    /// Consult the Jev judge on a denied Ask-class call. True when the
+    /// judge is confident the call fits the role. Any fallback (disabled
+    /// judge, load or inference error, low confidence, foreign labels)
+    /// keeps the deterministic denial (arXiv:2609.26550 §7: unsure always
+    /// defers). Non-ask tools never arbitrate.
     fn arbitrate_ask(&self, tool_name: &str, args: &str) -> bool {
         if !self.judge.is_enabled() {
             return false;
@@ -296,6 +304,61 @@ mod tests {
         let hook = GuardHook::new(Role::Validator, workspace(), policy, 32768);
         assert!(!hook.judge.is_enabled());
         assert!(!hook.arbitrate_ask("write", r#"{"path":"target/x.rs"}"#));
+    }
+
+    /// A hook with an enabled (though fallback-prone) judge section.
+    fn hook_with_judge() -> GuardHook {
+        let policy = GuardConfig {
+            jev_judge: agents::util::config::JevJudgeConfig {
+                enabled: true,
+                checkpoint: "/nonexistent/jev-checkpoint".into(),
+                confidence_threshold: 0.9,
+            },
+            ..GuardConfig::default()
+        };
+        GuardHook::new(Role::Validator, workspace(), policy, 32768)
+    }
+
+    #[test]
+    fn budget_exhaustion_is_never_arbitrable() {
+        let hook = hook_with_judge();
+        let mut action = hook.gate_call("write", r#"{"path":"target/x.rs","content":"fn f() {}"}"#);
+        for _ in 1..3 {
+            action = hook.gate_call("write", r#"{"path":"target/x.rs","content":"fn f() {}"}"#);
+        }
+        // Third call hits the budget; the enabled judge must not allow it.
+        assert!(matches!(action, ToolCallAction::Skip(_)), "budget denial must stand: {action:?}");
+    }
+
+    #[test]
+    fn bash_deny_pattern_is_never_arbitrable() {
+        let hook = hook_with_judge();
+        let action = hook.gate_call("bash", r#"{"command":"rm -rf /"}"#);
+        assert!(matches!(action, ToolCallAction::Skip(_)), "deny-pattern denial must stand: {action:?}");
+    }
+
+    #[test]
+    fn confident_ask_verdict_allows_the_call() {
+        // The committed tiny fixture is random-init, so q sits near 0.5;
+        // tau 0.45 admits it. `ask` is outside the Validator allowlist, so
+        // the deterministic tier denies and the judge arbitrates.
+        let fixture =
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../.omp/skills/laya/references/tests/fixtures/tiny");
+        let policy = GuardConfig {
+            jev_judge: agents::util::config::JevJudgeConfig {
+                enabled: true,
+                checkpoint: fixture.to_string_lossy().into_owned(),
+                confidence_threshold: 0.45,
+            },
+            ..GuardConfig::default()
+        };
+        let hook = GuardHook::new(Role::Validator, workspace(), policy, 32768);
+        assert!(hook.judge.is_enabled());
+        let action = hook.gate_call(
+            "ask",
+            r#"{"questions":[{"id":"q1","question":"Continue?","options":[{"label":"yes"},{"label":"no"}]}]}"#,
+        );
+        assert!(matches!(action, ToolCallAction::Run), "confident ask verdict must allow: {action:?}");
     }
 
     #[test]

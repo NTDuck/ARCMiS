@@ -25,9 +25,10 @@ decision interface locally: `choice` (probabilities over named labels),
 
 Add `JevJudge` (`ARCMiS/lib/orchestrator/src/jev_judge.rs`): a wrapper
 over `Option<Arc<laya::Agent>>` that answers one choice question per
-consultation. The guard's denied calls consult it before the refusal
-ships. A confident `appropriate` verdict allows the call, every other
-outcome keeps the deterministic denial.
+consultation. The guard's denied Ask-class calls consult it before the
+refusal ships. A confident `appropriate` verdict allows the call, every
+other outcome keeps the deterministic denial. Allowlist, path policy,
+deny patterns, and budget denials for non-ask tools stay untouched.
 
 The design points, each from the paper:
 
@@ -68,10 +69,11 @@ The design points, each from the paper:
   cache is a `Mutex` (`references/src/agent.rs`). `GuardHook` is `Clone`
   and shared across async tasks, so the judge holds `Arc<Agent>` and
   clones by reference-count.
-- **Deterministic tier first, judge second.** The judge only reviews calls
-  the deterministic tier flagged: allowlist, path policy, deny patterns,
-  and budget stay untouched, and the judge can only widen one denial, never
-  bypass a tier that passed the call. The paper's failure modes (JudgeBench
+- **Deterministic tier first, judge second.** The judge only reviews
+  Ask-class calls the deterministic tier flagged: allowlist, path policy,
+  deny patterns, and budget stay untouched for non-ask tools, and the
+  judge can only widen one denial, never bypass a tier that passed the
+  call. The paper's failure modes (JudgeBench
   −14.6pp on derivations, style-adversarial −19.8pp, reference-free prose
   near chance — §5 Table 2) argue for keeping the judge advisory, beside
   the deterministic rules, not above them.
