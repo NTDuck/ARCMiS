@@ -146,6 +146,36 @@ pub struct GuardConfig {
     /// small call budget in their prompts; the guard enforces it because
     /// the model alone will loop otherwise.
     pub max_tool_calls: usize,
+    /// Laya-backed Jev judge over the guard's Ask slot (ADR 0023). Off by
+    /// default: without a section the guard behaves exactly as before.
+    pub jev_judge: JevJudgeConfig,
+}
+
+/// Configuration for the laya-backed Jev judge (ADR 0023). One typed
+/// decision question per consultation; the confidence threshold gates
+/// acceptance per the cascade rule of arXiv:2609.26550 §7.
+#[derive(Debug, Clone, Deserialize, serde::Serialize)]
+#[serde(default)]
+pub struct JevJudgeConfig {
+    /// Consult the judge on Ask-class calls when true.
+    pub enabled: bool,
+    /// Local laya checkpoint directory. No hub download happens: an empty
+    /// path with `enabled` keeps the judge off.
+    pub checkpoint: String,
+    /// Minimum top-label probability that accepts a verdict. Below it the
+    /// caller falls back to its previous behavior (arXiv:2609.26550 §7:
+    /// accept when confident, escalate when unsure).
+    pub confidence_threshold: f64,
+}
+
+impl Default for JevJudgeConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            checkpoint: String::new(),
+            confidence_threshold: 0.9,
+        }
+    }
 }
 
 impl Default for GuardConfig {
@@ -164,6 +194,7 @@ impl Default for GuardConfig {
             ],
             ask_model: false,
             max_tool_calls: 0,
+            jev_judge: JevJudgeConfig::default(),
         }
     }
 }

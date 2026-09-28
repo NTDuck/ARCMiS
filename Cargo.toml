@@ -16,6 +16,7 @@ anyhow = "1.0.104"
 bdf-parser = "0.1.0"
 cucumber = "0.21.1"
 image = { version = "0.25", default-features = false, features = ["png"] }
+laya-rs = { version = "0.1", default-features = false }
 oxi-hashline = "0.64.0"
 petgraph = "0.8.3"
 rig = "0.42.0"
