@@ -44,6 +44,7 @@ pub fn build<C, F>(
     trace_sink: Option<Arc<crate::mas::trace::TraceSink>>,
     turns_for_role: impl Fn(Role) -> usize,
     snapcompact: Option<&crate::util::config::SnapcompactConfig>,
+    role_output_tokens: &std::collections::BTreeMap<String, u64>,
 ) -> anyhow::Result<MasAgents>
 where
     C: CompletionClient,
@@ -64,6 +65,11 @@ where
             .default_max_turns(turns_for_role(role));
         if let Some(sink) = &trace_sink {
             builder = builder.add_hook(crate::mas::trace::TraceHook::new(role.name(), sink.clone()));
+        }
+        // A role with an output override gets its ceiling patched onto every
+        // call; roles absent from the map keep the run default.
+        if let Some(ceiling) = role_output_tokens.get(role.name()) {
+            builder = builder.add_hook(crate::mas::role_output_tokens::RoleOutputTokensHook::new(*ceiling));
         }
         builder = builder.add_hook(crate::mas::continuation::TrailingUserMessageHook);
         // Snapcompact for every agent (ADR 0022): threshold 0 disables. The

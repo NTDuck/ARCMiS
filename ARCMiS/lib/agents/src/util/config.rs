@@ -127,6 +127,11 @@ pub struct MasConfig {
     /// disables the gate). Mirrors `run.num_ctx`; the orchestrator cannot
     /// see the run section.
     pub num_ctx: u64,
+    /// Per-role output-token overrides over `run.max_output_tokens`.
+    /// Translator file-emission turns die at the run default (c5 nandc
+    /// escalation); a role whose deliverable is one large file needs its
+    /// own ceiling. A role missing from the map keeps the run default.
+    pub role_output_tokens: std::collections::BTreeMap<String, u64>,
     /// Guard policy: deterministic deny patterns and the model-arbitration
     /// switch (the Jev slot; off until a second model exists).
     pub guard: GuardConfig,
@@ -214,6 +219,7 @@ impl Default for MasConfig {
             fanout: 2,
             collective_turns: 40,
             num_ctx: 32768,
+            role_output_tokens: std::collections::BTreeMap::new(),
             guard: GuardConfig::default(),
         }
     }

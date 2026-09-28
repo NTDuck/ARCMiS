@@ -6,6 +6,11 @@ mod cli_sink;
 mod experiment;
 mod observability;
 
+use std::path::Path;
+use std::path::PathBuf;
+use std::process::ExitCode;
+use std::time::Instant;
+
 use agents::util::provider::Provider;
 use agents::Fleet;
 use blackboard::Budgets;
@@ -18,10 +23,6 @@ use blackboard::Workspace;
 use orchestrator::manager::ManagerLoop;
 use orchestrator::manager::RoundOutcome;
 use orchestrator::state_machine;
-use std::path::Path;
-use std::path::PathBuf;
-use std::process::ExitCode;
-use std::time::Instant;
 
 #[tokio::main]
 async fn main() -> ExitCode {
@@ -176,6 +177,7 @@ async fn run() -> anyhow::Result<()> {
             Some(trace_sink.clone()),
             turns_for_role,
             Some(&config.snapcompact),
+            &mas.role_output_tokens,
         )?,
         agents::util::provider::Clients::Netmind(client) => agents::mas::registry::build(
             client,
@@ -185,6 +187,7 @@ async fn run() -> anyhow::Result<()> {
             Some(trace_sink.clone()),
             turns_for_role,
             Some(&config.snapcompact),
+            &mas.role_output_tokens,
         )?,
     };
 

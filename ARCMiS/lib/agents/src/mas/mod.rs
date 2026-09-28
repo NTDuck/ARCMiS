@@ -6,6 +6,7 @@
 pub mod continuation;
 pub mod fleet;
 pub mod registry;
+pub mod role_output_tokens;
 pub mod roles;
 pub mod trace;
 
