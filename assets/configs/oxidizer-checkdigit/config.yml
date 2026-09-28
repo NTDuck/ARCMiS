@@ -7,10 +7,10 @@ run:
   think: true
   temperature: 0.2
 output:
-  dir: .artifacts/experiments/crust-nandc/workspace
+  dir: .artifacts/experiments/oxidizer-checkdigit/workspace
 source:
-  language: c
-  root: assets/ReCodeAgent/data/tool_projects/crust/nandc/c
+  language: go
+  root: assets/ReCodeAgent/data/tool_projects/oxidizer/checkdigit/go
   target:
     language: rust
     test_command: sh -c '(cd target 2>/dev/null && cargo test) || cargo test'
