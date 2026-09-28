@@ -114,9 +114,15 @@ impl GuardHook {
             if tool_name == "read" && self.num_ctx > 0 {
                 if let Some(size) = self.file_size_bytes(&path) {
                     let projected = self.projected_tokens.load(Ordering::Relaxed);
+                    // A partial read (`limit` lines, default 400) delivers at
+                    // most its line budget, not the whole file; charging the
+                    // full size denied window-scoped reads of large files the
+                    // model was allowed to sample (c6 fileupload).
+                    let limit = read_limit(args);
+                    let effective_size = size.min(limit.saturating_mul(80));
                     // ~4 bytes per token, plus headroom for tool-result JSON
                     // framing.
-                    let file_tokens = (size / 4).saturating_add(64);
+                    let file_tokens = (effective_size / 4).saturating_add(64);
                     if projected + file_tokens > self.num_ctx * 8 / 10 {
                         return Some(self.scope_feedback());
                     }
@@ -234,6 +240,13 @@ fn arg_path_str(args: &str) -> Option<String> {
 fn command_str(args: &str) -> Option<String> {
     let value: serde_json::Value = serde_json::from_str(args).ok()?;
     value.get("command").and_then(serde_json::Value::as_str).map(str::to_owned)
+}
+
+/// Extract the read tool's line limit; the tool's own default is 400.
+fn read_limit(args: &str) -> u64 {
+    let value: Option<serde_json::Value> = serde_json::from_str(args).ok();
+    let limit = value.as_ref().and_then(|value| value.get("limit")).and_then(serde_json::Value::as_u64);
+    limit.unwrap_or(400).max(1)
 }
 
 /// Whether the tool can mutate the workspace. Only these meet the source/
@@ -487,5 +500,28 @@ mod tests {
             hook.deterministic("read", r#"{"path":"source/base.java"}"#).is_some(),
             "floor 30000 + 8864 > 26214: the read gate must fire when the projection updated"
         );
+    }
+
+    #[test]
+    fn partial_read_is_charged_by_its_limit_not_the_full_file() {
+        // C6 fileupload evidence: limit=45 reads of FileUploadBase.java were
+        // denied at projections where the delivered 45 lines (~3 KB) fit the
+        // window; the gate charged the full 35 KB. A partial read's charge
+        // is its line budget, so a small window-sample of a large file is
+        // allowed even when a full read is not.
+        let hook = hook(Role::Analyst);
+        let root = hook.inner.workspace().root().to_path_buf();
+        std::fs::create_dir_all(root.join("source")).unwrap();
+        std::fs::write(root.join("source/base.java"), "x".repeat(35_000)).unwrap();
+        // 20k floor: full-file charge (8.8k tokens) trips; 45 lines * 80 B
+        // (~964 tokens) does not.
+        hook.projected_tokens.store(20_000, Ordering::Relaxed);
+        assert!(
+            hook.deterministic("read", r#"{"path":"source/base.java","limit":45}"#).is_none(),
+            "45-line sample ~ 964 tokens: 20k + 0.96k < 26.2k, the gate must not fire"
+        );
+        // The default (400 lines * 80 B ~ 8.1k tokens) still trips at the
+        // same floor: the gate bounds the delivered size, not the file's.
+        assert!(hook.deterministic("read", r#"{"path":"source/base.java"}"#).is_some());
     }
 }
