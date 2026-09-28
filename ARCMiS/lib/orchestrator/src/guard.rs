@@ -26,6 +26,12 @@ impl Guard {
         }
     }
 
+    /// The workspace this guard polices.
+    #[must_use]
+    pub fn workspace(&self) -> &Workspace {
+        &self.workspace
+    }
+
     /// Whether the role may call this tool at all.
     #[must_use]
     pub fn permits_tool(&self, name: &str) -> bool {

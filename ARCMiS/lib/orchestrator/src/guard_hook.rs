@@ -98,9 +98,11 @@ impl GuardHook {
             // Read-scoping: a read that would push the projected next-turn
             // input past the context window is skipped with a scope hint
             // (c4 evidence: 30k+ saturating turns died as Length with no
-            // answer). Applies to read-class tools only.
+            // answer). Applies to read-class tools only. Tool paths resolve
+            // from the workspace root, so size checks must too; a harness-
+            // cwd lookup misses and silently disables the gate.
             if tool_name == "read" && self.num_ctx > 0 {
-                if let Some(size) = file_size_bytes(&path) {
+                if let Some(size) = self.file_size_bytes(&path) {
                     let projected = self.projected_tokens.load(Ordering::Relaxed);
                     // ~4 bytes per token, plus headroom for tool-result JSON
                     // framing.
@@ -169,12 +171,14 @@ impl GuardHook {
         "read would exhaust the context window; scope to one module; read head and grep symbols; summarize as you go"
             .into()
     }
-}
 
-/// Size of an existing file in bytes; `None` when the path is not a plain
-/// file (directories and virtual paths skip the gate).
-fn file_size_bytes(path: &str) -> Option<u64> {
-    std::fs::metadata(path).ok().filter(|meta| meta.is_file()).map(|meta| meta.len())
+    /// Size of an existing file in bytes, resolved from the workspace root
+    /// exactly as tool paths resolve. `None` when the path is not a plain
+    /// file (directories and virtual paths skip the gate).
+    fn file_size_bytes(&self, path: &str) -> Option<u64> {
+        let resolved = self.inner.workspace().root().join(path);
+        std::fs::metadata(resolved).ok().filter(|meta| meta.is_file()).map(|meta| meta.len())
+    }
 }
 
 /// Extract the write target from a raw JSON args string. Tools without a
@@ -286,11 +290,9 @@ mod tests {
     fn allows_small_read_below_threshold() {
         let dir = std::env::temp_dir().join(format!("guard-read-test-{}", std::process::id()));
         std::fs::create_dir_all(dir.join("source")).unwrap();
-        let file = dir.join("source/small.c");
-        std::fs::write(&file, "int x;\n".repeat(10)).unwrap();
-        let hook = hook(Role::Analyst);
-        let args = format!(r#"{{"path":"{}"}}"#, file.display());
-        assert!(hook.deterministic("read", &args).is_none());
+        std::fs::write(dir.join("source/small.c"), "int x;\n".repeat(10)).unwrap();
+        let hook = GuardHook::new(Role::Analyst, Workspace::new(dir), GuardConfig::default(), 32768);
+        assert!(hook.deterministic("read", r#"{"path":"source/small.c"}"#).is_none());
     }
 
     #[test]
@@ -298,21 +300,35 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("guard-read-big-{}", std::process::id()));
         std::fs::create_dir_all(dir.join("source")).unwrap();
         // At a 32768 window, the gate trips at 80%: ~26k tokens ~ 105k bytes.
-        let file = dir.join("source/big.c");
-        std::fs::write(&file, "x".repeat(200_000)).unwrap();
-        let hook = hook(Role::Analyst);
+        std::fs::write(dir.join("source/big.c"), "x".repeat(200_000)).unwrap();
+        let hook = GuardHook::new(Role::Analyst, Workspace::new(dir), GuardConfig::default(), 32768);
         hook.projected_tokens.store(20_000, Ordering::Relaxed);
-        let args = format!(r#"{{"path":"{}"}}"#, file.display());
-        let verdict = hook.deterministic("read", &args).expect("big read denied");
+        let verdict = hook.deterministic("read", r#"{"path":"source/big.c"}"#).expect("big read denied");
         assert!(verdict.contains("context window"));
         assert!(verdict.contains("scope to one module"));
+    }
+
+    #[test]
+    fn gate_fires_for_workspace_relative_path_from_any_cwd() {
+        // Regression: the size check once resolved against the harness cwd,
+        // so real-run paths (workspace-relative) never hit a file and the
+        // gate silently never fired (c5 traces: 0 skips with 47 large
+        // reads). The path here exists only under the workspace root, and
+        // the test runs from whatever cwd the harness uses.
+        let dir = std::env::temp_dir().join(format!("guard-read-rel-{}", std::process::id()));
+        std::fs::create_dir_all(dir.join("source")).unwrap();
+        std::fs::write(dir.join("source/big.c"), "x".repeat(200_000)).unwrap();
+        let hook = GuardHook::new(Role::Analyst, Workspace::new(dir), GuardConfig::default(), 32768);
+        hook.projected_tokens.store(20_000, Ordering::Relaxed);
+        let verdict = hook.deterministic("read", r#"{"path":"source/big.c"}"#).expect("gate must fire");
+        assert!(verdict.contains("context window"));
     }
 
     #[test]
     fn non_read_tools_skip_the_size_gate() {
         let dir = std::env::temp_dir().join(format!("guard-read-bash-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
-        let hook = hook(Role::Translator);
+        let hook = GuardHook::new(Role::Translator, Workspace::new(dir.clone()), GuardConfig::default(), 32768);
         // A bash command touching a huge file is not a read; the gate is
         // read-only by design.
         let args = format!(r#"{{"command":"wc -l {}"}}"#, dir.display());
@@ -323,11 +339,9 @@ mod tests {
     fn zero_num_ctx_disables_read_gate() {
         let dir = std::env::temp_dir().join(format!("guard-read-off-{}", std::process::id()));
         std::fs::create_dir_all(dir.join("source")).unwrap();
-        let file = dir.join("source/big.c");
-        std::fs::write(&file, "x".repeat(200_000)).unwrap();
+        std::fs::write(dir.join("source/big.c"), "x".repeat(200_000)).unwrap();
         let hook = GuardHook::new(Role::Analyst, Workspace::new(dir), GuardConfig::default(), 0);
         hook.projected_tokens.store(20_000, Ordering::Relaxed);
-        let args = format!(r#"{{"path":"{}"}}"#, file.display());
-        assert!(hook.deterministic("read", &args).is_none());
+        assert!(hook.deterministic("read", r#"{"path":"source/big.c"}"#).is_none());
     }
 }
