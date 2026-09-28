@@ -19,6 +19,7 @@ mas:
   max_rounds: 20
   role_output_tokens:
     translator: 16384
+    planner: 16384
   role_think:
     analyst: false
     translator: false
