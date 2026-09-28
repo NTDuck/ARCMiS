@@ -45,6 +45,7 @@ pub fn build<C, F>(
     turns_for_role: impl Fn(Role) -> usize,
     snapcompact: Option<&crate::util::config::SnapcompactConfig>,
     role_output_tokens: &std::collections::BTreeMap<String, u64>,
+    role_think: &std::collections::BTreeMap<String, bool>,
 ) -> anyhow::Result<MasAgents>
 where
     C: CompletionClient,
@@ -86,7 +87,7 @@ where
                 trailing_user_query: Some(crate::mas::continuation::CONTINUATION_QUERY.to_owned()),
             });
         }
-        if let Some(params) = extra_params(run) {
+        if let Some(params) = extra_params(run, role_think.get(role.name()).copied()) {
             builder = builder.additional_params(params);
         }
         // Fold the adapters through the public portable_dynamic_tool; the
@@ -112,12 +113,13 @@ where
 
 /// Provider-neutral extra params. Ollama models need the context window and
 /// the think switch; the OpenAI wire has no counterpart, so the params ride
-/// only when the run config says the provider is ollama.
-fn extra_params(run: &Run) -> Option<serde_json::Value> {
+/// only when the run config says the provider is ollama. A per-role think
+/// override (`mas.role_think`) wins over the run default.
+fn extra_params(run: &Run, think_override: Option<bool>) -> Option<serde_json::Value> {
     if run.provider_is_ollama() {
         Some(serde_json::json!({
             "num_ctx": run.num_ctx,
-            "think": run.think,
+            "think": think_override.unwrap_or(run.think),
         }))
     } else {
         None

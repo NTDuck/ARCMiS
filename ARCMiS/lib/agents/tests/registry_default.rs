@@ -73,3 +73,18 @@ fn run_provider_flag_gates_ollama_params() {
     run.provider = "netmind".into();
     assert!(!run.provider_is_ollama());
 }
+
+#[test]
+fn role_think_override_wins_over_run_default() {
+    // c8 fileupload: translator reasoning filled the context window before
+    // its first write. The per-role override must beat the run default and
+    // a missing role must fall back to it.
+    let run = Run::default();
+    assert!(run.think, "run default is think-on");
+    let mut role_think = std::collections::BTreeMap::new();
+    role_think.insert("translator".to_owned(), false);
+    // Override applies where present...
+    assert_eq!(role_think.get("translator").copied(), Some(false));
+    // ...and the run default holds where absent.
+    assert_eq!(role_think.get("analyst").copied().unwrap_or(run.think), true);
+}

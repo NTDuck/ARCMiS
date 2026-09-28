@@ -178,6 +178,7 @@ async fn run() -> anyhow::Result<()> {
             turns_for_role,
             Some(&config.snapcompact),
             &mas.role_output_tokens,
+            &mas.role_think,
         )?,
         agents::util::provider::Clients::Netmind(client) => agents::mas::registry::build(
             client,
@@ -188,6 +189,7 @@ async fn run() -> anyhow::Result<()> {
             turns_for_role,
             Some(&config.snapcompact),
             &mas.role_output_tokens,
+            &mas.role_think,
         )?,
     };
 

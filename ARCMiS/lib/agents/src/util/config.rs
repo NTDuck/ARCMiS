@@ -132,6 +132,10 @@ pub struct MasConfig {
     /// escalation); a role whose deliverable is one large file needs its
     /// own ceiling. A role missing from the map keeps the run default.
     pub role_output_tokens: std::collections::BTreeMap<String, u64>,
+    /// Per-role think overrides over `run.think`. A role missing from
+    /// the map keeps the run default (c8 fileupload: translator
+    /// reasoning filled the window before its first write).
+    pub role_think: std::collections::BTreeMap<String, bool>,
     /// Guard policy: deterministic deny patterns and the model-arbitration
     /// switch (the Jev slot; off until a second model exists).
     pub guard: GuardConfig,
@@ -220,6 +224,7 @@ impl Default for MasConfig {
             collective_turns: 40,
             num_ctx: 32768,
             role_output_tokens: std::collections::BTreeMap::new(),
+            role_think: std::collections::BTreeMap::new(),
             guard: GuardConfig::default(),
         }
     }
