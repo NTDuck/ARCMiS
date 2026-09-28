@@ -1,8 +1,8 @@
 run:
   model: smtek/Swift-Qwen3.8-27B:map-k4v
   max_turns: 14
-  num_ctx: 16384
-  max_output_tokens: 4096
+  num_ctx: 32768
+  max_output_tokens: 8192
   max_retries: 1
   think: true
   temperature: 0.2
