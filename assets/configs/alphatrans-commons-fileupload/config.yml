@@ -19,3 +19,5 @@ mas:
   max_rounds: 20
   role_output_tokens:
     translator: 16384
+  role_think:
+    translator: false
