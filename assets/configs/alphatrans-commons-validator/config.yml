@@ -15,4 +15,5 @@ source:
     language: python
     test_command: uv run --with pytest python3 -m pytest -q -p no:cacheprovider --tb=no
 mas:
+  fanout: 3
   max_rounds: 20

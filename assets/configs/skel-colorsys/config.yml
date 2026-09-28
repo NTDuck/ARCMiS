@@ -15,4 +15,5 @@ source:
     language: javascript
     test_command: sh -c 'find target -name "*.js" -exec node --check {} \;'
 mas:
+  fanout: 3
   max_rounds: 20

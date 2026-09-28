@@ -15,4 +15,5 @@ source:
     language: rust
     test_command: sh -c '(cd target 2>/dev/null && cargo test) || cargo test'
 mas:
+  fanout: 3
   max_rounds: 20
