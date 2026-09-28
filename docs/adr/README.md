@@ -28,6 +28,8 @@ Numbered, immutable Architecture Decision Records. Format and policy: [`.omp/rul
 | [0019](0019-folder-per-method.md) | One folder per method | accepted |
 | [0020](0020-meta-harness-experiment-contract.md) | Meta-Harness experiment contract | accepted |
 | [0021](0021-survey-sweep-methods-models.md) | Survey sweep across methods and models | accepted |
+| [0022](0022-hierarchical-dynamic-adaptive-orchestration.md) | Hierarchical dynamic-adaptive orchestration | accepted |
+| [0023](0023-laya-backed-jev-judge.md) | Laya-backed Jev judge on the guard Ask slot | accepted |
 
 ## References
 
