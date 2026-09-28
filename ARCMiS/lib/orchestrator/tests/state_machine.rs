@@ -128,7 +128,8 @@ fn router_keyword_pass_covers_role_verbs() {
 fn judge_parsers_accept_contract_lines() {
     // Diagnosis.
     let diagnosis = judges::parse_diagnosis(
-        "looked at the build.\nDIAGNOSIS: toolchain | missing serde feature in Cargo.toml | add serde with derive and rebuild",
+        "looked at the build.\nDIAGNOSIS: toolchain | missing serde feature in Cargo.toml | add serde with derive and \
+         rebuild",
     )
     .expect("diagnosis line");
     assert_eq!(diagnosis.category, judges::FailureCategory::Toolchain);

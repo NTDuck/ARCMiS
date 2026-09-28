@@ -2,9 +2,10 @@
 //! router and fleet analyst mutate at run time. Values come from the config
 //! file; nothing here is hardcoded.
 
+use std::collections::BTreeMap;
+
 use serde::Deserialize;
 use serde::Serialize;
-use std::collections::BTreeMap;
 
 use crate::mas::roles::Role;
 

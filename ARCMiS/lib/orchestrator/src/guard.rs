@@ -3,8 +3,9 @@
 //! against the role's allowlist and the workspace rule (source/ is
 //! read-only).
 
-use blackboard::Workspace;
 use std::path::Path;
+
+use blackboard::Workspace;
 
 /// Guard over one role's tool calls.
 #[derive(Clone)]

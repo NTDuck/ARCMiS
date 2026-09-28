@@ -121,7 +121,9 @@ impl Provider {
                     .or_else(|| std::env::var("OLLAMA_API_BASE_URL").ok())
                     .unwrap_or_else(|| "http://localhost:11434".to_owned()),
             ),
-            Self::Netmind { .. } => None,
+            Self::Netmind {
+                ..
+            } => None,
         }
     }
 
@@ -143,12 +145,7 @@ impl Provider {
             .with_context(|| format!("ollama /api/tags returned HTTP {status}; expected a model list"))?;
         let served: Vec<String> = body["models"]
             .as_array()
-            .map(|models| {
-                models
-                    .iter()
-                    .filter_map(|model| model["name"].as_str().map(str::to_owned))
-                    .collect()
-            })
+            .map(|models| models.iter().filter_map(|model| model["name"].as_str().map(str::to_owned)).collect())
             .unwrap_or_default();
         let missing: Vec<&String> = models
             .iter()
@@ -162,7 +159,8 @@ impl Provider {
         }
         let list = missing.iter().map(|model| model.as_str()).collect::<Vec<_>>().join(", ");
         anyhow::bail!(
-            "ollama does not serve model(s): {list}. Fix: bash qlora/scripts/merge_and_export.sh (runs 'ollama create <model>'), or set run.model / mas.model_ladder to a model from 'ollama list'."
+            "ollama does not serve model(s): {list}. Fix: bash qlora/scripts/merge_and_export.sh (runs 'ollama create \
+             <model>'), or set run.model / mas.model_ladder to a model from 'ollama list'."
         )
     }
 }

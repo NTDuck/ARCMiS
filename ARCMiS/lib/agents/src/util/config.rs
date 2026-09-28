@@ -123,6 +123,10 @@ pub struct MasConfig {
     /// Turn budget for one team collective sub-loop (translator →
     /// validator → tester on one batch), nested under one delegation.
     pub collective_turns: usize,
+    /// Model context window, used by the guard's read-scoping gate (0
+    /// disables the gate). Mirrors `run.num_ctx`; the orchestrator cannot
+    /// see the run section.
+    pub num_ctx: u64,
     /// Guard policy: deterministic deny patterns and the model-arbitration
     /// switch (the Jev slot; off until a second model exists).
     pub guard: GuardConfig,
@@ -178,6 +182,7 @@ impl Default for MasConfig {
             max_generated_tests_per_module: 4,
             fanout: 2,
             collective_turns: 40,
+            num_ctx: 32768,
             guard: GuardConfig::default(),
         }
     }

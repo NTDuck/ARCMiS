@@ -1,10 +1,11 @@
 //! Registry default test: every role builds from a mock client, prompts
 //! resolve, and the fleet ladder promotes and demotes.
 
+use std::collections::BTreeMap;
+
 use agents::mas::fleet::Fleet;
 use agents::mas::roles::Role;
 use agents::util::config::Run;
-use std::collections::BTreeMap;
 
 #[test]
 fn registry_module_is_reachable() {

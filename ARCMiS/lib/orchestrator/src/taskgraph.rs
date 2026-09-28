@@ -196,7 +196,7 @@ async fn run_single(
         Role::Tester => policy.max_tool_calls = 40,
         _ => {},
     }
-    let guard = GuardHook::new(role, workspace.clone(), policy);
+    let guard = GuardHook::new(role, workspace.clone(), policy, config.num_ctx);
     ledger
         .append_decision(&blackboard::Decision {
             at: now_string(),

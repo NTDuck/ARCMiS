@@ -1,10 +1,11 @@
 //! Preflight test: the model-registry check must fail with a fix-naming
 //! error when a configured model is absent from the daemon's tag list.
 
-use agents::util::provider::Provider;
 use std::io::Read as _;
 use std::io::Write as _;
 use std::net::TcpListener;
+
+use agents::util::provider::Provider;
 
 /// Serve one JSON body from a throwaway TCP listener as `/api/tags`.
 /// Accepts up to four connections (one test request plus slack); the
@@ -23,7 +24,8 @@ fn mock_tags_server(body: &'static str) -> String {
                 break;
             }
             let response = format!(
-                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: \
+                 close\r\n\r\n{}",
                 body.len(),
                 body
             );
@@ -56,10 +58,7 @@ async fn check_models_names_missing_model_and_fix() {
     let provider = Provider::Ollama {
         base_url: Some(base_url),
     };
-    let error = provider
-        .check_models(&["recodeagent-sft".to_owned()])
-        .await
-        .expect_err("missing model must fail");
+    let error = provider.check_models(&["recodeagent-sft".to_owned()]).await.expect_err("missing model must fail");
     let message = format!("{error:#}");
     assert!(message.contains("recodeagent-sft"), "error names the model: {message}");
     assert!(message.contains("ollama create"), "error names the fix: {message}");
@@ -87,8 +86,5 @@ async fn check_models_skips_non_ollama_providers() {
         api_key: "unused".to_owned(),
         base_url: "https://example.invalid/v1".to_owned(),
     };
-    provider
-        .check_models(&["recodeagent-sft".to_owned()])
-        .await
-        .expect("netmind skips the registry check");
+    provider.check_models(&["recodeagent-sft".to_owned()]).await.expect("netmind skips the registry check");
 }
