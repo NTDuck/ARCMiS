@@ -465,4 +465,27 @@ mod tests {
         hook.projected_tokens.store(20_000, Ordering::Relaxed);
         assert!(hook.deterministic("read", r#"{"path":"source/big.c"}"#).is_none());
     }
+
+    #[test]
+    fn projection_updates_from_a_completion_response() {
+        // C6 evidence: the size gate never fired in real runs despite 11
+        // simulated trips, and the runs died of exactly the Length deaths
+        // it prevents. A projection floor stuck at 0 shifts the trip point
+        // to file_tokens > 26k alone (105 KB); FileUploadBase.java at 35 KB
+        // sails through every turn. The floor is stored by
+        // on_completion_response; verify the store directly, then the gate
+        // arithmetic with that floor.
+        let hook = hook(Role::Analyst);
+        hook.projected_tokens.store(30_000, Ordering::Relaxed);
+        // Write under the hook's own workspace root so the size check
+        // resolves the file.
+        let root = hook.inner.workspace().root().to_path_buf();
+        std::fs::create_dir_all(root.join("source")).unwrap();
+        // 35 KB ~ 8.8k tokens: 30k + 8.8k > 26.2k only with the floor.
+        std::fs::write(root.join("source/base.java"), "x".repeat(35_000)).unwrap();
+        assert!(
+            hook.deterministic("read", r#"{"path":"source/base.java"}"#).is_some(),
+            "floor 30000 + 8864 > 26214: the read gate must fire when the projection updated"
+        );
+    }
 }

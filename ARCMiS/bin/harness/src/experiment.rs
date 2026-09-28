@@ -2,9 +2,10 @@
 //! result aggregate post-run. One experiment = one output directory under
 //! `.artifacts/experiments/<id>/`.
 
+use std::path::Path;
+
 use anyhow::Context as _;
 use blackboard::Manifest;
-use std::path::Path;
 
 /// Write `manifest.json` into the experiment directory before the run.
 pub fn write_pre_run(dir: &Path, manifest: &Manifest) -> anyhow::Result<()> {

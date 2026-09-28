@@ -3,11 +3,12 @@
 //! breaker states, and the final summary. Meta-harness tooling reads this
 //! file after the run.
 
-use anyhow::Context as _;
-use serde_json::Value;
 use std::io::Write as _;
 use std::path::Path;
 use std::path::PathBuf;
+
+use anyhow::Context as _;
+use serde_json::Value;
 
 /// Append-only event log.
 pub struct EventLog {

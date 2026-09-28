@@ -12,11 +12,10 @@
 use std::path::Path;
 use std::sync::Arc;
 
+use agents::util::config::JevJudgeConfig;
 use anyhow::Context;
 use laya::Agent;
 use serde_json::Value;
-
-use agents::util::config::JevJudgeConfig;
 
 /// Confidence of an answer: the top label probability. The paper's `q`
 /// (arXiv:2609.26550 §4) tracks native confidence at Spearman 0.948-0.999
