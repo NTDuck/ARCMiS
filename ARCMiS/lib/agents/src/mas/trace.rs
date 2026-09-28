@@ -49,6 +49,9 @@ impl TraceSink {
             if let Some(result) = map.get_mut("result") {
                 cap_string(result, 2000);
             }
+            if let Some(reason) = map.get_mut("skip_reason") {
+                cap_string(reason, 2000);
+            }
         }
         let unix_seconds = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -129,16 +132,29 @@ impl AgentHook for TraceHook {
     }
 
     async fn on_tool_result(&self, _ctx: &HookContext, event: ToolResultEvent<'_>) -> ToolResultAction {
-        self.sink.append(
-            "tool_result",
-            serde_json::json!({
-                "agent": self.agent,
-                "tool": event.tool_name,
-                "result": format!("{:?}", event.raw_result),
-            }),
-        );
+        self.sink.append("tool_result", result_fields(self.agent, event.tool_name, event.raw_result));
         ToolResultAction::Keep
     }
+}
+
+/// Trace fields for one tool result. Status plus reason: a skipped result
+/// (gate denial, budget stop) carries its model feedback in the output text;
+/// the Debug form used to drop it, and triage miscounted gate denials as a
+/// dead hook.
+fn result_fields(agent: &str, tool: &str, result: &rig::tool::ToolResult) -> Value {
+    let mut fields = serde_json::json!({
+        "agent": agent,
+        "tool": tool,
+        "status": result.status_name(),
+    });
+    if result.is_skipped() {
+        if let Some(reason) = result.output().as_text() {
+            fields["skip_reason"] = serde_json::Value::String(reason.to_owned());
+        }
+    } else {
+        fields["result"] = serde_json::Value::String(format!("{result:?}"));
+    }
+    fields
 }
 
 /// Open the trace file lazily on append; a failed open drops the record.
@@ -208,5 +224,26 @@ mod tests {
         assert_eq!(calls.len(), 1);
         assert_eq!(calls[0], "read_file");
         assert_eq!(fields["text"], "");
+    }
+
+    #[test]
+    fn skipped_tool_result_records_the_reason() {
+        // Regression: a gate-skipped read used to log only the Debug status
+        // (`status: "skipped"`), dropping the denial reason - cycle-6 triage
+        // then counted zero gate trips where the trace held ~10.
+        let result = rig::tool::ToolResult::skipped("read would exhaust the context window");
+        let fields = result_fields("analyst", "read", &result);
+        assert_eq!(fields["status"], "skipped");
+        assert_eq!(fields["skip_reason"], "read would exhaust the context window");
+        assert!(fields.get("result").is_none());
+    }
+
+    #[test]
+    fn successful_tool_result_keeps_the_debug_form() {
+        let result = rig::tool::ToolResult::success(rig::tool::ToolOutput::text("ok"));
+        let fields = result_fields("analyst", "read", &result);
+        assert_eq!(fields["status"], "success");
+        assert!(fields["result"].as_str().is_some());
+        assert!(fields.get("skip_reason").is_none());
     }
 }
