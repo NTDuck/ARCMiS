@@ -189,7 +189,7 @@ async fn run_single(
     // otherwise burns the full turn budget and dies without a report.
     let mut policy = config.guard.clone();
     match role {
-        Role::Validator | Role::Critic => policy.max_tool_calls = 12,
+        Role::Validator | Role::Critic => policy.max_tool_calls = 20,
         // The tester's job is bounded (build, test, one sim run); 40 calls
         // absorb retries without letting re-verification loops eat the
         // 40-turn delegation budget (observed: 84 calls after a PASS).
@@ -215,12 +215,15 @@ async fn run_single(
             output: format!("no agent for role {}", role.name()),
         };
     };
-    let instruction = format!(
+    let mut instruction = format!(
         "{}\n\nRun phase: {:?}. Guard: edit only inside target/ (tool paths resolve from the workspace root; meta/ is \
          the blackboard). When the deliverable is written, append a 3-5 line summary of what you did and where the \
          deliverable lives to meta/notes.md (create it if missing), then stop. Do not re-read your own output.",
         delegation.task, phase
     );
+    if matches!(role, Role::Validator | Role::Critic) {
+        instruction.push_str("\n\nThe translated workspace lives under target/; start from target/Cargo.toml.");
+    }
     let turns = match role {
         Role::Validator | Role::Critic | Role::FailureAnalyst | Role::FleetAnalyst => config.judge_turns,
         _ => config.worker_turns,
