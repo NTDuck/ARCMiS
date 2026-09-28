@@ -2,15 +2,23 @@
 //! call, and tool result at `{output_dir}/traces/turns.jsonl`. The hook is
 //! observe-only: every callback returns `Continue`.
 
-use rig::agent::hook::{
-    AgentHook, CompletionCall, CompletionCallAction, CompletionResponse, HookContext, ObservationAction, ToolCall,
-    ToolCallAction, ToolResultAction, ToolResultEvent,
-};
-use serde_json::Value;
 use std::io::Write as _;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::Mutex;
+
+use rig::agent::hook::AgentHook;
+use rig::agent::hook::CompletionCall;
+use rig::agent::hook::CompletionCallAction;
+use rig::agent::hook::CompletionResponse;
+use rig::agent::hook::HookContext;
+use rig::agent::hook::ObservationAction;
+use rig::agent::hook::ToolCall;
+use rig::agent::hook::ToolCallAction;
+use rig::agent::hook::ToolResultAction;
+use rig::agent::hook::ToolResultEvent;
+use serde_json::Value;
 
 /// Append-only per-turn trace sink.
 pub struct TraceSink {
@@ -104,29 +112,7 @@ impl AgentHook for TraceHook {
     }
 
     async fn on_completion_response(&self, _ctx: &HookContext, event: CompletionResponse<'_>) -> ObservationAction {
-        self.sink.append(
-            "model_response",
-            serde_json::json!({
-                "agent": self.agent,
-                "usage": {
-                    "input_tokens": event.usage.input_tokens,
-                    "output_tokens": event.usage.output_tokens,
-                    "total_tokens": event.usage.total_tokens,
-                    "cached_input_tokens": event.usage.cached_input_tokens,
-                },
-                "text": event
-                    .content
-                    .iter()
-                    .filter_map(|part| match part {
-                        rig::completion::AssistantContent::Text(text) => {
-                            Some(text.text.clone())
-                        },
-                        _ => None,
-                    })
-                    .collect::<Vec<_>>()
-                    .join("\n"),
-            }),
-        );
+        self.sink.append("model_response", response_fields(self.agent, event));
         ObservationAction::Continue
     }
 
@@ -158,4 +144,69 @@ impl AgentHook for TraceHook {
 /// Open the trace file lazily on append; a failed open drops the record.
 pub fn sink(path: &Path) -> anyhow::Result<Arc<TraceSink>> {
     Ok(Arc::new(TraceSink::new(path)?))
+}
+
+/// Trace fields for one model response. Tool-call names ride alongside the
+/// text so a tool-only turn (empty text, executed calls) is not misread as a
+/// missing answer.
+fn response_fields(agent: &str, event: CompletionResponse<'_>) -> Value {
+    let mut text_parts = Vec::new();
+    let mut tool_calls = Vec::new();
+    for part in event.content {
+        match part {
+            rig::completion::AssistantContent::Text(text) => text_parts.push(text.text.clone()),
+            rig::completion::AssistantContent::ToolCall(call) => tool_calls.push(call.function.name.clone()),
+            _ => {},
+        }
+    }
+    serde_json::json!({
+        "agent": agent,
+        "usage": {
+            "input_tokens": event.usage.input_tokens,
+            "output_tokens": event.usage.output_tokens,
+            "total_tokens": event.usage.total_tokens,
+            "cached_input_tokens": event.usage.cached_input_tokens,
+        },
+        "text": text_parts.join("\n"),
+        "tool_calls": tool_calls,
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use rig::completion::AssistantContent;
+    use rig::message::Text;
+    use rig::message::ToolCall;
+    use rig::message::ToolCallId;
+    use rig::message::ToolFunction;
+
+    use super::*;
+
+    #[test]
+    fn response_with_only_tool_calls_records_the_calls() {
+        // Regression: a tool-only turn used to log `text: ""` with no trace
+        // of the calls, and every triage pass misread it as a model failure.
+        let content = vec![
+            AssistantContent::Text(Text::new(String::new())),
+            AssistantContent::ToolCall(ToolCall::new(
+                ToolCallId::new("test-call-1").unwrap(),
+                ToolFunction::new("read_file".into(), serde_json::json!({"path": "src/main.rs"})),
+            )),
+        ];
+        let response = CompletionResponse {
+            prompt: &rig::completion::Message::User {
+                content: Vec::new(),
+            },
+            content: &content,
+            usage: Default::default(),
+            message_id: None,
+            identity: &Default::default(),
+            raw: &serde_json::Value::Null,
+        };
+        let fields = response_fields("analyst", response);
+        let calls = fields["tool_calls"].as_array().unwrap();
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0], "read_file");
+        assert_eq!(fields["text"], "");
+    }
 }

@@ -6,8 +6,8 @@
 //! A `team` delegation runs the translation collective (translator →
 //! validator → tester, repairer re-entry) as a nested loop under one task.
 
-use crate::guard_hook::GuardHook;
-use crate::manager::{judge_output, now_string, prompt_with_retries};
+use std::path::Path;
+
 use agents::util::config::MasConfig;
 use agents::MasAgents;
 use agents::Role;
@@ -15,7 +15,12 @@ use blackboard::Ledger;
 use blackboard::TaskList;
 use blackboard::TaskStatus;
 use blackboard::Workspace;
-use std::path::Path;
+
+use crate::guard_hook::GuardHook;
+use crate::manager::judge_output;
+use crate::manager::now_string;
+use crate::manager::prompt_with_retries;
+use crate::manager::TurnOutput;
 
 /// One parsed `delegate` decision.
 #[derive(Debug, Clone)]
@@ -107,7 +112,7 @@ pub async fn execute(
             .iter()
             .find(|(_, task, depends_on)| *task == delegation.task && *depends_on == delegation.depends_on)
         {
-            Some((id, _, _)) => id.clone(),
+            Some((id, ..)) => id.clone(),
             None => {
                 let id = tasks.add(&delegation.task, &delegation.depends_on)?;
                 queued.push((id.clone(), delegation.task.clone(), delegation.depends_on.clone()));
@@ -211,19 +216,25 @@ async fn run_single(
         };
     };
     let instruction = format!(
-        "{}\n\nRun phase: {:?}. Guard: edit only inside target/ (tool paths resolve from the workspace root; meta/ is the blackboard). When the deliverable is written, append a 3-5 line summary of what you did and where the deliverable lives to meta/notes.md (create it if missing), then stop. Do not re-read your own output.",
+        "{}\n\nRun phase: {:?}. Guard: edit only inside target/ (tool paths resolve from the workspace root; meta/ is \
+         the blackboard). When the deliverable is written, append a 3-5 line summary of what you did and where the \
+         deliverable lives to meta/notes.md (create it if missing), then stop. Do not re-read your own output.",
         delegation.task, phase
     );
     let turns = match role {
         Role::Validator | Role::Critic | Role::FailureAnalyst | Role::FleetAnalyst => config.judge_turns,
         _ => config.worker_turns,
     };
-    let output =
+    let turn =
         match prompt_with_retries(agent, &instruction, config.max_repairs.max(1) as u32, Some(guard), turns).await {
-            Ok(output) => output,
-            Err(error) => format!("DELEGATION FAILED: {error}"),
+            Ok(turn) => turn,
+            Err(error) => TurnOutput {
+                text: format!("DELEGATION FAILED: {error}"),
+                tool_calls: Vec::new(),
+            },
         };
-    finish_task(ledger, task_id, role, &output)
+    let output = turn.judgeable();
+    finish_task(ledger, task_id, role, &output, &turn.tool_calls)
 }
 
 /// Run the translation collective under one task id: translator → validator,
@@ -259,7 +270,8 @@ async fn run_collective(
         let validate = Delegation {
             role: Some("validator".into()),
             task: format!(
-                "Validate the translated batch produced under task {task_id}: run the target toolchain checks and the test command on target/."
+                "Validate the translated batch produced under task {task_id}: run the target toolchain checks and the \
+                 test command on target/."
             ),
             depends_on: Vec::new(),
             team: false,
@@ -310,8 +322,19 @@ async fn run_collective(
     }
 }
 
-/// Write the verdict to the ledger.
-fn finish_task(ledger: &Ledger, task_id: &str, role: Role, output: &str) -> TaskResult {
+/// Failure root-cause detail: name the tool calls on a tool-only turn, else
+/// the output head.
+fn failure_detail(output: &str, tool_calls: &[String]) -> String {
+    if output.trim().is_empty() && !tool_calls.is_empty() {
+        return format!("[{} tool calls: {}]", tool_calls.len(), tool_calls.join(", "));
+    }
+    output.chars().take(200).collect()
+}
+
+/// Write the verdict to the ledger. `tool_calls` are the turn's executed tool
+/// calls: a judged failure names them in the root cause so a tool-only turn
+/// is not triaged as a silent model failure.
+fn finish_task(ledger: &Ledger, task_id: &str, role: Role, output: &str, tool_calls: &[String]) -> TaskResult {
     let verdict = judge_output(role, output);
     let passed = verdict.is_ok();
     if passed {
@@ -329,7 +352,7 @@ fn finish_task(ledger: &Ledger, task_id: &str, role: Role, output: &str) -> Task
                 at: now_string(),
                 phase: String::new(),
                 category: "model".into(),
-                root_cause: format!("{reason}: {}", output.chars().take(200).collect::<String>()),
+                root_cause: format!("{reason}: {}", failure_detail(output, tool_calls)),
                 suggested_action: "re-delegate with a tighter instruction".into(),
             })
             .ok();

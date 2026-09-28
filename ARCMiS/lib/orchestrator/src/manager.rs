@@ -2,8 +2,9 @@
 //! blackboard, decides, and the orchestrator executes the decision
 //! mechanically (delegate, replan, escalate, done).
 
-use crate::judges;
-use crate::state_machine;
+use std::path::Path;
+use std::path::PathBuf;
+
 use agents::util::config::MasConfig;
 use agents::MasAgents;
 use agents::Role;
@@ -12,8 +13,9 @@ use blackboard::Ledger;
 use blackboard::Phase;
 use blackboard::TaskList;
 use blackboard::Workspace;
-use std::path::Path;
-use std::path::PathBuf;
+
+use crate::judges;
+use crate::state_machine;
 
 /// Outcome of one manager round.
 #[derive(Debug, Clone)]
@@ -71,7 +73,8 @@ impl ManagerLoop {
         let manager = self.agents.agent(Role::Manager).ok_or_else(|| anyhow::anyhow!("manager agent missing"))?;
 
         // The manager answers with one verb line: `DECISION: <verb> [args]`.
-        let answer = prompt_with_retries(manager, &prompt, self.max_retries, None, self.config.manager_turns).await?;
+        let answer =
+            prompt_with_retries(manager, &prompt, self.max_retries, None, self.config.manager_turns).await?.judgeable();
         let decisions = parse_decisions(&answer);
         if decisions.is_empty() {
             return Err(anyhow::anyhow!("manager gave no DECISION line: {answer:?}"));
@@ -181,7 +184,9 @@ impl ManagerLoop {
                         at: now_string(),
                         phase: format!("{:?}", state.phase),
                         category: "gate".into(),
-                        root_cause: "done claimed with no completed delegation in this phase; advance needs at least one judged pass".into(),
+                        root_cause: "done claimed with no completed delegation in this phase; advance needs at least \
+                                     one judged pass"
+                            .into(),
                         suggested_action: format!("delegate the remaining {:?} work first", state.phase),
                     })?;
                     return Ok(RoundOutcome::Refused);
@@ -214,7 +219,15 @@ impl ManagerLoop {
             .map(|failure| format!("- [{}] {}: {}", failure.phase, failure.category, failure.root_cause))
             .collect();
         Ok(format!(
-            "ROUND {}\n\nSTATE: phase={:?} batch={:?} model={}\n\nPLAN:\n{}\n\nNOTES:\n{}\n\nRECENT FAILURES:\n{}\n\nTASKS:\n{}\n\nDecide the next action. Answer with one or more DECISION lines (plain words, no angle brackets, no function-call syntax):\nDECISION: delegate ROLE | TASK TEXT\nDECISION: delegate ROLE | TASK TEXT | after:t2,t3\nDECISION: delegate ROLE | TASK TEXT | team\nDECISION: replan\nDECISION: escalate | REASON\nDECISION: done\nDECISION: finish | REASON\nROLE is one of: analyst, architect, planner, translator, validator, tester, failure-analyst, critic, repairer, fleet-analyst.\nYou MAY emit several delegate lines in one round when the tasks are independent; the harness runs up to {fanout} of them in parallel and queues the rest. `after:` lists task ids this one waits on; `team` runs the translation collective (translate, validate, repair) end to end under one task.",
+            "ROUND {}\n\nSTATE: phase={:?} batch={:?} model={}\n\nPLAN:\n{}\n\nNOTES:\n{}\n\nRECENT \
+             FAILURES:\n{}\n\nTASKS:\n{}\n\nDecide the next action. Answer with one or more DECISION lines (plain \
+             words, no angle brackets, no function-call syntax):\nDECISION: delegate ROLE | TASK TEXT\nDECISION: \
+             delegate ROLE | TASK TEXT | after:t2,t3\nDECISION: delegate ROLE | TASK TEXT | team\nDECISION: \
+             replan\nDECISION: escalate | REASON\nDECISION: done\nDECISION: finish | REASON\nROLE is one of: analyst, \
+             architect, planner, translator, validator, tester, failure-analyst, critic, repairer, \
+             fleet-analyst.\nYou MAY emit several delegate lines in one round when the tasks are independent; the \
+             harness runs up to {fanout} of them in parallel and queues the rest. `after:` lists task ids this one \
+             waits on; `team` runs the translation collective (translate, validate, repair) end to end under one task.",
             self.round,
             state.phase,
             state.current_batch,
@@ -327,21 +340,19 @@ pub(crate) fn judge_output(role: Role, output: &str) -> Result<(), String> {
             Some((word, detail)) => Err(format!("repair {word}: {detail}")),
             None => Err("repairer produced no REPAIR line".into()),
         },
-        Role::FailureAnalyst => {
+        Role::FailureAnalyst =>
             if judges::parse_diagnosis(output).is_some() {
                 Ok(())
             } else {
                 Err("failure analyst produced no DIAGNOSIS line".into())
-            }
-        },
+            },
         // Declarative roles pass when they produced nonempty output.
-        _ => {
+        _ =>
             if output.trim().is_empty() {
                 Err("empty specialist output".into())
             } else {
                 Ok(())
-            }
-        },
+            },
     }
 }
 
@@ -355,6 +366,25 @@ pub(crate) fn now_string() -> String {
     format!("unix:{seconds}")
 }
 
+/// One completed agent turn: the final text plus the tool calls it carried.
+/// A turn with executed tool calls is delivered work, not a missing answer: a
+/// tool-only turn judges on the calls it made, not on its empty text.
+#[derive(Debug, Clone)]
+pub(crate) struct TurnOutput {
+    pub text: String,
+    pub tool_calls: Vec<String>,
+}
+
+impl TurnOutput {
+    /// The judgeable output: text when present, else a tool-call marker.
+    pub fn judgeable(&self) -> String {
+        if !self.text.trim().is_empty() || self.tool_calls.is_empty() {
+            return self.text.clone();
+        }
+        format!("[{} tool calls: {}]", self.tool_calls.len(), self.tool_calls.join(", "))
+    }
+}
+
 /// Prompt one agent, retrying transient provider failures up to `max_retries`
 /// times. Transport- and server-side failures (HTTP 4xx/5xx wrapped in
 /// `HttpError`, provider 500s) are retryable; a run that exhausted its budget
@@ -366,7 +396,7 @@ pub(crate) async fn prompt_with_retries(
     max_retries: u32,
     hook: Option<crate::guard_hook::GuardHook>,
     default_max_turns: usize,
-) -> anyhow::Result<String> {
+) -> anyhow::Result<TurnOutput> {
     use rig::completion::Prompt as _;
     let mut attempt = 0;
     loop {
@@ -375,7 +405,20 @@ pub(crate) async fn prompt_with_retries(
             request = request.add_hook(hook);
         }
         match request.extended_details().await {
-            Ok(details) => return Ok(details.output),
+            Ok(details) => {
+                let tool_calls: Vec<String> = details
+                    .content
+                    .iter()
+                    .filter_map(|part| match part {
+                        rig::completion::AssistantContent::ToolCall(call) => Some(call.function.name.clone()),
+                        _ => None,
+                    })
+                    .collect();
+                return Ok(TurnOutput {
+                    text: details.output,
+                    tool_calls,
+                });
+            },
             Err(error) if attempt < max_retries && is_transient(&error) => {
                 attempt += 1;
                 tracing::warn!(
@@ -456,5 +499,33 @@ impl ManagerLoop {
             }
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn judgeable_annotates_tool_only_turn() {
+        let turn = TurnOutput {
+            text: String::new(),
+            tool_calls: vec!["write_file".into(), "bash".into()],
+        };
+        let output = turn.judgeable();
+        assert!(output.contains("tool calls"), "marker missing: {output}");
+        assert!(output.contains("write_file"));
+        // The judged verdict: a tool-only turn is delivered work, not an
+        // empty specialist output.
+        assert_eq!(judge_output(Role::Tester, &output), Ok(()));
+    }
+
+    #[test]
+    fn judgeable_keeps_text_output_unchanged() {
+        let turn = TurnOutput {
+            text: "wrote target/src/lib.rs".into(),
+            tool_calls: vec!["write_file".into()],
+        };
+        assert_eq!(turn.judgeable(), "wrote target/src/lib.rs");
     }
 }
