@@ -22,16 +22,23 @@ use rig::agent::hook::HookContext;
 use rig::agent::hook::ObservationAction;
 use rig::agent::hook::ToolCall;
 use rig::agent::hook::ToolCallAction;
-use rig::completion::Usage;
+use serde_json::Value;
 
 use crate::guard::Guard;
+use crate::jev_judge::Consultation;
+use crate::jev_judge::JevJudge;
 
 /// The tool gateway over one role. Built per delegation; the registry does
 /// not attach it because the role is only known at dispatch time.
 #[derive(Clone)]
 pub struct GuardHook {
     inner: Guard,
+    /// This delegation's role; the judge state names it.
+    role: Role,
     policy: GuardConfig,
+    /// The laya judge over the Ask slot; `None`-equivalent state keeps the
+    /// deny-by-default behavior (ADR 0023).
+    judge: JevJudge,
     /// Consecutive rejections inside this delegation; the manager sees the
     /// count when the delegation ends.
     rejections: Arc<AtomicUsize>,
@@ -53,9 +60,12 @@ impl GuardHook {
     /// the model's context window; 0 disables read-scoping.
     #[must_use]
     pub fn new(role: Role, workspace: blackboard::Workspace, policy: GuardConfig, num_ctx: u64) -> Self {
+        let judge = JevJudge::from_config(&policy.jev_judge);
         Self {
             inner: Guard::new(role.allowed_tools().to_vec(), workspace),
+            role,
             policy,
+            judge,
             rejections: Arc::new(AtomicUsize::new(0)),
             last_rejection: Arc::new(Mutex::new(None)),
             calls: Arc::new(AtomicUsize::new(0)),
@@ -138,13 +148,16 @@ impl AgentHook for GuardHook {
     async fn on_tool_call(&self, _ctx: &HookContext, event: ToolCall<'_>) -> ToolCallAction {
         let verdict = self.deterministic(event.tool_name, event.args).or_else(|| self.budget_verdict());
         if let Some(reason) = verdict {
+            // The Jev slot (ADR 0023): a confident judge verdict can allow
+            // a call the deterministic tier flagged. Fallback keeps the
+            // deny.
+            if self.arbitrate_ask(event.tool_name, event.args) {
+                return ToolCallAction::Run;
+            }
             self.rejections.fetch_add(1, Ordering::Relaxed);
             if let Ok(mut slot) = self.last_rejection.lock() {
                 *slot = Some(format!("{}: {}", event.tool_name, reason));
             }
-            // The Jev slot: Ask-class calls would route to the arbiter model
-            // here when guard.ask_model is on. With one model there is no
-            // independent arbiter, so Ask falls through to deny.
             return ToolCallAction::Skip(format!(
                 "GUARD REFUSAL: {reason}. Stay inside the role's tools and the workspace layout."
             ));
@@ -154,6 +167,27 @@ impl AgentHook for GuardHook {
 }
 
 impl GuardHook {
+    /// Consult the Jev judge on a denied call. True when the judge is
+    /// confident the call fits the role. Any fallback (disabled judge,
+    /// load or inference error, low confidence, foreign labels) keeps the
+    /// deterministic denial (arXiv:2609.26550 §7: unsure always defers).
+    fn arbitrate_ask(&self, tool_name: &str, args: &str) -> bool {
+        if !self.judge.is_enabled() {
+            return false;
+        }
+        let args = serde_json::from_str::<Value>(args).unwrap_or(Value::Null);
+        match self.judge.consult_ask(self.role.name(), tool_name, &args) {
+            Consultation::Decided {
+                verdict: crate::jev_judge::AskVerdict::Appropriate,
+                confidence,
+            } => {
+                tracing::info!(tool = tool_name, confidence, "jev judge allowed a denied call");
+                true
+            },
+            _ => false,
+        }
+    }
+
     /// Budget verdict for the next tool call. `None` means allow (and
     /// counts the call); `Some` denies with the budget-exhausted reason.
     fn budget_verdict(&self) -> Option<String> {
@@ -238,6 +272,30 @@ mod tests {
         let verdict = hook.deterministic("bash", r#"{"command":"rm -rf /"}"#);
         assert!(verdict.is_some());
         assert!(verdict.unwrap().contains("denied by policy"));
+    }
+
+    #[test]
+    fn disabled_judge_keeps_ask_slot_deny_by_default() {
+        // Default config: no judge. A denied call must still deny, and no
+        // arbitration may fire.
+        let hook = hook(Role::Validator);
+        assert!(!hook.judge.is_enabled());
+        assert!(!hook.arbitrate_ask("write", r#"{"path":"target/x.rs"}"#));
+    }
+
+    #[test]
+    fn enabled_judge_with_bad_checkpoint_denies() {
+        let policy = GuardConfig {
+            jev_judge: agents::util::config::JevJudgeConfig {
+                enabled: true,
+                checkpoint: "/nonexistent/jev-checkpoint".into(),
+                confidence_threshold: 0.9,
+            },
+            ..GuardConfig::default()
+        };
+        let hook = GuardHook::new(Role::Validator, workspace(), policy, 32768);
+        assert!(!hook.judge.is_enabled());
+        assert!(!hook.arbitrate_ask("write", r#"{"path":"target/x.rs"}"#));
     }
 
     #[test]
