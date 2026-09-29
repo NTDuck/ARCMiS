@@ -187,7 +187,10 @@ async fn run() -> anyhow::Result<()> {
             |role| tools::build_tools(&workspace_root, role.allowed_tools()),
             Some(trace_sink.clone()),
             turns_for_role,
-            Some(&config.snapcompact),
+            // Text-only completions gateways reject image blocks with 400
+            // vision_disabled (observed c15b: snapcompact PNG frames on the
+            // ninfer endpoint). No frames on this provider.
+            None,
             &mas.role_output_tokens,
             &mas.role_think,
         )?,
@@ -212,7 +215,8 @@ async fn run() -> anyhow::Result<()> {
                 &config.run,
                 &teams,
                 Some(trace_sink.clone()),
-                Some(&config.snapcompact),
+                // Same text-only rule as the specialists above.
+                None,
                 &mas.role_think,
             )?,
         }
