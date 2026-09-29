@@ -86,5 +86,5 @@ fn role_think_override_wins_over_run_default() {
     // Override applies where present...
     assert_eq!(role_think.get("translator").copied(), Some(false));
     // ...and the run default holds where absent.
-    assert_eq!(role_think.get("analyst").copied().unwrap_or(run.think), true);
+    assert!(role_think.get("analyst").copied().unwrap_or(run.think));
 }

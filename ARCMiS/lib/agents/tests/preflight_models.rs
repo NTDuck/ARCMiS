@@ -1,7 +1,6 @@
 //! Preflight test: the model-registry check must fail with a fix-naming
 //! error when a configured model is absent from the daemon's tag list.
 
-use std::io::Read as _;
 use std::io::Write as _;
 use std::net::TcpListener;
 
