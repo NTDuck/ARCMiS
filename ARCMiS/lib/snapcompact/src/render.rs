@@ -7,17 +7,17 @@ use image::ImageBuffer;
 use image::Rgba;
 
 /// Pixels per glyph column (8px wide font on an 8px advance, plus 2px gutter).
-pub const GLYPH_PITCH_X: u32 = 10;
+pub(crate) const GLYPH_PITCH_X: u32 = 10;
 /// Pixels per glyph row (13px tall font plus 3px leading).
-pub const GLYPH_PITCH_Y: u32 = 16;
+pub(crate) const GLYPH_PITCH_Y: u32 = 16;
 /// Default frame width in pixels (oh-my-pi `8on22-bw` for ollama).
 pub const DEFAULT_FRAME_WIDTH: u32 = 1568;
 /// Default frame height in pixels.
 pub const DEFAULT_FRAME_HEIGHT: u32 = 1568;
 /// Left margin in pixels.
-pub const MARGIN_X: u32 = 8;
+pub(crate) const MARGIN_X: u32 = 8;
 /// Top margin in pixels.
-pub const MARGIN_Y: u32 = 4;
+pub(crate) const MARGIN_Y: u32 = 4;
 
 /// Render `text` into one or more frames of the given size.
 ///

@@ -40,7 +40,7 @@ pub struct Delegation {
 
 /// Parse `after:t2,t3` and `team` clauses from the tail of a delegate body.
 #[must_use]
-pub fn parse_delegation(role: Option<String>, task: String) -> Delegation {
+pub(crate) fn parse_delegation(role: Option<String>, task: String) -> Delegation {
     let mut delegation = Delegation {
         role,
         task: String::new(),
