@@ -1,7 +1,7 @@
 # ADR 0022: Hierarchical dynamic-adaptive orchestration
 
 Date: 2026-09-25
-Status: Accepted
+Status: Accepted (extended by ADR 0026, which adds the static hierarchy axis)
 
 ## Context
 
