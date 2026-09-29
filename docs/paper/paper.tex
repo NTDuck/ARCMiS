@@ -139,14 +139,15 @@ problem sets reuse the ReCodeAgent dataset's project pairs.
 
 \paragraph{Multi-agent scaffolds.}
 ReAct~\cite{yao2023react} interleaves reasoning traces with tool actions
-and is the base loop for our monolith baseline. Reflexion~\cite{shinn2023reflexion}
+and is the base loop of most single-agent migration scaffolds.
+Reflexion~\cite{shinn2023reflexion}
 adds verbal self-reflection across retries. Self-Refine~\cite{madaan2023selfrefine}
 iterates a generate--feedback--revise loop. ARCMiS borrows the
 iterate-on-failure shape but moves the feedback to deterministic judges
 and toolchain evidence, because 27B models self-assess poorly. ReAct and
 Reflexion define the reasoning-plus-action and
-retry-with-feedback loops that every method in our preliminary surveys
-instantiated; ARCMiS keeps the loops but replaces model-graded feedback
+retry-with-feedback loops that every migration scaffold in this space
+instantiates; ARCMiS keeps the loops but replaces model-graded feedback
 with toolchain evidence. MetaGPT~\cite{hong2024metagpt} assigns a software company's
 roles to LLM agents over standardized artifacts. AutoGen~\cite{wu2023autogen}
 builds applications from conversing agents with human-in-the-loop
@@ -160,8 +161,8 @@ well-designed agent--computer interface matters as much as the model;
 that interface lesson is the basis for our hashline file tools and guard
 hook. Agentless~\cite{xia2025agentless}
 shows that a simple localizer--repairer--validator pipeline beats complex
-agents on some tasks. Our preliminary survey results agree in the
-small-project regime.
+agents on some tasks; the campaign's small-project verdicts agree in
+spirit, since its two verified sets are the smallest C and Go sets.
 
 \paragraph{Methodology justification.}
 SWE-bench~\cite{jimenez2024swebench} anchored evaluation in executable
@@ -210,7 +211,7 @@ authors with one frontier LLM (Claude 4.5 Sonnet) over 118 projects;
 ARCMiS runs the same four problem-set families (crust, oxidizer,
 alphatrans, skel) with a 27B local model, but the protocols differ on
 model, scale, and scoring, so Section~\ref{sec:baseline} treats those
-numbers as context, not a head-to-head result.
+numbers as context, not a comparison.
 
 \section{The ARCMiS Methodology}
 \label{sec:method}
@@ -319,8 +320,8 @@ The orchestrator answers each round with plain text whose lines carry
 \texttt{DECISION:} verbs: \texttt{delegate ROLE | TASK [|
   after:t2,t3]}, \texttt{replan}, \texttt{escalate},
 \texttt{done}. Parsing text instead of expecting tool calls removes a
-whole failure class observed in the preliminary surveys: malformed
-tool-call JSON that the ollama daemon rejected with HTTP 500. The
+whole failure class of small-model agent runs: malformed tool-call JSON
+that the ollama daemon rejects with HTTP 500. The
 orchestrator gets \emph{no tools at all}. The round prompt
 carries the plan, notes, task list, ledger tail, and state, so the model
 cannot spend turns re-reading files.
@@ -438,11 +439,10 @@ A run succeeds only when the evaluator reruns the target toolchain
 (\texttt{cargo build} + \texttt{cargo test} for Rust targets,
 \texttt{pytest} for Python, or a JavaScript syntax check) in the produced
 workspace and every test passes. Agent self-reports are recorded but
-never trusted. This rule exists because the preliminary surveys caught
-real self-report traps: ledger-method runs wrote passing per-problem
-records over empty workspaces, and a harness version compared the string
-\texttt{compilation\_status == "pass"} while the schema asked the model
-for a boolean, so exit codes carried no signal. The scorer re-runs the
+never trusted. This rule exists because self-report traps are real:
+an agent can write a passing per-problem record over an empty
+workspace, and a status string carries no signal while an exit code
+does. The scorer re-runs the
 toolchain itself, and traces and score paths count tool-call activity, so
 a healthy tool-only turn (empty text, real tool calls) is never misread
 as a failure.
@@ -700,7 +700,7 @@ workspace; none reached \textsf{Done} end to end.}
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=0.94\textwidth]{figures/fig3-survey-cliff.pdf}
+\includegraphics[width=0.94\textwidth]{figures/fig3-per-set.pdf}
 \caption{Best toolchain-verified test count per problem set over the
 whole campaign. Only nandc (17 tests) and checkdigit (48 and 36 tests)
 produced compiling workspaces; every other bar sits at zero with the run
@@ -800,61 +800,13 @@ wrapper-timeout kills in the campaign landed on runs that were still
 progressing, and raising the timeout only moved the wall; the burn rate
 binds first.
 
-\subsection{Preliminary context: the capability cliff}
-
-Two preliminary surveys, run before the campaign and since superseded by
-it, motivate the architecture and remain the only multi-method evidence
-we have. We compress them to one finding and mark them explicitly as
-preliminary. In a 105-cell grid over seven C projects (three methods,
-five repetitions), toolchain-verified success concentrated by project
-size, not by method: the 185--324 source LOC band converted at 87--93\%
-per attempt, and nothing at or above 635 LOC compiled, a sharp capability
-cliff for single-shot and scaffolded methods alike at the 27B scale.
-That cliff is why the campaign's problem sets reach three orders of
-magnitude, and why the harness, not the prompt, is where we spent the
-effort. The survey's scoring traps (self-reported passes over empty
-workspaces, a string-compared status that carried no signal) are the
-direct motivation for toolchain-only scoring
-(Section~\ref{sec:method}).
-
-\subsection{Baseline comparison: survey 230926 and ReCodeAgent context}
+\subsection{Baseline comparison: published context}
 \label{sec:baseline}
 
-Two comparison surfaces exist: a direct same-protocol sweep
-(survey 230926) and the published ReCodeAgent record, which serves as
-context only. Table~\ref{tab:baselines} lists the sources.
-
-\begin{table}[ht]
-\centering
-\begin{tabular}{@{}p{2.6cm}p{4.6cm}p{6.4cm}@{}}
-\toprule
-Method & Source & Protocol \\
-\midrule
-Monolith & prescribed by survey 230926 & one ReAct agent (write, bash) plus a validator; 120 turns \\
-Ledger & \cite{ledger2026}, Algorithm of arXiv:2608.26480 & manager--worker over a shared task ledger; 60/120 turns \\
-ReCodeAgent-faithful & \cite{recodeagent2026}, Algorithm 1 of arXiv:2604.07341 & analyzer, planner, translator, validator loop; 11 rounds \\
-ReCodeAgent (published) & \cite{recodeagent2026} & Claude 4.5 Sonnet, 118 projects, its own validated suites \\
-\bottomrule
-\end{tabular}
-\caption{The comparison methods and their protocols. The first three
-ran in survey 230926 under one identical harness; the fourth is the
-published ReCodeAgent record, which shares problem-set families but
-differs on model, scale, and validation protocol.}
-\label{tab:baselines}
-\end{table}
-
-\paragraph{Direct head-to-head (survey 230926).}
-The sweep ran Monolith, Ledger, and a ReCodeAgent-faithful method on
-seven C$\to$Rust projects, five repetitions per cell, with the same
-toolchain-only scoring as the campaign. Verified-pass outcomes by
-method: Monolith 16, Ledger 15, ReCodeAgent-faithful 8 (35 attempts
-each; one re-run cell inflates Monolith's attempt count to 39). The
-method effect is second-order and project-dependent: Ledger is the only
-method that passes chtrie (5 of 5), Monolith the only one that passes
-murmurhash\_c (5 of 5), and the ReCodeAgent-faithful method never wins
-a cell outright while still passing 4 of 5 on the two smallest
-projects. Project size dominates: the 185--324 LOC band converts at
-87--93\% and nothing at or above 635 LOC compiles.
+One comparison surface exists in this paper: the published ReCodeAgent
+record, which serves as context only. ARCMiS never ran Skel, Oxidizer,
+AlphaTrans, or SWE-agent on shared instances under one protocol, so
+every cross-paper juxtaposition below is directional, not statistical.
 
 \paragraph{Published ReCodeAgent numbers as context.}
 The ReCodeAgent paper (arXiv:2604.07341, accepted at ASE 2026)
