@@ -2,6 +2,10 @@
 
 - **Date:** 2026-09-23
 - **Status:** accepted
+- **Superseded by:** the autooptimise campaign close-out (ADR 0024,
+  2026-09-29). The sweep report files under `docs/bench/` and the
+  driver scripts (`scripts/survey.sh`,
+  `scripts/aggregate-survey.py`) were deleted in 2026-09-29 cleanup.
 
 ## Context
 
@@ -59,5 +63,6 @@ per-problem records, but post-sweep workspace inspection found all
 three empty: the orchestrator self-reported validation with no translated
 code, so they count as failures. Failure mix: 42% MaxTurnsError, 39%
 other model-protocol errors, 13% daemon rejections of malformed
-tool-call arguments, 2% JSON parse. Full tables in
-`docs/bench/2026-09-22-survey-220926.md`.
+tool-call arguments, 2% JSON parse. Full tables were in the deleted
+`docs/bench/2026-09-22-survey-220926.md`; the run tree
+(`experiments/220926/`) is no longer present in the tree either.
