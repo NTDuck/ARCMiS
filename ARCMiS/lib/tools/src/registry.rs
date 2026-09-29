@@ -1,5 +1,5 @@
 //! Tool registry: the single source of truth for what tools exist and what
-//! their properties are. The manager constructs it once at startup and passes
+//! their properties are. The harness constructs it once at startup and passes
 //! it to the guard, the router, and the observability controller.
 //!
 //! The registry erases tools at the metadata level (rig's `Tool` is not

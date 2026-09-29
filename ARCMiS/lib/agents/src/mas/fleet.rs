@@ -12,8 +12,8 @@ use crate::mas::roles::Role;
 /// The model ladder and per-role model assignment.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Fleet {
-    /// Manager model id.
-    pub manager_model: String,
+    /// Orchestrator (tier 1) model id.
+    pub orchestrator_model: String,
     /// Specialist model ladder, weakest first. Promotion moves one rung up.
     pub ladder: Vec<String>,
     /// Current model per specialist role.
@@ -25,7 +25,7 @@ impl Fleet {
     #[must_use]
     pub fn model_for(&self, role: Role) -> &str {
         match role {
-            Role::Manager => &self.manager_model,
+            Role::Orchestrator => &self.orchestrator_model,
             other => self
                 .role_models
                 .get(other.name())
@@ -61,7 +61,7 @@ impl Fleet {
     /// Assign one role to a model id directly.
     pub fn assign(&mut self, role: Role, model: String) {
         match role {
-            Role::Manager => self.manager_model = model,
+            Role::Orchestrator => self.orchestrator_model = model,
             other => {
                 self.role_models.insert(other.name().to_owned(), model);
             },

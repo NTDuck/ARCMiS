@@ -81,18 +81,15 @@ fn state_and_plan_files() {
 
     // State: absent before first write, round-trips after.
     assert!(blackboard::state::read(dir.path()).expect("no state yet").is_none());
-    blackboard::state::write(
-        dir.path(),
-        &State {
-            phase_delegations: 0,
-            phase: Phase::Migration,
-            current_task: Some("t3".into()),
-            current_batch: Some("batch-2".into()),
-            current_model: "qwen3:8b".into(),
-            updated_at: "2026-09-24T00:00:00Z".into(),
-            last_transition: "pilot passed".into(),
-        },
-    )
+    blackboard::state::write(dir.path(), &State {
+        phase_delegations: 0,
+        phase: Phase::Migration,
+        current_task: Some("t3".into()),
+        current_batch: Some("batch-2".into()),
+        current_model: "qwen3:8b".into(),
+        updated_at: "2026-09-24T00:00:00Z".into(),
+        last_transition: "pilot passed".into(),
+    })
     .expect("write state");
     let state = blackboard::state::read(dir.path()).expect("read state").expect("state present");
     assert_eq!(state.phase, Phase::Migration);

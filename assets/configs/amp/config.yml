@@ -33,10 +33,10 @@ output:
 recode:
   max_rounds: 11
 
-# Ledger budget split: the manager and each fresh worker delegation carry
+# Ledger budget split: the orchestrator and each fresh worker delegation carry
 # separate turn budgets.
 ledger:
-  manager_turns: 60
+  orchestrator_turns: 60
   worker_turns: 120
   retries: 2
 

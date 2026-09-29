@@ -2,19 +2,20 @@
 //! 0020 so meta-harness tooling can classify the experiment directory before
 //! the run produces anything.
 
+use std::path::Path;
+
 use anyhow::Context as _;
 use serde::Deserialize;
 use serde::Serialize;
-use std::path::Path;
 
 /// Run budgets echoed from the config for provenance.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Budgets {
-    /// Manager turn budget.
-    pub manager_turns: usize,
+    /// Orchestrator turn budget.
+    pub orchestrator_turns: usize,
     /// Worker turn budget per delegation.
     pub worker_turns: usize,
-    /// Manager-loop round ceiling.
+    /// Orchestrator-loop round ceiling.
     pub max_rounds: usize,
 }
 

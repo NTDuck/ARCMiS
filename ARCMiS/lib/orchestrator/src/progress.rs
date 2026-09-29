@@ -1,6 +1,6 @@
 //! Progress tracker: how far the run has come, from the blackboard files.
-//! The manager reads this each round; the observability controller reads it
-//! after the run.
+//! The orchestrator reads this each round; the observability controller reads
+//! it after the run.
 
 use blackboard::Phase;
 use blackboard::TaskList;

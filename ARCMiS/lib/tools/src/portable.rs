@@ -3,6 +3,11 @@
 //! allowlist per role without typed plumbing.
 
 use std::future::Future;
+use std::path::Path;
+use std::sync::Arc;
+
+use oxi_hashline::InMemorySnapshotStore;
+use rig::tool::PortableDynamicTool;
 
 use crate::ast_edit::AstEdit;
 use crate::ast_grep::AstGrep;
@@ -14,10 +19,6 @@ use crate::lsp::Lsp;
 use crate::read::Read;
 use crate::search::Search;
 use crate::write::Write;
-use oxi_hashline::InMemorySnapshotStore;
-use rig::tool::PortableDynamicTool;
-use std::path::Path;
-use std::sync::Arc;
 
 /// One dynamic tool factory output: the adapter plus its name.
 pub struct Named {

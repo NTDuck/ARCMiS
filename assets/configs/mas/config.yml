@@ -25,16 +25,16 @@ source:
 
 # MAS method configuration. Ignored by the other methods.
 mas:
-  # Manager-loop round ceiling across the whole run.
+  # Orchestrator-loop round ceiling across the whole run.
   max_rounds: 60
-  # Manager turn budget per round.
-  manager_turns: 20
+  # Orchestrator turn budget per round.
+  orchestrator_turns: 20
   # Specialist turn budget per delegation.
   worker_turns: 40
   judge_turns: 60
   # Repair attempts per diagnosed failure before escalation.
   max_repairs: 2
-  # Consecutive rounds with no completed task before the manager escalates.
+  # Consecutive rounds with no completed task before the orchestrator escalates.
   stagnation_rounds: 6
   # plan.md and notes.md character caps (GVS5H working-file discipline).
   plan_cap: 4000

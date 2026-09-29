@@ -1,4 +1,4 @@
-//! MAS run orchestrator: the phase state machine, the manager loop, the
+//! MAS run orchestrator: the phase state machine, the round loop, the
 //! router, the tool guard, the judge parsers, the circuit breaker, and the
 //! progress tracker.
 
@@ -7,7 +7,9 @@ pub mod guard;
 pub mod guard_hook;
 pub mod jev_judge;
 pub mod judges;
-pub mod manager;
+// `loop` is a Rust keyword; the module carries a trailing underscore. The
+// type inside is `OrchestratorLoop`, so no caller types the module name.
+pub mod loop_;
 pub mod progress;
 pub mod router;
 pub mod state_machine;
@@ -27,8 +29,8 @@ pub use judges::parse_repair;
 pub use judges::parse_verdict;
 pub use judges::Diagnosis;
 pub use judges::FailureCategory;
-pub use manager::ManagerLoop;
-pub use manager::RoundOutcome;
+pub use loop_::OrchestratorLoop;
+pub use loop_::RoundOutcome;
 pub use progress::Progress;
 pub use state_machine::Advance;
 pub use state_machine::Transition;

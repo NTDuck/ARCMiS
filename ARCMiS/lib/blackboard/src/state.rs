@@ -1,10 +1,11 @@
-//! Current run state, materialized as `state.json`. The manager reads it on
-//! every round; the orchestrator writes it on every phase transition.
+//! Current run state, materialized as `state.json`. The orchestrator reads it
+//! on every round; the orchestrator writes it on every phase transition.
+
+use std::path::Path;
 
 use anyhow::Context as _;
 use serde::Deserialize;
 use serde::Serialize;
-use std::path::Path;
 
 /// Methodology phases. Reversible transitions on failure are the contract:
 /// the orchestrator may regress (e.g. MIGRATION → DISCOVERY on a missing
@@ -40,10 +41,10 @@ pub struct State {
     pub phase: Phase,
     /// Delegations completed since the phase began. The `done` decision may
     /// advance only when this is at least one: a phase advances on evidence,
-    /// not on a bare manager claim.
+    /// not on a bare orchestrator claim.
     #[serde(default)]
     pub phase_delegations: u64,
-    /// Task the manager currently delegates on, when any.
+    /// Task the orchestrator currently delegates on, when any.
     #[serde(default)]
     pub current_task: Option<String>,
     /// Batch currently migrating, when any.

@@ -27,7 +27,7 @@ MODELS=(
   "qwen3.8:27b-mtp-q4_K_M"
   "smtek/Swift-Qwen3.8-27B:dflash2"
 )
-# The ledger manager loops over its own task list, the recode pipeline
+# The ledger orchestrator loops over its own task list, the recode pipeline
 # runs four agents, the monolith runs two; the recode config carries 40
 # turns for the four-phase pipeline, the others 14. One budget per
 # method, read from its GildedRose config, applied to every project.

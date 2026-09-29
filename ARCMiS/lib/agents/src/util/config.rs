@@ -95,10 +95,10 @@ impl Run {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default)]
 pub struct MasConfig {
-    /// Manager-loop round ceiling across the whole run.
+    /// Orchestrator-loop round ceiling across the whole run.
     pub max_rounds: usize,
-    /// Manager turn budget per round.
-    pub manager_turns: usize,
+    /// Orchestrator turn budget per round.
+    pub orchestrator_turns: usize,
     /// Specialist turn budget per delegation.
     pub worker_turns: usize,
     /// Turn budget for the judge roles (validator, critic, fleet analyst):
@@ -107,7 +107,7 @@ pub struct MasConfig {
     pub judge_turns: usize,
     /// Repair attempts per diagnosed failure before escalation.
     pub max_repairs: usize,
-    /// Consecutive stalled rounds before the manager escalates.
+    /// Consecutive stalled rounds before the orchestrator escalates.
     pub stagnation_rounds: usize,
     /// plan.md character cap (GVS5H keeps the plan inside one read).
     pub plan_cap: usize,
@@ -211,7 +211,7 @@ impl Default for MasConfig {
     fn default() -> Self {
         Self {
             max_rounds: 60,
-            manager_turns: 20,
+            orchestrator_turns: 20,
             worker_turns: 40,
             judge_turns: 40,
             max_repairs: 2,
@@ -253,13 +253,13 @@ pub struct Output {
     pub dir: PathBuf,
 }
 
-/// Ledger method budgets: the manager and each fresh worker delegation
+/// Ledger method budgets: the orchestrator and each fresh worker delegation
 /// carry separate turn budgets (paper: fresh worker per cycle with its
 /// own call allowance). `retries` covers worker delegations.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default)]
 pub struct LedgerBudgets {
-    pub manager_turns: usize,
+    pub orchestrator_turns: usize,
     pub worker_turns: usize,
     pub retries: u32,
 }
@@ -267,7 +267,7 @@ pub struct LedgerBudgets {
 impl Default for LedgerBudgets {
     fn default() -> Self {
         Self {
-            manager_turns: 30,
+            orchestrator_turns: 30,
             worker_turns: 60,
             retries: 1,
         }

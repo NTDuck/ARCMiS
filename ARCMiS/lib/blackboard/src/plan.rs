@@ -1,9 +1,10 @@
-//! `plan.md`: the manager's capped working plan. GVS5H's cap keeps the file
-//! inside one model read; the cap is a config value, not a magic number.
+//! `plan.md`: the orchestrator's capped working plan. GVS5H's cap keeps the
+//! file inside one model read; the cap is a config value, not a magic number.
 
-use anyhow::Context as _;
 use std::path::Path;
 use std::path::PathBuf;
+
+use anyhow::Context as _;
 
 /// The plan file.
 #[derive(Debug, Clone)]

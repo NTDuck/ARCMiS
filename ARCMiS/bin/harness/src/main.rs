@@ -1,6 +1,6 @@
 //! Binary entry point for ARCMiS. The MAS harness driver: load config,
-//! snapshot the source, write the manifest, run the manager loop under the
-//! phase state machine, and emit the result aggregate.
+//! snapshot the source, write the manifest, run the orchestrator round loop
+//! under the phase state machine, and emit the result aggregate.
 
 mod cli_sink;
 mod experiment;
@@ -20,8 +20,8 @@ use blackboard::Phase;
 use blackboard::State;
 use blackboard::TaskList;
 use blackboard::Workspace;
-use orchestrator::manager::ManagerLoop;
-use orchestrator::manager::RoundOutcome;
+use orchestrator::loop_::OrchestratorLoop;
+use orchestrator::loop_::RoundOutcome;
 use orchestrator::state_machine;
 
 #[tokio::main]
@@ -104,7 +104,7 @@ async fn run() -> anyhow::Result<()> {
         method: "mas".into(),
         model: config.run.model.clone(),
         budgets: Budgets {
-            manager_turns: config.mas.manager_turns,
+            orchestrator_turns: config.mas.orchestrator_turns,
             worker_turns: config.mas.worker_turns,
             max_rounds: config.mas.max_rounds,
         },
@@ -136,21 +136,21 @@ async fn run() -> anyhow::Result<()> {
         experiment::write_pre_run(dir, &manifest)?;
     }
 
-    // Fleet: the ladder from the config; the manager on the top rung,
-    // specialists on the weakest (the fleet analyst promotes).
+    // Fleet: the ladder from the config. The orchestrator sits on the top
+    // rung, specialists on the weakest (the fleet analyst promotes).
     let ladder = if config.mas.model_ladder.is_empty() {
         vec![config.run.model.clone()]
     } else {
         config.mas.model_ladder.clone()
     };
-    let manager_model = ladder.last().cloned().unwrap_or_else(|| config.run.model.clone());
+    let orchestrator_model = ladder.last().cloned().unwrap_or_else(|| config.run.model.clone());
     let mut fleet = Fleet {
-        manager_model,
+        orchestrator_model,
         ladder: ladder.clone(),
         role_models: Default::default(),
     };
     for role in agents::Role::ALL {
-        if role != agents::Role::Manager {
+        if role != agents::Role::Orchestrator {
             fleet.assign(role, ladder.first().cloned().unwrap_or_else(|| config.run.model.clone()));
         }
     }
@@ -163,7 +163,7 @@ async fn run() -> anyhow::Result<()> {
     let mas = config.mas.clone();
     let turns_for_role = |role: agents::Role| -> usize {
         match role {
-            agents::Role::Manager => mas.manager_turns,
+            agents::Role::Orchestrator => mas.orchestrator_turns,
             agents::Role::Validator | agents::Role::Critic | agents::Role::FleetAnalyst => mas.judge_turns,
             _ => mas.worker_turns,
         }
@@ -199,7 +199,7 @@ async fn run() -> anyhow::Result<()> {
         phase_delegations: 0,
         current_task: None,
         current_batch: None,
-        current_model: fleet.model_for(agents::Role::Manager).to_owned(),
+        current_model: fleet.model_for(agents::Role::Orchestrator).to_owned(),
         updated_at: now_rfc3339(),
         last_transition: "preflight".into(),
     };
@@ -208,7 +208,7 @@ async fn run() -> anyhow::Result<()> {
 
     // The run loop.
     let events = observability::EventLog::new(&output_dir)?;
-    let mut manager_loop = ManagerLoop {
+    let mut orchestrator_loop = OrchestratorLoop {
         run_dir: run_dir.clone(),
         agents: agents_set,
         config: config.mas.clone(),
@@ -229,7 +229,7 @@ async fn run() -> anyhow::Result<()> {
 
     for _round in 0..config.mas.max_rounds {
         let progress_before = orchestrator::progress::snapshot(&run_dir)?;
-        let outcome = manager_loop.round().await?;
+        let outcome = orchestrator_loop.round().await?;
         let progress = orchestrator::progress::snapshot(&run_dir)?;
 
         match &outcome {
@@ -242,7 +242,7 @@ async fn run() -> anyhow::Result<()> {
                 cli_sink::emit("delegate", &format!("{} <- {}", role.name(), task));
                 events.record("delegation", serde_json::json!({"role": role.name(), "task": task}))?;
             },
-            RoundOutcome::Replanned => cli_sink::emit("replan", "manager rewrote the plan"),
+            RoundOutcome::Replanned => cli_sink::emit("replan", "orchestrator rewrote the plan"),
             RoundOutcome::Escalated(reason) => {
                 cli_sink::emit("escalate", reason);
                 events.record("escalate", serde_json::json!({"reason": reason}))?;
@@ -264,10 +264,10 @@ async fn run() -> anyhow::Result<()> {
         if progress.done_tasks > progress_before.done_tasks {
             breaker_state.record_productive_round();
             breaker_state.record_progress();
-            manager_loop_ledger_round(&run_dir, false);
+            round_ledger_observation(&run_dir, false);
         } else {
             breaker_state.record_stalled_round();
-            manager_loop_ledger_round(&run_dir, true);
+            round_ledger_observation(&run_dir, true);
         }
         let state = blackboard::state::read(&run_dir)?.expect("state present");
         match breaker_state.check(state.phase, &config.mas) {
@@ -286,7 +286,7 @@ async fn run() -> anyhow::Result<()> {
         harness_id: manifest.harness_id.clone(),
         final_phase: format!("{:?}", final_state.phase),
         completed: final_state.phase == Phase::Done,
-        rounds: manager_loop.round,
+        rounds: orchestrator_loop.round,
         delegations,
         tasks_done: progress.done_tasks,
         tasks_total: progress.total_tasks,
@@ -308,7 +308,7 @@ async fn run() -> anyhow::Result<()> {
 
 /// Record a round-progress observation in the ledger. `stalled` selects the
 /// stalled-round kind instead of the productive-round one.
-fn manager_loop_ledger_round(run_dir: &Path, stalled: bool) {
+fn round_ledger_observation(run_dir: &Path, stalled: bool) {
     let ledger = Ledger::new(run_dir.join("ledgers"));
     let _ = ledger.append_observation(&blackboard::Observation {
         at: now_rfc3339(),

@@ -20,12 +20,9 @@ impl Catalog {
     /// Add a tool to the catalog.
     pub fn add(&mut self, name: impl Into<String>) {
         let name = name.into();
-        self.tools.insert(
-            name.clone(),
-            Tool {
-                name,
-            },
-        );
+        self.tools.insert(name.clone(), Tool {
+            name,
+        });
     }
 
     /// Look up a tool by name.

@@ -1,13 +1,14 @@
 //! Append-only ledgers: decisions, failures, observations. One JSONL line
 //! per event; meta-harness reads these after the run.
 
-use anyhow::Context as _;
-use serde::Deserialize;
-use serde::Serialize;
 use std::io::Write as _;
 use std::path::PathBuf;
 
-/// One manager or orchestrator decision.
+use anyhow::Context as _;
+use serde::Deserialize;
+use serde::Serialize;
+
+/// One orchestrator decision.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Decision {
     /// RFC 3339 UTC timestamp.

@@ -4,9 +4,10 @@
 //! analyst/architect/planner artifacts; `target/` holds the migration output;
 //! `runs/` holds per-run logs.
 
-use anyhow::Context as _;
 use std::path::Path;
 use std::path::PathBuf;
+
+use anyhow::Context as _;
 use walkdir::WalkDir;
 
 /// The migration workspace.

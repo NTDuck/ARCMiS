@@ -45,7 +45,7 @@ fn tool_allowlists_partition_read_and_write() {
 #[test]
 fn fleet_ladder_promotes_and_demotes() {
     let mut fleet = Fleet {
-        manager_model: "qwen3:4b".into(),
+        orchestrator_model: "qwen3:4b".into(),
         ladder: vec!["qwen3:4b".into(), "qwen3:8b".into(), "qwen3:14b".into()],
         role_models: BTreeMap::new(),
     };
@@ -60,10 +60,10 @@ fn fleet_ladder_promotes_and_demotes() {
     assert_eq!(fleet.demote(Role::Translator), Some("qwen3:8b".to_owned()));
     fleet.demote(Role::Translator).expect("second demote");
     assert_eq!(fleet.demote(Role::Translator), None, "bottom of ladder");
-    // Manager model is separate from the ladder.
-    assert_eq!(fleet.model_for(Role::Manager), "qwen3:4b");
-    fleet.assign(Role::Manager, "qwen3:32b".into());
-    assert_eq!(fleet.model_for(Role::Manager), "qwen3:32b");
+    // Orchestrator model is separate from the ladder.
+    assert_eq!(fleet.model_for(Role::Orchestrator), "qwen3:4b");
+    fleet.assign(Role::Orchestrator, "qwen3:32b".into());
+    assert_eq!(fleet.model_for(Role::Orchestrator), "qwen3:32b");
 }
 
 #[test]

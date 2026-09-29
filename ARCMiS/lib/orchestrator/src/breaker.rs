@@ -90,9 +90,9 @@ impl BreakerState {
     }
 }
 
-/// Run-level token ceiling derived from the config: rounds times the manager
-/// and worker turn budgets times the per-call output cap, in a cheap
-/// bytes-per-token estimate. Zero disables the check.
+/// Run-level token ceiling derived from the config: rounds times the
+/// orchestrator and worker turn budgets times the per-call output cap, in a
+/// cheap bytes-per-token estimate. Zero disables the check.
 fn run_token_budget(config: &MasConfig) -> u64 {
     if config.max_rounds == 0 {
         return 0;

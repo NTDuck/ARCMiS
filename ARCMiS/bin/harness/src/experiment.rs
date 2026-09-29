@@ -33,7 +33,7 @@ pub struct Aggregate {
     pub final_phase: String,
     /// Whether the run reached `Done`.
     pub completed: bool,
-    /// Manager rounds executed.
+    /// Orchestrator rounds executed.
     pub rounds: usize,
     /// Delegations executed.
     pub delegations: usize,
@@ -59,7 +59,7 @@ mod tests {
             method: "mas".into(),
             model: "test".into(),
             budgets: blackboard::Budgets {
-                manager_turns: 20,
+                orchestrator_turns: 20,
                 worker_turns: 40,
                 max_rounds: 60,
             },

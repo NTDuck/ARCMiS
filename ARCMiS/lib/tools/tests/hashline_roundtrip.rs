@@ -32,13 +32,10 @@ async fn read_write_edit_roundtrip_changes_tag() {
         snapshots: store.clone(),
     };
     let result = write
-        .call(
-            &mut rig::tool::ToolContext::new(),
-            WriteArgs {
-                path: "src/lib.rs".to_owned(),
-                content: "fn one() -> u32 {\n    1\n}\n".to_owned(),
-            },
-        )
+        .call(&mut rig::tool::ToolContext::new(), WriteArgs {
+            path: "src/lib.rs".to_owned(),
+            content: "fn one() -> u32 {\n    1\n}\n".to_owned(),
+        })
         .await
         .unwrap();
     let text = result.as_text().unwrap_or_default().to_owned();
@@ -51,14 +48,11 @@ async fn read_write_edit_roundtrip_changes_tag() {
         snapshots: store.clone(),
     };
     let result = read
-        .call(
-            &mut rig::tool::ToolContext::new(),
-            ReadArgs {
-                path: "src/lib.rs".to_owned(),
-                offset: None,
-                limit: None,
-            },
-        )
+        .call(&mut rig::tool::ToolContext::new(), ReadArgs {
+            path: "src/lib.rs".to_owned(),
+            offset: None,
+            limit: None,
+        })
         .await
         .unwrap();
     let text = result.as_text().unwrap_or_default().to_owned();
@@ -71,12 +65,9 @@ async fn read_write_edit_roundtrip_changes_tag() {
     let edit = Edit::new(root.clone(), store.clone());
     let patch = format!("[src/lib.rs#{first_tag}]\nSWAP 2.=2:\n+    2\n");
     let result = edit
-        .call(
-            &mut rig::tool::ToolContext::new(),
-            EditArgs {
-                patch,
-            },
-        )
+        .call(&mut rig::tool::ToolContext::new(), EditArgs {
+            patch,
+        })
         .await;
     if let Err(error) = &result {
         panic!("edit failed: {error}");
@@ -92,14 +83,11 @@ async fn read_write_edit_roundtrip_changes_tag() {
 
     // Re-read shows the new tag.
     let result = read
-        .call(
-            &mut rig::tool::ToolContext::new(),
-            ReadArgs {
-                path: "src/lib.rs".to_owned(),
-                offset: None,
-                limit: None,
-            },
-        )
+        .call(&mut rig::tool::ToolContext::new(), ReadArgs {
+            path: "src/lib.rs".to_owned(),
+            offset: None,
+            limit: None,
+        })
         .await
         .unwrap();
     let text = result.as_text().unwrap_or_default().to_owned();
@@ -118,25 +106,19 @@ async fn stale_tag_is_rejected() {
         snapshots: store.clone(),
     };
     write
-        .call(
-            &mut rig::tool::ToolContext::new(),
-            WriteArgs {
-                path: "a.txt".to_owned(),
-                content: "line one\nline two\n".to_owned(),
-            },
-        )
+        .call(&mut rig::tool::ToolContext::new(), WriteArgs {
+            path: "a.txt".to_owned(),
+            content: "line one\nline two\n".to_owned(),
+        })
         .await
         .unwrap();
 
     // Patch with a tag the session never minted.
     let edit = Edit::new(root.clone(), store.clone());
     let result = edit
-        .call(
-            &mut rig::tool::ToolContext::new(),
-            EditArgs {
-                patch: "[a.txt#ZZZZ]\nDEL 1.=1\n".to_owned(),
-            },
-        )
+        .call(&mut rig::tool::ToolContext::new(), EditArgs {
+            patch: "[a.txt#ZZZZ]\nDEL 1.=1\n".to_owned(),
+        })
         .await;
     assert!(result.is_err(), "stale tag must be rejected");
     let message = result.err().unwrap().to_string();

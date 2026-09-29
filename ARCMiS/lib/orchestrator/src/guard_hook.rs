@@ -39,7 +39,7 @@ pub struct GuardHook {
     /// The laya judge over the Ask slot; `None`-equivalent state keeps the
     /// deny-by-default behavior (ADR 0023).
     judge: JevJudge,
-    /// Consecutive rejections inside this delegation; the manager sees the
+    /// Consecutive rejections inside this delegation. The orchestrator sees the
     /// count when the delegation ends.
     rejections: Arc<AtomicUsize>,
     /// Last rejection feedback (for the delegation report).

@@ -30,7 +30,7 @@ mas:
   # finite ceiling. ~400 rounds at worst-case round cost stays inside the
   # per-cell wall-clock timeout.
   max_rounds: 400
-  manager_turns: 40
+  orchestrator_turns: 40
   worker_turns: 200
   # Judges read, run the suite, and verdict; a small ceiling stops a
   # validation pass from eating a translator-sized budget.

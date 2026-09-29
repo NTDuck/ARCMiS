@@ -1,13 +1,14 @@
-//! `tasks.json`: the manager TODO — one ARCMiS run's dynamic task list.
-//! Mirrors GVS5H's manager-curated task file; specialists consume it.
+//! `tasks.json`: the orchestrator TODO — one ARCMiS run's dynamic task list.
+//! Mirrors GVS5H's curated task file; specialists consume it.
+
+use std::path::Path;
+use std::path::PathBuf;
 
 use anyhow::Context as _;
 use serde::Deserialize;
 use serde::Serialize;
-use std::path::Path;
-use std::path::PathBuf;
 
-/// One task on the manager list.
+/// One task on the orchestrator list.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Task {
     /// Stable id (e.g. `t1`, `t2`).
@@ -19,7 +20,7 @@ pub struct Task {
     /// Task ids this one depends on.
     #[serde(default)]
     pub depends_on: Vec<String>,
-    /// Specialist role the manager assigned, when any.
+    /// Specialist role the orchestrator assigned, when any.
     #[serde(default)]
     pub assigned_to: Option<String>,
 }

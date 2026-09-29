@@ -1,8 +1,9 @@
 //! `notes.md`: the specialists' shared scratchpad. Capped like the plan.
 
-use anyhow::Context as _;
 use std::path::Path;
 use std::path::PathBuf;
+
+use anyhow::Context as _;
 
 use crate::plan::cap_text;
 

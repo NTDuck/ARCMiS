@@ -166,7 +166,7 @@ fn op_start(phases: &mut [TodoPhase], step: &TodoOp, errors: &mut Vec<String>) {
     let target = step.task.as_deref().unwrap_or_default();
     match find_mut(phases, target) {
         None => errors.push(format!("task \"{target}\" not found")),
-        Some(_) => {
+        Some(_) =>
             for phase in phases.iter_mut() {
                 for item in phase.tasks.iter_mut() {
                     if item.content == target {
@@ -175,8 +175,7 @@ fn op_start(phases: &mut [TodoPhase], step: &TodoOp, errors: &mut Vec<String>) {
                         item.status = String::from("pending");
                     }
                 }
-            }
-        },
+            },
     }
 }
 
@@ -208,7 +207,7 @@ fn op_settle(phases: &mut Vec<TodoPhase>, step: &TodoOp, errors: &mut Vec<String
     let phase_name = step.phase.as_deref();
     match find_mut_scoped(phases, phase_name, target) {
         None => errors.push(format!("task \"{target}\" not found")),
-        Some(_) => {
+        Some(_) =>
             for phase in phases.iter_mut() {
                 if let Some(name) = phase_name {
                     if phase.name != name {
@@ -226,8 +225,7 @@ fn op_settle(phases: &mut Vec<TodoPhase>, step: &TodoOp, errors: &mut Vec<String
                     item.status = String::from(new_status);
                     true
                 });
-            }
-        },
+            },
     }
 }
 

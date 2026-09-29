@@ -2,11 +2,12 @@
 //! from `topological_batches`; `strongly_connected_components` mirrors
 //! DepWareTrans's cycle handling.
 
+use std::collections::BTreeMap;
+use std::path::Path;
+
 use anyhow::Context as _;
 use serde::Deserialize;
 use serde::Serialize;
-use std::collections::BTreeMap;
-use std::path::Path;
 
 /// Node kinds of the migration graph.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]

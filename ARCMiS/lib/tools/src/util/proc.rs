@@ -49,9 +49,8 @@ impl ProcError {
 impl fmt::Display for ProcError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ProcError::Spawn(message) | ProcError::Timeout(message) | ProcError::Status(message) => {
-                formatter.write_str(message)
-            },
+            ProcError::Spawn(message) | ProcError::Timeout(message) | ProcError::Status(message) =>
+                formatter.write_str(message),
         }
     }
 }

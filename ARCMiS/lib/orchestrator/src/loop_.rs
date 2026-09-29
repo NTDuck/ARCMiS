@@ -1,6 +1,7 @@
-//! Manager loop: one orchestration round. The manager agent reads the
-//! blackboard, decides, and the orchestrator executes the decision
-//! mechanically (delegate, replan, escalate, done).
+//! Round loop: one orchestration round. The orchestrator agent (tier 1)
+//! reads the blackboard, decides, and the harness executes the decision
+//! mechanically (delegate, replan, escalate, done). Renamed from
+//! `ManagerLoop` (ADR 0026).
 
 use std::path::Path;
 use std::path::PathBuf;
@@ -17,10 +18,10 @@ use blackboard::Workspace;
 use crate::judges;
 use crate::state_machine;
 
-/// Outcome of one manager round.
+/// Outcome of one orchestrator round.
 #[derive(Debug, Clone)]
 pub enum RoundOutcome {
-    /// The manager delegated; the orchestrator ran the specialist.
+    /// The orchestrator delegated; the harness ran the specialist.
     Delegated {
         /// Role the work went to.
         role: Role,
@@ -29,21 +30,21 @@ pub enum RoundOutcome {
         /// Specialist's final text.
         output: String,
     },
-    /// The manager rewrote the plan.
+    /// The orchestrator rewrote the plan.
     Replanned,
-    /// The manager escalated (repeated failure).
+    /// The orchestrator escalated (repeated failure).
     Escalated(String),
-    /// The manager declared the phase done.
+    /// The orchestrator declared the phase done.
     PhaseDone(Phase),
-    /// The harness refused a decision (evidence gate); the manager sees the
-    /// refusal in the next round's failure tail.
+    /// The harness refused a decision (evidence gate). The orchestrator sees
+    /// the refusal in the next round's failure tail.
     Refused,
-    /// The manager asked to stop the run.
+    /// The orchestrator asked to stop the run.
     Finished(String),
 }
 
-/// The manager loop context: everything one round touches.
-pub struct ManagerLoop {
+/// The round-loop context: everything one round touches.
+pub struct OrchestratorLoop {
     /// Run directory holding the blackboard files.
     pub run_dir: PathBuf,
     /// The built agents.
@@ -60,8 +61,8 @@ pub struct ManagerLoop {
     pub max_retries: u32,
 }
 
-impl ManagerLoop {
-    /// Run one round: read state, ask the manager, execute the decision.
+impl OrchestratorLoop {
+    /// Run one round: read state, ask the orchestrator, execute the decision.
     pub async fn round(&mut self) -> anyhow::Result<RoundOutcome> {
         self.round += 1;
         let state = blackboard::state::read(&self.run_dir)?
@@ -69,15 +70,18 @@ impl ManagerLoop {
         // Mirror the blackboard into workspace/meta so every role reads the
         // run state through its sandbox; run/ itself is outside the tool root.
         self.mirror_blackboard()?;
-        let prompt = self.manager_prompt(&state)?;
-        let manager = self.agents.agent(Role::Manager).ok_or_else(|| anyhow::anyhow!("manager agent missing"))?;
+        let prompt = self.round_prompt(&state)?;
+        let orchestrator =
+            self.agents.agent(Role::Orchestrator).ok_or_else(|| anyhow::anyhow!("orchestrator agent missing"))?;
 
-        // The manager answers with one verb line: `DECISION: <verb> [args]`.
-        let answer =
-            prompt_with_retries(manager, &prompt, self.max_retries, None, self.config.manager_turns).await?.judgeable();
+        // The orchestrator answers with one verb line: `DECISION: <verb>
+        // [args]`.
+        let answer = prompt_with_retries(orchestrator, &prompt, self.max_retries, None, self.config.orchestrator_turns)
+            .await?
+            .judgeable();
         let decisions = parse_decisions(&answer);
         if decisions.is_empty() {
-            return Err(anyhow::anyhow!("manager gave no DECISION line: {answer:?}"));
+            return Err(anyhow::anyhow!("orchestrator gave no DECISION line: {answer:?}"));
         }
 
         // The dynamic layer: several delegate decisions register into the
@@ -135,9 +139,10 @@ impl ManagerLoop {
                     output: outcome.results.iter().map(|result| result.output.clone()).collect::<Vec<_>>().join("\n\n"),
                 });
             }
-            // Every delegation queued behind its dependencies; the manager's
-            // next round sees the pending tasks. Report replan, not a
-            // delegation with a fabricated role.
+            // Every delegation queued behind its dependencies. The
+            // orchestrator's next round sees the pending tasks.
+            // Report replan, not a delegation with a fabricated
+            // role.
             return Ok(RoundOutcome::Replanned);
         }
 
@@ -158,7 +163,7 @@ impl ManagerLoop {
                     phase: format!("{:?}", state.phase),
                     action: "replan".into(),
                     detail: serde_json::json!({"round": self.round}),
-                    reasoning: "manager rewrote the plan".into(),
+                    reasoning: "orchestrator rewrote the plan".into(),
                 })?;
                 Ok(RoundOutcome::Replanned)
             },
@@ -184,7 +189,7 @@ impl ManagerLoop {
                         at: now_string(),
                         phase: format!("{:?}", state.phase),
                         category: "gate".into(),
-                        root_cause: "done claimed with no completed delegation in this phase; advance needs at least \
+                        root_cause: "done claimed with no completed delegation in this phase. Advance needs at least \
                                      one judged pass"
                             .into(),
                         suggested_action: format!("delegate the remaining {:?} work first", state.phase),
@@ -206,8 +211,8 @@ impl ManagerLoop {
         }
     }
 
-    /// Compose the manager's round prompt from the blackboard.
-    fn manager_prompt(&self, state: &blackboard::State) -> anyhow::Result<String> {
+    /// Compose the orchestrator's round prompt from the blackboard.
+    fn round_prompt(&self, state: &blackboard::State) -> anyhow::Result<String> {
         let tasks = TaskList::new(&self.run_dir).read()?;
         let plan = read_or_empty(&self.run_dir.join("plan.md"))?;
         let notes = read_or_empty(&self.run_dir.join("notes.md"))?;
@@ -250,7 +255,7 @@ impl ManagerLoop {
     }
 }
 
-/// The manager's decision verbs.
+/// The orchestrator's decision verbs.
 pub(crate) enum DecisionVerb {
     /// Delegate to a role (named or router-chosen).
     Delegate {
@@ -271,7 +276,7 @@ pub(crate) enum DecisionVerb {
     },
 }
 
-/// Parse every `DECISION:` line; the manager may emit several delegates in
+/// Parse every `DECISION:` line; the orchestrator may emit several delegates in
 /// one round (the task-graph executor orders and gates them).
 pub(crate) fn parse_decisions(answer: &str) -> Vec<DecisionVerb> {
     answer
@@ -470,7 +475,7 @@ fn snapshot_phase(run_dir: &Path) -> anyhow::Result<blackboard::State> {
     blackboard::state::read(run_dir)?.ok_or_else(|| anyhow::anyhow!("state missing in {run_dir:?}"))
 }
 
-impl ManagerLoop {
+impl OrchestratorLoop {
     /// Harvest agent-written files from `workspace/meta/` into the run
     /// blackboard, then mirror the run state back. The run/ dir stays the
     /// source of truth; meta/ is the sandbox-visible read/write view.

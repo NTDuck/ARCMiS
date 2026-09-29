@@ -167,11 +167,10 @@ impl oxi_hashline::HashlineFs for RootFs {
         let resolved = self.resolve(path)?;
         match tokio::fs::read_to_string(&resolved).await {
             Ok(text) => Ok(oxi_hashline::normalize_to_lf(oxi_hashline::strip_bom(&text).text)),
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound =>
                 Err(oxi_hashline::mismatch::HashlineError::NotFound {
                     path: path.to_owned(),
-                })
-            },
+                }),
             Err(error) => Err(oxi_hashline::mismatch::HashlineError::Io(error)),
         }
     }

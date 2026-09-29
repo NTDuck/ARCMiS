@@ -98,7 +98,7 @@ where
         }
         // Fold the adapters through the public portable_dynamic_tool; the
         // first call transitions the builder into the tools state. A role
-        // with an empty allowlist builds tool-free (the manager).
+        // with an empty allowlist builds tool-free (the orchestrator).
         let mut adapters = tools_for_role(role).into_iter();
         let agent = match adapters.next() {
             Some(first) => {

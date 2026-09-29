@@ -1,5 +1,5 @@
 //! Task-graph executor: the dynamic-selection half of the orchestration
-//! pattern (ADR 0022). The manager's round may emit several `delegate`
+//! pattern (ADR 0022). The orchestrator's round may emit several `delegate`
 //! decisions; each becomes a task with optional dependencies. Ready tasks
 //! (all dependencies done) run bounded by the configured fan-out — with a
 //! single ollama slot the interleaving is turn-level, not token-level.
@@ -17,15 +17,15 @@ use blackboard::TaskStatus;
 use blackboard::Workspace;
 
 use crate::guard_hook::GuardHook;
-use crate::manager::judge_output;
-use crate::manager::now_string;
-use crate::manager::prompt_with_retries;
-use crate::manager::TurnOutput;
+use crate::loop_::judge_output;
+use crate::loop_::now_string;
+use crate::loop_::prompt_with_retries;
+use crate::loop_::TurnOutput;
 
 /// One parsed `delegate` decision.
 #[derive(Debug, Clone)]
 pub struct Delegation {
-    /// Role hint from the manager (empty → router picks).
+    /// Role hint from the orchestrator (empty → router picks).
     pub role: Option<String>,
     /// Task instruction.
     pub task: String,
@@ -124,7 +124,7 @@ pub async fn execute(
 
     // Ready set: dependencies done. An unknown dependency id reads as
     // satisfied so a mistyped `after:` cannot silently stall the task; the
-    // manager sees the task still pending and can re-delegate it.
+    // orchestrator sees the task still pending and can re-delegate it.
     let known = tasks.read()?;
     let done: Vec<String> =
         known.iter().filter(|task| task.status == TaskStatus::Done).map(|task| task.id.clone()).collect();
@@ -160,9 +160,9 @@ pub async fn execute(
     })
 }
 
-/// Route a delegation to its role: manager hint, then keyword pass, then the
-/// default. The router model is skipped — the manager's next round sees an
-/// unhandled task and names a role; routing twice per task spends context
+/// Route a delegation to its role: orchestrator hint, then keyword pass, then
+/// the default. The router model is skipped. The orchestrator's next round sees
+/// an unhandled task and names a role; routing twice per task spends context
 /// for nothing.
 fn resolve_role(delegation: &Delegation, task_text: &str) -> Role {
     delegation

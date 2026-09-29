@@ -73,11 +73,10 @@ impl Tool for Irc {
         let text = match args.op.as_str() {
             "list" => list_peers(&self.peers)?,
             "send" => send_message(&self.peers, &args)?,
-            other => {
+            other =>
                 return Err(ToolExecutionError::invalid_args(format!(
                     "unknown op \"{other}\". Use \"list\" or \"send\"."
-                )))
-            },
+                ))),
         };
         Ok(ToolOutput::text(text))
     }

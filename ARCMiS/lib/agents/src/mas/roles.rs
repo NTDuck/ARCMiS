@@ -4,8 +4,9 @@
 /// Specialist role. The router names one of these per delegation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Role {
-    /// Manager: owns the plan and delegates.
-    Manager,
+    /// Orchestrator (tier 1): owns the plan and delegates. Renamed from
+    /// `Manager` (ADR 0026); traces before that ADR carry the old name.
+    Orchestrator,
     /// Reads the codebase; writes the source map.
     Analyst,
     /// Writes the migration brief.
@@ -29,9 +30,9 @@ pub enum Role {
 }
 
 impl Role {
-    /// Every role in registry order (manager first).
+    /// Every role in registry order (orchestrator first).
     pub const ALL: [Role; 11] = [
-        Role::Manager,
+        Role::Orchestrator,
         Role::Analyst,
         Role::Architect,
         Role::Planner,
@@ -48,7 +49,7 @@ impl Role {
     #[must_use]
     pub fn name(self) -> &'static str {
         match self {
-            Role::Manager => "manager",
+            Role::Orchestrator => "orchestrator",
             Role::Analyst => "analyst",
             Role::Architect => "architect",
             Role::Planner => "planner",
@@ -72,13 +73,13 @@ impl Role {
     #[must_use]
     pub fn allowed_tools(self) -> &'static [&'static str] {
         match self {
-            // The manager decides from the round prompt; tools only let it
+            // The orchestrator decides from the round prompt; tools only let it
             // loop reading files instead of answering (observed: 40 reads of
             // plan.md). The round prompt carries plan, notes, tasks, ledger.
-            Role::Manager => &[],
+            Role::Orchestrator => &[],
             // Analysts write artifacts (source map, graphs); judges read only.
             Role::Analyst => &["read", "write", "search", "find", "ast_grep"],
-            // The validator re-runs the test suite itself (the manager asks
+            // The validator re-runs the test suite itself (the orchestrator asks
             // for 'cargo test' evidence); the critic and fleet analyst
             // judge from reading only.
             Role::Validator => &["read", "search", "find", "ast_grep", "bash"],

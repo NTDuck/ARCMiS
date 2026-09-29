@@ -136,7 +136,7 @@ def collect_run(run_dir: Path) -> dict:
         rec["reported_compiled"] = y.get("compiled", "false")
         rec["elapsed_s"] = round(parse_elapsed(y.get("elapsed", "")), 1)
         # The evaluator reran build+test only when result steps exist.
-        # Ledger records carry `steps: []` from the manager self-report.
+        # Ledger records carry `steps: []` from the orchestrator self-report.
         # those count as unverifiable regardless of what the record says.
         rec["evaluated"] = any(
             line.strip().startswith("- step:") for line in ymls[-1].read_text().splitlines()
@@ -179,7 +179,7 @@ def collect_run(run_dir: Path) -> dict:
     else:
         rec["failure_class"] = "other"
     # A scored record only counts when the evaluator reran the
-    # toolchain. manager self-reports over empty workspaces must not
+    # toolchain. Orchestrator self-reports over empty workspaces must not
     # leak verified metrics into the aggregate.
     rec["verified"] = bool(scored and rec["evaluated"] and rec["compiled"])
     return rec
@@ -355,7 +355,7 @@ def esc(text) -> str:
 # Per-survey scoring caveat shown under the summary cards.
 NOTES = {
     "220926": (
-        " Three ledger runs wrote per-problem records from the manager's"
+        " Three ledger runs wrote per-problem records from the orchestrator's"
         " self-report with empty workspaces; the verified metrics exclude them."
     ),
     "230926": (
