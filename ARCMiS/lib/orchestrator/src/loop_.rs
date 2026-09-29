@@ -223,17 +223,38 @@ impl OrchestratorLoop {
             .take(5)
             .map(|failure| format!("- [{}] {}: {}", failure.phase, failure.category, failure.root_cause))
             .collect();
+        // Grammar and ROLE list depend on the orchestration tier (ADR 0026):
+        // with hierarchy on the round prompt names the leads (plus the
+        // tier-1 advisory role) and drops the `team` verb, so the
+        // orchestrator cannot even see a specialist name to send.
+        let (role_list, team_verb, hierarchy_note) = if self.config.hierarchy.enabled {
+            let teams = crate::hierarchy::teams(&self.config);
+            let mut names: Vec<&str> = teams.iter().map(|team| team.lead.as_str()).collect();
+            names.push(Role::FleetAnalyst.name());
+            (
+                names.join(", "),
+                String::new(),
+                " With hierarchy on, batch work goes to a team lead; the lead dispatches its specialists. Delegating \
+                 to fleet-analyst directly is allowed (advisory only)."
+                    .to_owned(),
+            )
+        } else {
+            (
+                "analyst, architect, planner, translator, validator, tester, failure-analyst, critic, repairer, \
+                 fleet-analyst"
+                    .to_owned(),
+                "DECISION: delegate ROLE | TASK TEXT | team\n".to_owned(),
+                String::new(),
+            )
+        };
         Ok(format!(
             "ROUND {}\n\nSTATE: phase={:?} batch={:?} model={}\n\nPLAN:\n{}\n\nNOTES:\n{}\n\nRECENT \
              FAILURES:\n{}\n\nTASKS:\n{}\n\nDecide the next action. Answer with one or more DECISION lines (plain \
              words, no angle brackets, no function-call syntax):\nDECISION: delegate ROLE | TASK TEXT\nDECISION: \
-             delegate ROLE | TASK TEXT | after:t2,t3\nDECISION: delegate ROLE | TASK TEXT | team\nDECISION: \
-             replan\nDECISION: escalate | REASON\nDECISION: done\nDECISION: finish | REASON\nROLE is one of: analyst, \
-             architect, planner, translator, validator, tester, failure-analyst, critic, repairer, \
-             fleet-analyst{leads}.\nYou MAY emit several delegate lines in one round when the tasks are independent; \
-             the harness runs up to {fanout} of them in parallel and queues the rest. `after:` lists task ids this \
-             one waits on; `team` runs the translation collective (translate, validate, repair) end to end under one \
-             task.             {hierarchy_note}",
+             delegate ROLE | TASK TEXT | after:t2,t3\n{team_verb}DECISION: replan\nDECISION: escalate | \
+             REASON\nDECISION: done\nDECISION: finish | REASON\nROLE is one of: {role_list}.\nYou MAY emit several \
+             delegate lines in one round when the tasks are independent; the harness runs up to {fanout} of them in \
+             parallel and queues the rest. `after:` lists task ids this one waits on.             {hierarchy_note}",
             self.round,
             state.phase,
             state.current_batch,
@@ -252,25 +273,9 @@ impl OrchestratorLoop {
                 .collect::<Vec<_>>()
                 .join("\n"),
             fanout = self.config.fanout,
-            // Hierarchical mode (ADR 0026): the round prompt lists the
-            // lead names so the orchestrator can target a team directly.
-            leads = if self.config.hierarchy.enabled {
-                format!(
-                    ", {}",
-                    crate::hierarchy::teams(&self.config)
-                        .iter()
-                        .map(|team| team.lead.as_str())
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                )
-            } else {
-                String::new()
-            },
-            hierarchy_note = if self.config.hierarchy.enabled {
-                " With hierarchy on, batch work goes to a team lead, not directly to a specialist."
-            } else {
-                ""
-            },
+            role_list = role_list,
+            team_verb = team_verb,
+            hierarchy_note = hierarchy_note,
         ))
     }
 }
