@@ -19,4 +19,3 @@ mas:
   max_rounds: 20
   role_output_tokens:
     translator: 16384
-    architect: 16384

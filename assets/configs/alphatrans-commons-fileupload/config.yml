@@ -18,8 +18,14 @@ mas:
   fanout: 3
   max_rounds: 20
   role_output_tokens:
-    translator: 16384
+    analyst: 16384
+    architect: 16384
     planner: 16384
+    translator: 16384
+    validator: 16384
+    critic: 16384
+    repairer: 16384
+    tester: 16384
   role_think:
     analyst: false
     translator: false

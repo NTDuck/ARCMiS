@@ -41,10 +41,10 @@ sed "s#^[[:space:]]*dir:[[:space:]].*#  dir: $OUT#" "$CONFIG_PATH" > "$cfg"
 
 # Lineage: the manifest written by the harness carries parents and
 # hypothesis as plain text. Patch them in after the run.
-# Run timeout is env-overridable; the 3600 default keeps prior runs
-# comparable. The proposer may set TIMEOUT_SECONDS for sets that need
-# longer ladders (e.g. a Hardening run 1 task from completion).
-TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-3600}"
+# Run timeout is env-overridable. The 7200 default fits the runs that
+# historically died at 3600 mid-Hardening; prior 3600-second runs stay
+# comparable because each manifest records the wrapper rc.
+TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-7200}"
 OLLAMA_API_BASE_URL="${OLLAMA_API_BASE_URL:-http://localhost:11434}" \
   timeout "$TIMEOUT_SECONDS" cargo run --quiet -p harness --manifest-path "$REPO/Cargo.toml" -- \
     --config "$cfg" --experiment "$CANDIDATE" \
