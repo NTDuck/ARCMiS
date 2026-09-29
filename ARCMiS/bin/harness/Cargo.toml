@@ -11,10 +11,8 @@ agents = { package = "ARCMiS-agents", path = "../../lib/agents" }
 blackboard = { package = "ARCMiS-blackboard", path = "../../lib/blackboard" }
 middleware = { package = "ARCMiS-middleware", path = "../../lib/middleware" }
 orchestrator = { package = "ARCMiS-orchestrator", path = "../../lib/orchestrator" }
-snapcompact = { package = "ARCMiS-snapcompact", path = "../../lib/snapcompact" }
 tools = { package = "ARCMiS-tools", path = "../../lib/tools" }
 anyhow.workspace = true
-rig = "0.42.0"
 serde.workspace = true
 serde_json.workspace = true
 serde_yaml.workspace = true

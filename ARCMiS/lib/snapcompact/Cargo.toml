@@ -14,8 +14,6 @@ bdf-parser.workspace = true
 image.workspace = true
 rig = "0.42.0"
 serde.workspace = true
-serde_json.workspace = true
-anyhow.workspace = true
 tracing.workspace = true
 
 # ARCMiS-<name> naming (repo rule): the uppercase prefix triggers

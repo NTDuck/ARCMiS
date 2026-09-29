@@ -12,13 +12,11 @@ dependencies = [
  "anyhow",
  "reqwest 0.13.5",
  "rig",
- "schemars 1.2.2",
  "serde",
  "serde_json",
  "serde_yaml",
  "tempfile",
  "tokio",
- "tracing",
 ]
 
 [[package]]
@@ -29,10 +27,7 @@ dependencies = [
  "petgraph",
  "serde",
  "serde_json",
- "serde_yaml",
  "tempfile",
- "time",
- "tracing",
  "walkdir",
 ]
 
@@ -52,14 +47,12 @@ version = "0.1.0"
 dependencies = [
  "ARCMiS-agents",
  "ARCMiS-blackboard",
- "ARCMiS-tools",
  "anyhow",
  "laya-rs",
  "rig",
  "serde",
  "serde_json",
  "tempfile",
- "thiserror 2.0.20",
  "tokio",
  "tracing",
 ]
@@ -68,12 +61,10 @@ dependencies = [
 name = "ARCMiS-snapcompact"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "bdf-parser",
  "image",
  "rig",
  "serde",
- "serde_json",
  "tracing",
 ]
 
@@ -93,9 +84,7 @@ dependencies = [
  "rusqlite",
  "serde",
  "serde_json",
- "sha2",
  "tokio",
- "tracing",
  "uuid",
  "walkdir",
 ]
@@ -2970,10 +2959,8 @@ dependencies = [
  "ARCMiS-blackboard",
  "ARCMiS-middleware",
  "ARCMiS-orchestrator",
- "ARCMiS-snapcompact",
  "ARCMiS-tools",
  "anyhow",
- "rig",
  "serde",
  "serde_json",
  "serde_yaml",
