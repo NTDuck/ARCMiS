@@ -5,9 +5,13 @@
 pub mod breaker;
 pub mod guard;
 pub mod guard_hook;
+pub mod hierarchy;
 pub mod jev_judge;
 pub mod judges;
-// `loop` is a Rust keyword; the module carries a trailing underscore. The
+pub mod lead;
+#[cfg(test)]
+mod lead_parse_tests;
+// `loop` is a Rust keyword, so the module carries a trailing underscore. The
 // type inside is `OrchestratorLoop`, so no caller types the module name.
 pub mod loop_;
 pub mod progress;

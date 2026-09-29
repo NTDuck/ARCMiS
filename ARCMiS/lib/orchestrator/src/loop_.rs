@@ -21,7 +21,7 @@ use crate::state_machine;
 /// Outcome of one orchestrator round.
 #[derive(Debug, Clone)]
 pub enum RoundOutcome {
-    /// The orchestrator delegated; the harness ran the specialist.
+    /// The orchestrator delegated. the harness ran the specialist.
     Delegated {
         /// Role the work went to.
         role: Role,
@@ -68,7 +68,7 @@ impl OrchestratorLoop {
         let state = blackboard::state::read(&self.run_dir)?
             .ok_or_else(|| anyhow::anyhow!("run state missing; preflight must write it"))?;
         // Mirror the blackboard into workspace/meta so every role reads the
-        // run state through its sandbox; run/ itself is outside the tool root.
+        // run state through its sandbox. run/ itself is outside the tool root.
         self.mirror_blackboard()?;
         let prompt = self.round_prompt(&state)?;
         let orchestrator =
@@ -230,9 +230,10 @@ impl OrchestratorLoop {
              delegate ROLE | TASK TEXT | after:t2,t3\nDECISION: delegate ROLE | TASK TEXT | team\nDECISION: \
              replan\nDECISION: escalate | REASON\nDECISION: done\nDECISION: finish | REASON\nROLE is one of: analyst, \
              architect, planner, translator, validator, tester, failure-analyst, critic, repairer, \
-             fleet-analyst.\nYou MAY emit several delegate lines in one round when the tasks are independent; the \
-             harness runs up to {fanout} of them in parallel and queues the rest. `after:` lists task ids this one \
-             waits on; `team` runs the translation collective (translate, validate, repair) end to end under one task.",
+             fleet-analyst{leads}.\nYou MAY emit several delegate lines in one round when the tasks are independent; \
+             the harness runs up to {fanout} of them in parallel and queues the rest. `after:` lists task ids this \
+             one waits on; `team` runs the translation collective (translate, validate, repair) end to end under one \
+             task.             {hierarchy_note}",
             self.round,
             state.phase,
             state.current_batch,
@@ -251,6 +252,25 @@ impl OrchestratorLoop {
                 .collect::<Vec<_>>()
                 .join("\n"),
             fanout = self.config.fanout,
+            // Hierarchical mode (ADR 0026): the round prompt lists the
+            // lead names so the orchestrator can target a team directly.
+            leads = if self.config.hierarchy.enabled {
+                format!(
+                    ", {}",
+                    crate::hierarchy::teams(&self.config)
+                        .iter()
+                        .map(|team| team.lead.as_str())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            } else {
+                String::new()
+            },
+            hierarchy_note = if self.config.hierarchy.enabled {
+                " With hierarchy on, batch work goes to a team lead, not directly to a specialist."
+            } else {
+                ""
+            },
         ))
     }
 }
@@ -276,7 +296,7 @@ pub(crate) enum DecisionVerb {
     },
 }
 
-/// Parse every `DECISION:` line; the orchestrator may emit several delegates in
+/// Parse every `DECISION:` line. the orchestrator may emit several delegates in
 /// one round (the task-graph executor orders and gates them).
 pub(crate) fn parse_decisions(answer: &str) -> Vec<DecisionVerb> {
     answer
@@ -321,7 +341,7 @@ fn parse_decision_line(line: &str) -> Option<DecisionVerb> {
     }
 }
 
-/// Judge a specialist's final text by its contract line. `Ok` on a pass;
+/// Judge a specialist's final text by its contract line. `Ok` marks a pass.
 /// the error carries the failure reason.
 pub(crate) fn judge_output(role: Role, output: &str) -> Result<(), String> {
     // A delegation that never returned (budget spent, model failure) fails its
@@ -362,7 +382,7 @@ pub(crate) fn judge_output(role: Role, output: &str) -> Result<(), String> {
 }
 
 /// Compact UTC timestamp for ledger ordering (`unix:<seconds>`). The ledger
-/// only needs monotone-ish ordering; the harness logs carry full precision.
+/// only needs monotone-ish ordering. the harness logs carry full precision.
 pub(crate) fn now_string() -> String {
     let seconds = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -392,7 +412,7 @@ impl TurnOutput {
 
 /// Prompt one agent, retrying transient provider failures up to `max_retries`
 /// times. Transport- and server-side failures (HTTP 4xx/5xx wrapped in
-/// `HttpError`, provider 500s) are retryable; a run that exhausted its budget
+/// `HttpError`, provider 500s) are retryable. a run that exhausted its budget
 /// or was cancelled is not. `hook`, when set, rides every attempt (the guard
 /// gateway) and a turn cap bounds the run.
 pub(crate) async fn prompt_with_retries(
@@ -443,8 +463,8 @@ pub(crate) async fn prompt_with_retries(
 fn is_transient(error: &rig::completion::PromptError) -> bool {
     match error {
         // Transport- and server-side only. `ResponseError` covers
-        // deterministic failures (budget exhaustion, malformed output);
-        // retrying one restarts the conversation from scratch and burns
+        // deterministic failures (budget exhaustion, malformed output).
+        // Retrying one restarts the conversation from scratch and burns
         // the same budget again.
         rig::completion::PromptError::CompletionError(rig::completion::CompletionError::HttpError(_))
         | rig::completion::PromptError::CompletionError(rig::completion::CompletionError::ProviderError(_)) => true,
@@ -478,7 +498,7 @@ fn snapshot_phase(run_dir: &Path) -> anyhow::Result<blackboard::State> {
 impl OrchestratorLoop {
     /// Harvest agent-written files from `workspace/meta/` into the run
     /// blackboard, then mirror the run state back. The run/ dir stays the
-    /// source of truth; meta/ is the sandbox-visible read/write view.
+    /// source of truth. meta/ is the sandbox-visible read/write view.
     fn mirror_blackboard(&self) -> anyhow::Result<()> {
         let meta = self.workspace.root().join("meta");
         std::fs::create_dir_all(&meta)?;

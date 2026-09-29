@@ -2,6 +2,7 @@
 //! value (model, paths, languages, toolchain) lives in the yml, not in the
 //! agent. See .omp/rules/config.md.
 
+use std::collections::BTreeMap;
 use std::fs::read_to_string;
 use std::path::Path;
 use std::path::PathBuf;
@@ -37,7 +38,7 @@ pub struct Config {
 pub struct SnapcompactConfig {
     /// Projection threshold that triggers compaction. 0 disables the hook.
     pub threshold_tokens: u32,
-    /// Recent tokens kept verbatim; the rest is archived into frames.
+    /// Recent tokens kept verbatim. the rest is archived into frames.
     pub keep_recent_tokens: u32,
 }
 
@@ -60,7 +61,7 @@ pub struct Run {
     pub max_output_tokens: u64,
     pub max_retries: u32,
     /// Enable model thinking mode. Thinking improves long-horizon tool
-    /// use on the supported models; disable only for a specific reason.
+    /// use on the supported models. disable only for a specific reason.
     pub think: bool,
     /// Sampling temperature for the model.
     pub temperature: f64,
@@ -102,7 +103,7 @@ pub struct MasConfig {
     /// Specialist turn budget per delegation.
     pub worker_turns: usize,
     /// Turn budget for the judge roles (validator, critic, fleet analyst):
-    /// they read, run the suite, and write one verdict; a small ceiling keeps
+    /// they read, run the suite, and write one verdict. a small ceiling keeps
     /// a validation pass from consuming a translator-sized budget.
     pub judge_turns: usize,
     /// Repair attempts per diagnosed failure before escalation.
@@ -118,27 +119,83 @@ pub struct MasConfig {
     /// Test generations the tester may write per module (coverage-gap cap).
     pub max_generated_tests_per_module: usize,
     /// Parallel specialist executions the orchestrator may interleave in
-    /// one round (bounded by the single ollama slot; 2 = two turn streams).
+    /// one round (bounded by the single ollama slot. 2 = two turn streams).
     pub fanout: usize,
     /// Turn budget for one team collective sub-loop (translator →
     /// validator → tester on one batch), nested under one delegation.
     pub collective_turns: usize,
     /// Model context window, used by the guard's read-scoping gate (0
-    /// disables the gate). Mirrors `run.num_ctx`; the orchestrator cannot
+    /// disables the gate). Mirrors `run.num_ctx`. the orchestrator cannot
     /// see the run section.
     pub num_ctx: u64,
     /// Per-role output-token overrides over `run.max_output_tokens`.
     /// Translator file-emission turns die at the run default (c5 nandc
-    /// escalation); a role whose deliverable is one large file needs its
+    /// escalation). a role whose deliverable is one large file needs its
     /// own ceiling. A role missing from the map keeps the run default.
-    pub role_output_tokens: std::collections::BTreeMap<String, u64>,
+    pub role_output_tokens: BTreeMap<String, u64>,
     /// Per-role think overrides over `run.think`. A role missing from
     /// the map keeps the run default (c8 fileupload: translator
     /// reasoning filled the window before its first write).
-    pub role_think: std::collections::BTreeMap<String, bool>,
+    pub role_think: BTreeMap<String, bool>,
     /// Guard policy: deterministic deny patterns and the model-arbitration
-    /// switch (the Jev slot; off until a second model exists).
+    /// switch (the Jev slot. off until a second model exists).
     pub guard: GuardConfig,
+    /// Hierarchical static orchestration (ADR 0026). Default off: the run
+    /// behaves exactly as the single-tier ADR 0022 design.
+    pub hierarchy: HierarchyConfig,
+}
+
+/// Tier-2 team layout for hierarchical orchestration. Teams are fixed at
+/// build (registry, one lead prompt, one member allowlist each). the
+/// runtime picks which lead serves a delegation. No team layout is
+/// hardcoded here: the config owns the split.
+#[derive(Debug, Clone, Deserialize, serde::Serialize)]
+#[serde(default)]
+pub struct HierarchyConfig {
+    /// Tier-2 leads active. false = exact single-tier behavior.
+    pub enabled: bool,
+    /// Deny a tier-1 delegation that names a specialist directly (feedback
+    /// to the orchestrator) instead of silently rerouting it to the
+    /// member's lead. On by default: the refusal teaches the tier split.
+    pub deny_direct: bool,
+    /// One entry per lead. The lead's prompt file must exist. members must
+    /// be specialist role names.
+    pub teams: Vec<TeamConfig>,
+}
+
+impl Default for HierarchyConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            deny_direct: true,
+            teams: Vec::new(),
+        }
+    }
+}
+
+/// One tier-2 team: a lead and the specialists it may dispatch.
+#[derive(Debug, Clone, Deserialize, serde::Serialize)]
+pub struct TeamConfig {
+    /// Lead role name (for example `migration-lead`). Resolves to a prompt
+    /// file. the agent itself is tool-free and decides in DECISION text.
+    pub lead: String,
+    /// Specialist role names this lead may delegate to. Cross-team and
+    /// lead-to-lead delegation is refused (depth cap 3, ADR 0026).
+    pub members: Vec<String>,
+    /// Inner-loop round ceiling for the lead (its own model calls).
+    pub turns: usize,
+    /// Consecutive unproductive inner rounds before the lead's loop
+    /// breaks. Empty keeps the run-level `stagnation_rounds`.
+    pub stagnation_rounds: Option<usize>,
+}
+
+impl TeamConfig {
+    /// Resolve the member names to roles. A name that fails to resolve is
+    /// a config error. `validate_teams` reports it at preflight.
+    #[must_use]
+    pub fn members(&self) -> Vec<Option<crate::mas::roles::Role>> {
+        self.members.iter().map(|name| crate::mas::roles::Role::from_name(name)).collect()
+    }
 }
 
 /// Deterministic + model-arbitrated tool gateway policy.
@@ -152,7 +209,7 @@ pub struct GuardConfig {
     pub ask_model: bool,
     /// Tool calls allowed per delegation before the guard denies further
     /// calls. 0 disables the cap. Judges (validator, critic) promise a
-    /// small call budget in their prompts; the guard enforces it because
+    /// small call budget in their prompts. the guard enforces it because
     /// the model alone will loop otherwise.
     pub max_tool_calls: usize,
     /// Laya-backed Jev judge over the guard's Ask slot (ADR 0023). Off by
@@ -161,7 +218,7 @@ pub struct GuardConfig {
 }
 
 /// Configuration for the laya-backed Jev judge (ADR 0023). One typed
-/// decision question per consultation; the confidence threshold gates
+/// decision question per consultation. the confidence threshold gates
 /// acceptance per the cascade rule of arXiv:2609.26550 §7.
 #[derive(Debug, Clone, Deserialize, serde::Serialize)]
 #[serde(default)]
@@ -223,9 +280,10 @@ impl Default for MasConfig {
             fanout: 2,
             collective_turns: 40,
             num_ctx: 32768,
-            role_output_tokens: std::collections::BTreeMap::new(),
-            role_think: std::collections::BTreeMap::new(),
+            role_output_tokens: BTreeMap::new(),
+            role_think: BTreeMap::new(),
             guard: GuardConfig::default(),
+            hierarchy: HierarchyConfig::default(),
         }
     }
 }

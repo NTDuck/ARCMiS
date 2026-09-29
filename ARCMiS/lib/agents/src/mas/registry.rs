@@ -22,6 +22,9 @@ use crate::util::config::Run;
 pub struct MasAgents {
     /// Agents per role.
     agents: Arc<BTreeMap<&'static str, Agent>>,
+    /// Tier-2 lead agents per lead name. Empty in single-tier mode
+    /// (`mas.hierarchy.enabled` false).
+    leads: Arc<BTreeMap<String, Agent>>,
 }
 
 impl MasAgents {
@@ -30,13 +33,32 @@ impl MasAgents {
     pub fn agent(&self, role: Role) -> Option<&Agent> {
         self.agents.get(role.name())
     }
+
+    /// Attach the tier-2 lead agents built by `build_leads`. Harness code
+    /// calls this once after `build`. the map stays private so a lead agent
+    /// is only reachable through the hierarchy path.
+    pub fn attach_leads(&mut self, leads: BTreeMap<String, Agent>) {
+        self.leads = Arc::new(leads);
+    }
+
+    /// Look up one tier-2 lead's agent by name.
+    #[must_use]
+    pub fn lead(&self, name: &str) -> Option<&Agent> {
+        self.leads.get(name)
+    }
+
+    /// The configured lead names, in config order.
+    #[must_use]
+    pub fn lead_names(&self) -> Vec<String> {
+        self.leads.keys().cloned().collect()
+    }
 }
 
 /// Build every role's agent from one client. Works for any provider whose
 /// client implements `CompletionClient` (ollama native, netmind OpenAI
 /// wire): the blanket `AgentClientExt` produces the same `AgentBuilder`.
 ///
-/// `tools_for_role` supplies the portable tool adapters for one role; each
+/// `tools_for_role` supplies the portable tool adapters for one role. each
 /// adapter is registered on that role's agent only, so the model sees
 /// exactly its allowlist. `trace_sink`, when set, receives one JSONL line
 /// per model call, model response, tool call, and tool result.
@@ -48,8 +70,8 @@ pub fn build<C, F>(
     trace_sink: Option<Arc<middleware::trace::TraceSink>>,
     turns_for_role: impl Fn(Role) -> usize,
     snapcompact: Option<&crate::util::config::SnapcompactConfig>,
-    role_output_tokens: &std::collections::BTreeMap<String, u64>,
-    role_think: &std::collections::BTreeMap<String, bool>,
+    role_output_tokens: &BTreeMap<String, u64>,
+    role_think: &BTreeMap<String, bool>,
 ) -> anyhow::Result<MasAgents>
 where
     C: CompletionClient,
@@ -57,7 +79,8 @@ where
     F: Fn(Role) -> Vec<tools::portable::Named>,
 {
     let mut agents = BTreeMap::new();
-    // Parse the BDF font once; the snapcompact hook shares it across roles.
+    let leads = BTreeMap::new();
+    // Parse the BDF font once. the snapcompact hook shares it across roles.
     let snapcompact_font = Arc::new(snapcompact::load_font());
     for role in Role::ALL {
         let model = fleet.model_for(role);
@@ -70,11 +93,12 @@ where
             .default_max_turns(turns_for_role(role));
         if let Some(sink) = &trace_sink {
             // Tier 1: the registry builds single-tier agents. Hierarchy mode
-            // (ADR 0026) builds lead agents separately at tier 2.
+            // (ADR 0026) builds lead agents separately at tier 2 via
+            // `build_leads`, which traces with tier 2.
             builder = builder.add_hook(TraceHook::new(role.name(), 1, sink.clone()));
         }
         // A role with an output override gets its ceiling patched onto every
-        // call; roles absent from the map keep the run default.
+        // call. roles absent from the map keep the run default.
         if let Some(ceiling) = role_output_tokens.get(role.name()) {
             builder = builder.add_hook(RoleOutputTokensHook::new(*ceiling));
         }
@@ -96,7 +120,7 @@ where
         if let Some(params) = extra_params(run, role_think.get(role.name()).copied()) {
             builder = builder.additional_params(params);
         }
-        // Fold the adapters through the public portable_dynamic_tool; the
+        // Fold the adapters through the public portable_dynamic_tool. the
         // first call transitions the builder into the tools state. A role
         // with an empty allowlist builds tool-free (the orchestrator).
         let mut adapters = tools_for_role(role).into_iter();
@@ -114,11 +138,65 @@ where
     }
     Ok(MasAgents {
         agents: Arc::new(agents),
+        leads: Arc::new(leads),
     })
 }
 
+/// Build the tier-2 lead agents for hierarchical mode (ADR 0026). One
+/// tool-free agent per team lead: like the tier-1 orchestrator, a lead
+/// decides in DECISION text and the harness executes the dispatch, so no
+/// tool allowlist exists to leak across the tier boundary. The lead sits
+/// on the weakest ladder rung (specialist tier). `lead_model` overrides
+/// per team when the config names one.
+pub fn build_leads<C>(
+    client: &C,
+    fleet: &Fleet,
+    run: &Run,
+    teams: &[crate::mas::leads::Team],
+    trace_sink: Option<Arc<middleware::trace::TraceSink>>,
+    snapcompact: Option<&crate::util::config::SnapcompactConfig>,
+    role_think: &BTreeMap<String, bool>,
+) -> anyhow::Result<BTreeMap<String, Agent>>
+where
+    C: CompletionClient,
+    C::CompletionModel: 'static,
+{
+    let mut leads = BTreeMap::new();
+    let snapcompact_font = Arc::new(snapcompact::load_font());
+    for team in teams {
+        let model = fleet.model_for(Role::Translator).to_owned();
+        let prompt = crate::mas::leads::prompt_text(&team.lead)?;
+        let mut builder = client
+            .agent(model)
+            .preamble(&prompt)
+            .temperature(run.temperature)
+            .max_tokens(run.max_output_tokens)
+            .default_max_turns(team.turns);
+        if let Some(sink) = &trace_sink {
+            builder = builder.add_hook(TraceHook::new(team.lead.clone(), 2, sink.clone()));
+        }
+        builder = builder.add_hook(TrailingUserMessageHook);
+        if let Some(config) = snapcompact.filter(|config| config.threshold_tokens > 0) {
+            builder = builder.add_hook(snapcompact::SnapcompactHook {
+                threshold_tokens: config.threshold_tokens,
+                options: snapcompact::CompactOptions {
+                    keep_recent_tokens: config.keep_recent_tokens,
+                    ..snapcompact::CompactOptions::default()
+                },
+                font: snapcompact_font.clone(),
+                trailing_user_query: Some(CONTINUATION_QUERY.to_owned()),
+            });
+        }
+        if let Some(params) = extra_params(run, role_think.get(&team.lead).copied()) {
+            builder = builder.additional_params(params);
+        }
+        leads.insert(team.lead.clone(), builder.build());
+    }
+    Ok(leads)
+}
+
 /// Provider-neutral extra params. Ollama models need the context window and
-/// the think switch; the OpenAI wire has no counterpart, so the params ride
+/// the think switch. the OpenAI wire has no counterpart, so the params ride
 /// only when the run config says the provider is ollama. A per-role think
 /// override (`mas.role_think`) wins over the run default.
 fn extra_params(run: &Run, think_override: Option<bool>) -> Option<serde_json::Value> {

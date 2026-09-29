@@ -90,19 +90,20 @@ fn cap_string(value: &mut Value, cap: usize) {
     }
 }
 
-/// Which named agent emitted the events, and at which tier; set at build
+/// Which named agent emitted the events, and at which tier. set at build
 /// time.
 pub struct TraceHook {
-    agent: &'static str,
+    agent: String,
     tier: u8,
     sink: Arc<TraceSink>,
 }
 
 impl TraceHook {
-    /// Attach the hook for one named agent at one tier.
-    pub fn new(agent: &'static str, tier: u8, sink: Arc<TraceSink>) -> Self {
+    /// Attach the hook for one named agent at one tier. Lead agent names
+    /// come from runtime config, so the name is owned, not static.
+    pub fn new(agent: impl Into<String>, tier: u8, sink: Arc<TraceSink>) -> Self {
         Self {
-            agent,
+            agent: agent.into(),
             tier,
             sink,
         }
@@ -123,7 +124,7 @@ impl AgentHook for TraceHook {
     }
 
     async fn on_completion_response(&self, _ctx: &HookContext, event: CompletionResponse<'_>) -> ObservationAction {
-        self.sink.append("model_response", response_fields(self.agent, self.tier, event));
+        self.sink.append("model_response", response_fields(&self.agent, self.tier, event));
         ObservationAction::Continue
     }
 
@@ -141,13 +142,13 @@ impl AgentHook for TraceHook {
     }
 
     async fn on_tool_result(&self, _ctx: &HookContext, event: ToolResultEvent<'_>) -> ToolResultAction {
-        self.sink.append("tool_result", result_fields(self.agent, self.tier, event.tool_name, event.raw_result));
+        self.sink.append("tool_result", result_fields(&self.agent, self.tier, event.tool_name, event.raw_result));
         ToolResultAction::Keep
     }
 }
 
 /// Trace fields for one tool result. Status plus reason: a skipped result
-/// (gate denial, budget stop) carries its model feedback in the output text;
+/// (gate denial, budget stop) carries its model feedback in the output text.
 /// the Debug form used to drop it, and triage miscounted gate denials as a
 /// dead hook.
 fn result_fields(agent: &str, tier: u8, tool: &str, result: &rig::tool::ToolResult) -> Value {
@@ -167,7 +168,7 @@ fn result_fields(agent: &str, tier: u8, tool: &str, result: &rig::tool::ToolResu
     fields
 }
 
-/// Open the trace file lazily on append; a failed open drops the record.
+/// Open the trace file lazily on append. a failed open drops the record.
 pub fn sink(path: &Path) -> anyhow::Result<Arc<TraceSink>> {
     Ok(Arc::new(TraceSink::new(path)?))
 }

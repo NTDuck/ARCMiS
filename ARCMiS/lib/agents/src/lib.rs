@@ -6,6 +6,7 @@ pub mod mas {
     //! drives the state machine. This crate owns the role definitions, the
     //! fleet model ladder, and the agent registry.
     pub mod fleet;
+    pub mod leads;
     pub mod registry;
     pub mod roles;
 }
@@ -18,6 +19,7 @@ pub mod util {
 }
 
 pub use mas::fleet::Fleet;
+pub use mas::leads::Team;
 pub use mas::registry::MasAgents;
 pub use mas::roles::Role;
 pub use util::config::Config;

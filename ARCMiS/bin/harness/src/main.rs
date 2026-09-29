@@ -157,7 +157,7 @@ async fn run() -> anyhow::Result<()> {
 
     // Build the agents on the selected client, with each role's tool
     // allowlist rooted at the workspace. Tools resolve relative paths
-    // against this root; prompts direct specialists at source/ and target/.
+    // against this root. prompts direct specialists at source/ and target/.
     let workspace_root = output_dir.join("workspace");
     let trace_sink = middleware::trace::sink(&output_dir)?;
     let mas = config.mas.clone();
@@ -168,7 +168,7 @@ async fn run() -> anyhow::Result<()> {
             _ => mas.worker_turns,
         }
     };
-    let agents_set = match &clients {
+    let mut agents_set = match &clients {
         agents::util::provider::Clients::Ollama(client) => agents::mas::registry::build(
             client,
             &fleet,
@@ -192,6 +192,34 @@ async fn run() -> anyhow::Result<()> {
             &mas.role_think,
         )?,
     };
+    // Hierarchical mode (ADR 0026): build the tier-2 lead agents beside the
+    // specialists. Single-tier runs leave the map empty.
+    let leads = if mas.hierarchy.enabled {
+        let teams = orchestrator::hierarchy::validate(&config.mas)?;
+        match &clients {
+            agents::util::provider::Clients::Ollama(client) => agents::mas::registry::build_leads(
+                client,
+                &fleet,
+                &config.run,
+                &teams,
+                Some(trace_sink.clone()),
+                Some(&config.snapcompact),
+                &mas.role_think,
+            )?,
+            agents::util::provider::Clients::Netmind(client) => agents::mas::registry::build_leads(
+                client,
+                &fleet,
+                &config.run,
+                &teams,
+                Some(trace_sink.clone()),
+                Some(&config.snapcompact),
+                &mas.role_think,
+            )?,
+        }
+    } else {
+        Default::default()
+    };
+    agents_set.attach_leads(leads);
 
     // Initial state + task list.
     let state = State {
