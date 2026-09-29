@@ -158,11 +158,20 @@ impl OrchestratorLoop {
                 ..
             } => Ok(RoundOutcome::Replanned),
             DecisionVerb::Replan => {
+                // Persist the plan body the orchestrator wrote in its answer
+                // (c15b3: the model emitted a full proposed plan.md and the
+                // harness dropped it; the prompt promises this persistence).
+                let plan = plan_section(&answer);
+                let plan_persisted = plan.is_some();
+                if let Some(plan_body) = plan {
+                    std::fs::write(self.run_dir.join("plan.md"), plan_body.as_str())?;
+                    self.mirror_blackboard()?;
+                }
                 self.ledger.append_decision(&Decision {
                     at: now_string(),
                     phase: format!("{:?}", state.phase),
                     action: "replan".into(),
-                    detail: serde_json::json!({"round": self.round}),
+                    detail: serde_json::json!({"round": self.round, "plan_persisted": plan_persisted}),
                     reasoning: "orchestrator rewrote the plan".into(),
                 })?;
                 Ok(RoundOutcome::Replanned)
@@ -252,9 +261,11 @@ impl OrchestratorLoop {
              FAILURES:\n{}\n\nTASKS:\n{}\n\nDecide the next action. Answer with one or more DECISION lines (plain \
              words, no angle brackets, no function-call syntax):\nDECISION: delegate ROLE | TASK TEXT\nDECISION: \
              delegate ROLE | TASK TEXT | after:t2,t3\n{team_verb}DECISION: replan\nDECISION: escalate | \
-             REASON\nDECISION: done\nDECISION: finish | REASON\nROLE is one of: {role_list}.\nYou MAY emit several \
-             delegate lines in one round when the tasks are independent; the harness runs up to {fanout} of them in \
-             parallel and queues the rest. `after:` lists task ids this one waits on.             {hierarchy_note}",
+             REASON\nDECISION: done\nDECISION: finish | REASON\nROLE is one of: {role_list}.\nFor replan: write the \
+             new plan under a `PLAN:` heading before the DECISION line; the harness persists that section as plan.md. \
+             Empty-plan replans change nothing.\nYou MAY emit several delegate lines in one round when the tasks are \
+             independent; the harness runs up to {fanout} of them in parallel and queues the rest. `after:` lists \
+             task ids this one waits on.             {hierarchy_note}",
             self.round,
             state.phase,
             state.current_batch,
@@ -309,6 +320,36 @@ pub(crate) fn parse_decisions(answer: &str) -> Vec<DecisionVerb> {
         .filter(|line| line.trim_start().to_ascii_uppercase().starts_with("DECISION:"))
         .filter_map(parse_decision_line)
         .collect()
+}
+
+/// Extract a `PLAN:` section from the orchestrator's answer. The model
+/// writes the new plan body under this heading (usually right before the
+/// DECISION lines); the replan verb persists it as `plan.md`. Returns
+/// `None` when the answer carries no plan section.
+pub(crate) fn plan_section(answer: &str) -> Option<String> {
+    let mut body = None;
+    for marker in ["PLAN:", "PROPOSED PLAN"] {
+        if let Some(start) = answer.find(marker) {
+            let start = start + marker.len();
+            // Cut at the first DECISION line or the next all-caps heading so
+            // reasoning text after the plan does not leak into plan.md.
+            let rest = &answer[start..];
+            let end = rest
+                .lines()
+                .enumerate()
+                .find(|(_, line)| {
+                    let trimmed = line.trim_start();
+                    trimmed.to_ascii_uppercase().starts_with("DECISION:")
+                        || trimmed.ends_with(':') && trimmed.len() <= 40 && trimmed.to_ascii_uppercase() == trimmed
+                })
+                .map_or(rest.len(), |(index, _)| rest.lines().take(index).collect::<Vec<_>>().join("\n").len());
+            let candidate = rest[..end].trim();
+            if !candidate.is_empty() {
+                body = Some(candidate.to_owned());
+            }
+        }
+    }
+    body
 }
 
 fn parse_decision_line(line: &str) -> Option<DecisionVerb> {
@@ -557,5 +598,28 @@ mod tests {
             tool_calls: vec!["write_file".into()],
         };
         assert_eq!(turn.judgeable(), "wrote target/src/lib.rs");
+    }
+
+    #[test]
+    fn plan_section_cuts_at_decision_line() {
+        let answer = "The batches changed.\n\nPLAN:\n# Plan\n- B1 core\n- B2 harness\n\nDECISION: replan";
+        let plan = plan_section(answer).expect("plan section missing");
+        assert!(plan.contains("# Plan"));
+        assert!(plan.contains("- B2 harness"));
+        assert!(!plan.contains("DECISION"), "plan leaked the decision line: {plan}");
+    }
+
+    #[test]
+    fn plan_section_none_without_heading() {
+        let answer = "The plan is stale.\n\nDECISION: replan";
+        assert_eq!(plan_section(answer), None);
+    }
+
+    #[test]
+    fn plan_section_prefers_plan_heading_over_proposed() {
+        let answer = "Proposed plan below.\n\nPLAN:\n# Real plan\nB1\n\nDECISION: replan";
+        let plan = plan_section(answer).expect("plan section missing");
+        assert!(plan.contains("# Real plan"));
+        assert!(!plan.contains("Proposed plan below"));
     }
 }

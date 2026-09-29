@@ -131,19 +131,36 @@ pub(crate) async fn run_lead_batch(
         };
         match parse_lead_decision(&answer, &team) {
             Some(LeadDecision::Done) => {
-                let passed = results.iter().any(|result| result.passed);
-                return finish(
-                    ledger,
-                    task_id,
-                    lead_name,
-                    passed,
-                    if passed {
-                        "batch complete".into()
-                    } else {
-                        "lead declared done with no passing dispatch".into()
-                    },
-                    results,
-                );
+                // Acceptance gate: the tier-1 task text names deliverables in
+                // its `Acceptance:` line; a batch that declares done without
+                // them fails instead of passing a half-delivered brief
+                // (observed c15b3: t1 passed without meta/plan.md, which
+                // starved the Planning phase and tripped the breaker).
+                let missing = missing_acceptance_files(&delegation.task, workspace);
+                let passed = results.iter().any(|result| result.passed) && missing.is_empty();
+                let mut summary = if passed {
+                    "batch complete".to_owned()
+                } else if results.iter().any(|result| result.passed) {
+                    format!("batch incomplete; acceptance files missing: {}", missing.join(", "))
+                } else {
+                    "lead declared done with no passing dispatch".to_owned()
+                };
+                if !missing.is_empty() {
+                    ledger
+                        .append_failure(&blackboard::Failure {
+                            at: now_string(),
+                            phase: format!("{phase:?}"),
+                            category: "gate".into(),
+                            root_cause: format!(
+                                "lead batch done without acceptance deliverables: {}",
+                                missing.join(", ")
+                            ),
+                            suggested_action: "dispatch a member to produce the missing files".into(),
+                        })
+                        .ok();
+                    summary.push_str("; dispatch a member to produce them, or re-emit done after repair");
+                }
+                return finish(ledger, task_id, lead_name, passed, summary, results);
             },
             Some(LeadDecision::Delegate {
                 role,
@@ -201,6 +218,31 @@ pub(crate) async fn run_lead_batch(
     }
     tracing::warn!(lead = lead_name, turns = team.turns, "lead turn budget exhausted; batch fails");
     finish(ledger, task_id, lead_name, false, "lead turn budget exhausted".into(), results)
+}
+
+/// Workspace paths named in the task's `Acceptance:` clause that do not
+/// exist yet. Recognizes `path/file.ext` tokens; tokens without a `/` or
+/// an extension are prose and ignored. Absent clause -> empty set.
+#[must_use]
+fn missing_acceptance_files(task: &str, workspace: &Workspace) -> Vec<String> {
+    let Some(position) = task.find("Acceptance:") else {
+        return Vec::new();
+    };
+    let clause = &task[position + "Acceptance:".len()..];
+    let mut missing = Vec::new();
+    for token in
+        clause.split(|character: char| !(character.is_alphanumeric() || matches!(character, '/' | '.' | '_' | '-')))
+    {
+        if token.contains('/')
+            && token.contains('.')
+            && !token.starts_with('.')
+            && !workspace.root().join(token).exists()
+            && !missing.contains(&token.to_owned())
+        {
+            missing.push(token.to_owned());
+        }
+    }
+    missing
 }
 
 /// Ledger the batch verdict and fold it into one tier-1-visible result.
