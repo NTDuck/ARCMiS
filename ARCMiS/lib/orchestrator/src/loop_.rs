@@ -193,7 +193,7 @@ impl OrchestratorLoop {
                 // delegation since the phase began. A bare claim advances
                 // nothing (observed: the walk Pilot -> Migration ->
                 // Integration in 18 s with no validation work).
-                if state.phase_delegations == 0 {
+                if state.phase_delegations <= state.phase_delegation_watermark {
                     self.ledger.append_failure(&blackboard::Failure {
                         at: now_string(),
                         phase: format!("{:?}", state.phase),

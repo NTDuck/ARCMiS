@@ -32,6 +32,7 @@ pub fn snapshot(run_dir: &std::path::Path) -> anyhow::Result<Progress> {
     let state = blackboard::state::read(run_dir)?.unwrap_or(blackboard::State {
         phase: Phase::Preflight,
         phase_delegations: 0,
+        phase_delegation_watermark: 0,
         current_task: None,
         current_batch: None,
         current_model: String::new(),

@@ -83,6 +83,7 @@ fn state_and_plan_files() {
     assert!(blackboard::state::read(dir.path()).expect("no state yet").is_none());
     blackboard::state::write(dir.path(), &State {
         phase_delegations: 0,
+        phase_delegation_watermark: 0,
         phase: Phase::Migration,
         current_task: Some("t3".into()),
         current_batch: Some("batch-2".into()),

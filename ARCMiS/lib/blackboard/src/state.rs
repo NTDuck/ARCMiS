@@ -44,6 +44,15 @@ pub struct State {
     /// not on a bare orchestrator claim.
     #[serde(default)]
     pub phase_delegations: u64,
+    /// Cumulative completed delegations at the moment the current phase
+    /// began. The `done` gate compares `phase_delegations` (cumulative) with
+    /// this watermark: work finished under the previous phase counts when the
+    /// phase's exit condition needed no fresh dispatch (observed c15 smoke:
+    /// Migration entered with both batches already translated and validated
+    /// in Pilot. The fresh-pass-only gate left the orchestrator no legal
+    /// move and the stagnation breaker killed a finished run).
+    #[serde(default)]
+    pub phase_delegation_watermark: u64,
     /// Task the orchestrator currently delegates on, when any.
     #[serde(default)]
     pub current_task: Option<String>,

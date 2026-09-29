@@ -106,7 +106,8 @@ pub(crate) async fn run_lead_batch(
                 "{}\n\nTEAM: you may delegate to one of: {}.\n\nDecide the next action. Answer with DECISION lines \
                  (plain words, no angle brackets):\nDECISION: delegate ROLE | TASK TEXT\nDECISION: done\nROLE is one \
                  of the team members above. One dispatch per round; the harness runs it to completion before your \
-                 next round.",
+                 next round. TASK TEXT stays under 40 words: name the deliverable and the files to touch; the brief \
+                 above already carries the detail, so do not restate it.",
                 brief(&delegation.task, config, workspace),
                 team.member_names().join(", "),
             )
@@ -115,7 +116,9 @@ pub(crate) async fn run_lead_batch(
                 "ROUND {} of your batch (task unchanged; the brief you already have). TEAM: you may delegate to one \
                  of: {}.\n\nDISPATCH RESULTS SO FAR:\n{}\n\nDecide the next action. Answer with DECISION lines (plain \
                  words, no angle brackets):\nDECISION: delegate ROLE | TASK TEXT\nDECISION: done\nROLE is one of the \
-                 team members above. One dispatch per round; the harness runs it to completion before your next round.",
+                 team members above. One dispatch per round; the harness runs it to completion before your next \
+                 round. TASK TEXT stays under 40 words; reference the brief and prior results instead of restating \
+                 them.",
                 _round + 1,
                 team.member_names().join(", "),
                 transcript,

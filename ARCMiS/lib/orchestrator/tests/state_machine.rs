@@ -16,6 +16,7 @@ fn state_at(phase: Phase) -> State {
     State {
         phase,
         phase_delegations: 0,
+        phase_delegation_watermark: 0,
         current_task: None,
         current_batch: None,
         current_model: "test-model".into(),
@@ -176,4 +177,27 @@ fn done_from_discovery_advances_not_self_transitions() {
     let record = state_machine::apply(&mut state, next_phase, "phase exit condition holds").expect("legal");
     assert_eq!(record.from, Phase::Discovery);
     assert_eq!(record.to, Phase::Contract);
+}
+
+/// The done gate compares the cumulative pass count with the watermark set
+/// at phase entry. Work completed under the previous phase satisfies the new
+/// phase's gate when no fresh dispatch happened yet (c15 smoke regression:
+/// Migration entered with both batches validated in Pilot and the old
+/// fresh-pass-only gate refused every `done`, tripping the stagnation
+/// breaker on a finished run).
+#[test]
+fn done_gate_accepts_passes_from_the_previous_phase() {
+    use blackboard::Phase;
+    use orchestrator::state_machine;
+    let mut state = state_at(Phase::Pilot);
+    state.phase_delegations = 2;
+    state_machine::apply(&mut state, Phase::Migration, "pilot exit holds").expect("legal");
+    assert_eq!(state.phase_delegation_watermark, 2, "entry watermark records the carried passes");
+    assert!(
+        state.phase_delegations > state.phase_delegation_watermark - 1,
+        "gate arithmetic keeps a carried pass visible"
+    );
+    // A fresh pass in the new phase clears the gate with margin.
+    state.phase_delegations += 1;
+    assert!(state.phase_delegations > state.phase_delegation_watermark);
 }

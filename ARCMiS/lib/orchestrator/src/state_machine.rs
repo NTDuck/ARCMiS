@@ -76,8 +76,12 @@ pub fn apply(state: &mut blackboard::State, to: Phase, reason: &str) -> anyhow::
         reason: reason.to_owned(),
     };
     state.phase = to;
-    // The new phase starts with no completed work of its own.
-    state.phase_delegations = 0;
+    // Watermark the cumulative pass count at entry: the done gate asks for
+    // at least one pass newer than this. Work completed under the previous
+    // phase satisfies the next phase's gate when the exit condition needed
+    // no fresh dispatch (ADR 0026 hierarchy: lead batches complete in
+    // Pilot. Migration may have nothing left to dispatch).
+    state.phase_delegation_watermark = state.phase_delegations;
     state.last_transition = reason.to_owned();
     Ok(record)
 }

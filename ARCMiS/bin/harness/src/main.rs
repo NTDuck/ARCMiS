@@ -225,6 +225,7 @@ async fn run() -> anyhow::Result<()> {
     let state = State {
         phase: Phase::Preflight,
         phase_delegations: 0,
+        phase_delegation_watermark: 0,
         current_task: None,
         current_batch: None,
         current_model: fleet.model_for(agents::Role::Orchestrator).to_owned(),
