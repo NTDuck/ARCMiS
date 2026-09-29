@@ -96,15 +96,31 @@ pub(crate) async fn run_lead_batch(
         .ok();
 
     for _round in 0..team.turns {
-        let prompt = format!(
-            "{}\n\nTEAM: you may delegate to one of: {}.\n\nDISPATCH RESULTS SO FAR:\n{}\n\nDecide the next action. \
-             Answer with DECISION lines (plain words, no angle brackets):\nDECISION: delegate ROLE | TASK \
-             TEXT\nDECISION: done\nROLE is one of the team members above. One dispatch per round; the harness runs it \
-             to completion before your next round.",
-            brief(&delegation.task, config, workspace),
-            team.member_names().join(", "),
-            transcript,
-        );
+        // Round 1 carries the full brief. Later rounds carry a reminder plus
+        // the dispatch history: the brief text does not change, and resending
+        // it every round grows the lead's prompt monotonically (observed: a
+        // lead prompt grew 6k -> 16k chars over 16 rounds while the decision
+        // stayed a one-line dispatch).
+        let prompt = if _round == 0 {
+            format!(
+                "{}\n\nTEAM: you may delegate to one of: {}.\n\nDecide the next action. Answer with DECISION lines \
+                 (plain words, no angle brackets):\nDECISION: delegate ROLE | TASK TEXT\nDECISION: done\nROLE is one \
+                 of the team members above. One dispatch per round; the harness runs it to completion before your \
+                 next round.",
+                brief(&delegation.task, config, workspace),
+                team.member_names().join(", "),
+            )
+        } else {
+            format!(
+                "ROUND {} of your batch (task unchanged; the brief you already have). TEAM: you may delegate to one \
+                 of: {}.\n\nDISPATCH RESULTS SO FAR:\n{}\n\nDecide the next action. Answer with DECISION lines (plain \
+                 words, no angle brackets):\nDECISION: delegate ROLE | TASK TEXT\nDECISION: done\nROLE is one of the \
+                 team members above. One dispatch per round; the harness runs it to completion before your next round.",
+                _round + 1,
+                team.member_names().join(", "),
+                transcript,
+            )
+        };
         let answer = match prompt_with_retries(lead, &prompt, config.max_repairs.max(1) as u32, None, team.turns).await
         {
             Ok(turn) => turn.judgeable(),
