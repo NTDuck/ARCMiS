@@ -1,14 +1,15 @@
 //! Compact a message history: keep recent messages verbatim, serialize the
 //! rest to text, render the text to PNG frames.
 
-use crate::render::render_frames;
-use crate::serialize::estimate_tokens;
-use crate::serialize::serialize_history;
-use crate::serialize::SerializeOptions;
 use bdf_parser::BdfFont;
 use image::ImageBuffer;
 use image::Rgba;
 use rig::message::Message;
+
+use crate::render::render_frames;
+use crate::serialize::estimate_tokens;
+use crate::serialize::serialize_history;
+use crate::serialize::SerializeOptions;
 
 /// Options for [`compact`].
 #[derive(Debug, Clone)]

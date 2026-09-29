@@ -12,14 +12,20 @@ fn synthetic_history(turns: usize) -> Vec<rig::message::Message> {
     for turn in 0..turns {
         messages.push(Message::User {
             content: vec![rig::message::UserContent::Text(rig::message::Text {
-                text: format!("request {turn}: migrate module {turn} from C to Rust, keep the public API stable, and run the toolchain afterwards"),
+                text: format!(
+                    "request {turn}: migrate module {turn} from C to Rust, keep the public API stable, and run the \
+                     toolchain afterwards"
+                ),
                 additional_params: None,
             })],
         });
         messages.push(Message::Assistant {
             id: None,
             content: vec![rig::message::AssistantContent::Text(rig::message::Text {
-                text: format!("response {turn}: analyzed module {turn}, wrote 240 lines, build passed, tests green, coverage improved by 3.4 percent; noting edge case in parser for follow-up during the hardening phase"),
+                text: format!(
+                    "response {turn}: analyzed module {turn}, wrote 240 lines, build passed, tests green, coverage \
+                     improved by 3.4 percent; noting edge case in parser for follow-up during the hardening phase"
+                ),
                 additional_params: None,
             })],
         });

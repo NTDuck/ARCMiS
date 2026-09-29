@@ -10,6 +10,7 @@ pub mod hook;
 pub mod render;
 pub mod serialize;
 
+use bdf_parser::BdfFont;
 pub use compact::compact;
 pub use compact::message_tokens_public;
 pub use compact::CompactOptions;
@@ -21,8 +22,6 @@ pub use render::DEFAULT_FRAME_WIDTH;
 pub use serialize::estimate_tokens;
 pub use serialize::serialize_history;
 pub use serialize::SerializeOptions;
-
-use bdf_parser::BdfFont;
 
 /// Parse the bundled 8x13 BDF font.
 ///

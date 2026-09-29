@@ -56,7 +56,7 @@ daemon.
 180 cells, 5 h 07 m wall. 5 toolchain-verified successes, all on
 `fft` under `monolith` with the 27B pair. The ledger method wrote 3
 per-problem records, but post-sweep workspace inspection found all
-three empty: the manager self-reported validation with no translated
+three empty: the orchestrator self-reported validation with no translated
 code, so they count as failures. Failure mix: 42% MaxTurnsError, 39%
 other model-protocol errors, 13% daemon rejections of malformed
 tool-call arguments, 2% JSON parse. Full tables in

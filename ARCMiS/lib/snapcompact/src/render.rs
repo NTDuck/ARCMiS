@@ -76,7 +76,8 @@ fn draw_glyph(frame: &mut ImageBuffer<Rgba<u8>, Vec<u8>>, font: &BdfFont, ch: ch
     let height = bbx.size.y.max(0) as usize;
     // BDF y offset: distance from the baseline up to the bitmap bottom.
     // Screen y of the bitmap top = baseline_y - offset.y - height + 1.
-    let baseline_y = y as i64 + 12; // 13px font: baseline sits 12px below cell top.
+    let baseline_y = y as i64 + 12; // 13px font: baseline sits 12px below cell
+                                    // top.
     let top = baseline_y - i64::from(bbx.offset.y) - height as i64 + 1;
     for gy in 0..height {
         for gx in 0..width {
