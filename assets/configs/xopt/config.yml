@@ -27,19 +27,6 @@ output:
   # driver rewrites this per run.
   dir: .artifacts/xopt/Rust
 
-# Recode fix-round ceiling. The first execution round plus up to ten
-# fix rounds: the agent decides when the code is done, the ceiling only
-# guards a runaway loop.
-recode:
-  max_rounds: 11
-
-# Ledger budget split: the orchestrator and each fresh worker delegation carry
-# separate turn budgets.
-ledger:
-  orchestrator_turns: 60
-  worker_turns: 120
-  retries: 2
-
 source:
   # Input codebase to transform. From the ReCodeAgent dataset (crust,
   # C to Rust pair).

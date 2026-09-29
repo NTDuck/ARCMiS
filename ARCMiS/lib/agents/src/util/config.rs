@@ -16,12 +16,6 @@ pub struct Config {
     pub run: Run,
     pub output: Output,
     pub source: Source,
-    /// Ledger method budgets. Ignored by the other methods.
-    #[serde(default)]
-    pub ledger: LedgerBudgets,
-    /// Recode fix-round ceiling. Ignored by the other methods.
-    #[serde(default)]
-    pub recode: RecodeBudgets,
     /// MAS method configuration. Ignored by the other methods.
     #[serde(default)]
     pub mas: MasConfig,
@@ -121,9 +115,6 @@ pub struct MasConfig {
     /// Parallel specialist executions the orchestrator may interleave in
     /// one round (bounded by the single ollama slot. 2 = two turn streams).
     pub fanout: usize,
-    /// Turn budget for one team collective sub-loop (translator →
-    /// validator → tester on one batch), nested under one delegation.
-    pub collective_turns: usize,
     /// Model context window, used by the guard's read-scoping gate (0
     /// disables the gate). Mirrors `run.num_ctx`. the orchestrator cannot
     /// see the run section.
@@ -204,9 +195,6 @@ impl TeamConfig {
 pub struct GuardConfig {
     /// Bash command substrings that are always denied.
     pub deny: Vec<String>,
-    /// Enable the model arbitration tier for Ask-class calls. Off while
-    /// the only model is the caller's own.
-    pub ask_model: bool,
     /// Tool calls allowed per delegation before the guard denies further
     /// calls. 0 disables the cap. Judges (validator, critic) promise a
     /// small call budget in their prompts. the guard enforces it because
@@ -258,7 +246,6 @@ impl Default for GuardConfig {
                 "npm install".into(),
                 "sudo ".into(),
             ],
-            ask_model: false,
             max_tool_calls: 0,
             jev_judge: JevJudgeConfig::default(),
         }
@@ -278,7 +265,6 @@ impl Default for MasConfig {
             model_ladder: Vec::new(),
             max_generated_tests_per_module: 4,
             fanout: 2,
-            collective_turns: 40,
             num_ctx: 32768,
             role_output_tokens: BTreeMap::new(),
             role_think: BTreeMap::new(),
@@ -288,48 +274,10 @@ impl Default for MasConfig {
     }
 }
 
-/// Recode budgets: how many fix rounds the pipeline may run after the
-/// first execution round. The paper's Algorithm 1 loops until the
-/// validator passes or the ceiling hits.
-#[derive(Debug, Deserialize)]
-#[serde(default)]
-pub struct RecodeBudgets {
-    pub max_rounds: usize,
-}
-
-impl Default for RecodeBudgets {
-    fn default() -> Self {
-        Self {
-            max_rounds: 10,
-        }
-    }
-}
-
 /// Output section: where the transformed codebase and logs land.
 #[derive(Debug, Deserialize)]
 pub struct Output {
     pub dir: PathBuf,
-}
-
-/// Ledger method budgets: the orchestrator and each fresh worker delegation
-/// carry separate turn budgets (paper: fresh worker per cycle with its
-/// own call allowance). `retries` covers worker delegations.
-#[derive(Debug, Clone, Deserialize)]
-#[serde(default)]
-pub struct LedgerBudgets {
-    pub orchestrator_turns: usize,
-    pub worker_turns: usize,
-    pub retries: u32,
-}
-
-impl Default for LedgerBudgets {
-    fn default() -> Self {
-        Self {
-            orchestrator_turns: 30,
-            worker_turns: 60,
-            retries: 1,
-        }
-    }
 }
 
 /// Source section: input codebase, target language, and toolchain.
