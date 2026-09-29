@@ -41,32 +41,11 @@ pub mod task;
 pub mod todo;
 pub mod write;
 
-pub use ask::Ask;
-pub use ask::AskArgs;
-pub use ast_edit::AstEdit;
-pub use ast_grep::AstGrep;
-pub use bash::Bash;
-pub use debug::Debug;
+// Re-exports kept to the symbols with consumers outside their module:
+// `Edit`/`Read`/`Write` (tests), `build_tools`/`Named` (agents, harness).
+// Everything else imports through its module path (`tools::read::ReadArgs`).
 pub use edit::Edit;
-pub use edit::EditArgs;
-pub use eval::Eval;
-pub use find::Find;
-pub use irc::Irc;
-pub use job::Job;
-pub use lsp::Lsp;
 pub use portable::build_tools;
 pub use portable::Named;
 pub use read::Read;
-pub use read::ReadArgs;
-pub use search::Search;
-pub use ssh::Ssh;
-pub use task::Task;
-pub use todo::Todo;
-pub use util::catalog::Catalog;
-pub use util::catalog::Tool;
-pub use util::jobs::JobRegistry;
-pub use util::path::path_sanitize;
-pub use util::snapshots::InMemorySnapshotStore;
-pub use util::snapshots::SnapshotStore;
 pub use write::Write;
-pub use write::WriteArgs;
