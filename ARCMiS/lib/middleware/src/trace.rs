@@ -1,6 +1,10 @@
 //! Per-turn trace hook. One JSONL line per model call, model response, tool
 //! call, and tool result at `{output_dir}/traces/turns.jsonl`. The hook is
 //! observe-only: every callback returns `Continue`.
+//!
+//! Tier field: every record names the delegating tier (`orchestrator` builds
+//! tier 1, a lead builds tier 2). ADR 0026. Old traces without the field
+//! stay parseable. Readers treat a missing tier as tier 1.
 
 use std::io::Write as _;
 use std::path::Path;
@@ -86,17 +90,20 @@ fn cap_string(value: &mut Value, cap: usize) {
     }
 }
 
-/// Which named agent emitted the events; set at build time.
+/// Which named agent emitted the events, and at which tier; set at build
+/// time.
 pub struct TraceHook {
     agent: &'static str,
+    tier: u8,
     sink: Arc<TraceSink>,
 }
 
 impl TraceHook {
-    /// Attach the hook for one named agent.
-    pub fn new(agent: &'static str, sink: Arc<TraceSink>) -> Self {
+    /// Attach the hook for one named agent at one tier.
+    pub fn new(agent: &'static str, tier: u8, sink: Arc<TraceSink>) -> Self {
         Self {
             agent,
+            tier,
             sink,
         }
     }
@@ -108,6 +115,7 @@ impl AgentHook for TraceHook {
             "model_call",
             serde_json::json!({
                 "agent": self.agent,
+                "tier": self.tier,
                 "prompt": event.prompt.rag_text().unwrap_or_default(),
             }),
         );
@@ -115,7 +123,7 @@ impl AgentHook for TraceHook {
     }
 
     async fn on_completion_response(&self, _ctx: &HookContext, event: CompletionResponse<'_>) -> ObservationAction {
-        self.sink.append("model_response", response_fields(self.agent, event));
+        self.sink.append("model_response", response_fields(self.agent, self.tier, event));
         ObservationAction::Continue
     }
 
@@ -124,6 +132,7 @@ impl AgentHook for TraceHook {
             "tool_call",
             serde_json::json!({
                 "agent": self.agent,
+                "tier": self.tier,
                 "tool": event.tool_name,
                 "args": event.args,
             }),
@@ -132,7 +141,7 @@ impl AgentHook for TraceHook {
     }
 
     async fn on_tool_result(&self, _ctx: &HookContext, event: ToolResultEvent<'_>) -> ToolResultAction {
-        self.sink.append("tool_result", result_fields(self.agent, event.tool_name, event.raw_result));
+        self.sink.append("tool_result", result_fields(self.agent, self.tier, event.tool_name, event.raw_result));
         ToolResultAction::Keep
     }
 }
@@ -141,9 +150,10 @@ impl AgentHook for TraceHook {
 /// (gate denial, budget stop) carries its model feedback in the output text;
 /// the Debug form used to drop it, and triage miscounted gate denials as a
 /// dead hook.
-fn result_fields(agent: &str, tool: &str, result: &rig::tool::ToolResult) -> Value {
+fn result_fields(agent: &str, tier: u8, tool: &str, result: &rig::tool::ToolResult) -> Value {
     let mut fields = serde_json::json!({
         "agent": agent,
+        "tier": tier,
         "tool": tool,
         "status": result.status_name(),
     });
@@ -165,7 +175,7 @@ pub fn sink(path: &Path) -> anyhow::Result<Arc<TraceSink>> {
 /// Trace fields for one model response. Tool-call names ride alongside the
 /// text so a tool-only turn (empty text, executed calls) is not misread as a
 /// missing answer.
-fn response_fields(agent: &str, event: CompletionResponse<'_>) -> Value {
+fn response_fields(agent: &str, tier: u8, event: CompletionResponse<'_>) -> Value {
     let mut text_parts = Vec::new();
     let mut tool_calls = Vec::new();
     for part in event.content {
@@ -177,6 +187,7 @@ fn response_fields(agent: &str, event: CompletionResponse<'_>) -> Value {
     }
     serde_json::json!({
         "agent": agent,
+        "tier": tier,
         "usage": {
             "input_tokens": event.usage.input_tokens,
             "output_tokens": event.usage.output_tokens,
@@ -219,11 +230,12 @@ mod tests {
             identity: &Default::default(),
             raw: &serde_json::Value::Null,
         };
-        let fields = response_fields("analyst", response);
+        let fields = response_fields("analyst", 1, response);
         let calls = fields["tool_calls"].as_array().unwrap();
         assert_eq!(calls.len(), 1);
         assert_eq!(calls[0], "read_file");
         assert_eq!(fields["text"], "");
+        assert_eq!(fields["tier"], 1);
     }
 
     #[test]
@@ -232,7 +244,7 @@ mod tests {
         // (`status: "skipped"`), dropping the denial reason - cycle-6 triage
         // then counted zero gate trips where the trace held ~10.
         let result = rig::tool::ToolResult::skipped("read would exhaust the context window");
-        let fields = result_fields("analyst", "read", &result);
+        let fields = result_fields("analyst", 1, "read", &result);
         assert_eq!(fields["status"], "skipped");
         assert_eq!(fields["skip_reason"], "read would exhaust the context window");
         assert!(fields.get("result").is_none());
@@ -241,7 +253,7 @@ mod tests {
     #[test]
     fn successful_tool_result_keeps_the_debug_form() {
         let result = rig::tool::ToolResult::success(rig::tool::ToolOutput::text("ok"));
-        let fields = result_fields("analyst", "read", &result);
+        let fields = result_fields("analyst", 1, "read", &result);
         assert_eq!(fields["status"], "success");
         assert!(fields["result"].as_str().is_some());
         assert!(fields.get("skip_reason").is_none());

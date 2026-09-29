@@ -1,10 +1,14 @@
 //! Registry: build the 11 role agents from the provider clients, the fleet
-//! model assignment, and the tool instances. One agent per role; the
+//! model assignment, and the tool instances. One agent per role. The
 //! orchestrator wires the concrete tool set per delegation.
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+use middleware::role_output_tokens::RoleOutputTokensHook;
+use middleware::trace::TraceHook;
+use middleware::TrailingUserMessageHook;
+use middleware::CONTINUATION_QUERY;
 use rig::agent::Agent;
 use rig::client::completion::CompletionClient;
 use rig::client::AgentClientExt;
@@ -41,7 +45,7 @@ pub fn build<C, F>(
     fleet: &Fleet,
     run: &Run,
     tools_for_role: F,
-    trace_sink: Option<Arc<crate::mas::trace::TraceSink>>,
+    trace_sink: Option<Arc<middleware::trace::TraceSink>>,
     turns_for_role: impl Fn(Role) -> usize,
     snapcompact: Option<&crate::util::config::SnapcompactConfig>,
     role_output_tokens: &std::collections::BTreeMap<String, u64>,
@@ -65,14 +69,16 @@ where
             .max_tokens(run.max_output_tokens)
             .default_max_turns(turns_for_role(role));
         if let Some(sink) = &trace_sink {
-            builder = builder.add_hook(crate::mas::trace::TraceHook::new(role.name(), sink.clone()));
+            // Tier 1: the registry builds single-tier agents. Hierarchy mode
+            // (ADR 0026) builds lead agents separately at tier 2.
+            builder = builder.add_hook(TraceHook::new(role.name(), 1, sink.clone()));
         }
         // A role with an output override gets its ceiling patched onto every
         // call; roles absent from the map keep the run default.
         if let Some(ceiling) = role_output_tokens.get(role.name()) {
-            builder = builder.add_hook(crate::mas::role_output_tokens::RoleOutputTokensHook::new(*ceiling));
+            builder = builder.add_hook(RoleOutputTokensHook::new(*ceiling));
         }
-        builder = builder.add_hook(crate::mas::continuation::TrailingUserMessageHook);
+        builder = builder.add_hook(TrailingUserMessageHook);
         // Snapcompact for every agent (ADR 0022): threshold 0 disables. The
         // trailing query keeps the continuation hook's user-query guarantee
         // alive when compaction replaces the history (ollama 500 otherwise).
@@ -84,7 +90,7 @@ where
                     ..snapcompact::CompactOptions::default()
                 },
                 font: snapcompact_font.clone(),
-                trailing_user_query: Some(crate::mas::continuation::CONTINUATION_QUERY.to_owned()),
+                trailing_user_query: Some(CONTINUATION_QUERY.to_owned()),
             });
         }
         if let Some(params) = extra_params(run, role_think.get(role.name()).copied()) {

@@ -6,6 +6,7 @@ version = 4
 name = "ARCMiS-agents"
 version = "0.1.0"
 dependencies = [
+ "ARCMiS-middleware",
  "ARCMiS-snapcompact",
  "ARCMiS-tools",
  "anyhow",
@@ -33,6 +34,16 @@ dependencies = [
  "time",
  "tracing",
  "walkdir",
+]
+
+[[package]]
+name = "ARCMiS-middleware"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "rig",
+ "serde_json",
+ "tracing",
 ]
 
 [[package]]
@@ -2957,6 +2968,7 @@ version = "0.1.0"
 dependencies = [
  "ARCMiS-agents",
  "ARCMiS-blackboard",
+ "ARCMiS-middleware",
  "ARCMiS-orchestrator",
  "ARCMiS-snapcompact",
  "ARCMiS-tools",

@@ -10,6 +10,7 @@ name = "agents"
 
 [dependencies]
 anyhow.workspace = true
+middleware = { package = "ARCMiS-middleware", path = "../middleware" }
 tools = { package = "ARCMiS-tools", path = "../tools" }
 snapcompact = { package = "ARCMiS-snapcompact", path = "../snapcompact" }
 rig = "0.42.0"

@@ -159,7 +159,7 @@ async fn run() -> anyhow::Result<()> {
     // allowlist rooted at the workspace. Tools resolve relative paths
     // against this root; prompts direct specialists at source/ and target/.
     let workspace_root = output_dir.join("workspace");
-    let trace_sink = agents::mas::trace::sink(&output_dir)?;
+    let trace_sink = middleware::trace::sink(&output_dir)?;
     let mas = config.mas.clone();
     let turns_for_role = |role: agents::Role| -> usize {
         match role {

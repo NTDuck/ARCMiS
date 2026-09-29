@@ -1,0 +1,19 @@
+[package]
+name = "ARCMiS-middleware"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Role-agnostic rig AgentHook middleware: trace, continuation, output-token ceiling."
+
+[lib]
+name = "middleware"
+
+[dependencies]
+anyhow.workspace = true
+rig = "0.42.0"
+serde_json.workspace = true
+tracing.workspace = true
+
+[lints]
+workspace = true
