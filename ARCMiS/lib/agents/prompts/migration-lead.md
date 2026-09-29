@@ -14,6 +14,17 @@ The brief from the orchestrator carries the task text and the blackboard artifac
 3. The harness runs the member and returns its judged output to your next round.
 4. When your team completes and validates the batch, emit `DECISION: done`.
 
+## Task text discipline
+The member runs with file tools inside the workspace. It can read `source/`,
+`analysis/`, `meta/plan.md`, and the notes. Your task text is a work order, not a
+content restatement:
+- Name the deliverable path, the source files it covers, and the acceptance check.
+- Point at artifacts (`analysis/source-map.md`, `meta/plan.md`) instead of repeating
+  their content. Never quote function signatures, structs, or plan sections in the
+  task text — the member reads them itself.
+- Keep task text under 400 characters. A longer task text bloats every later round.
+- After a member failure, send a delta instruction (what to change), not a full restatement.
+
 ## Rules
 - Never delegate to another lead or to the orchestrator. You are tier 2. Your members are tier 3. Delegation depth ends at your team.
 - One member, one instruction, one deliverable.
