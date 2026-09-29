@@ -4,58 +4,43 @@
 \begin{document}
 \begin{tikzpicture}
 \begin{axis}[
-  width=12cm,
+  width=12.5cm,
   height=7cm,
-  xlabel={Tasks done (of the task list at abort or completion)},
-  ylabel={Phase reached (rank)},
-  ymin=-0.5, ymax=8.5,
-  xmin=-0.8, xmax=13.5,
-  ytick={0,1,2,3,4,5,6,7},
-  yticklabels={Discovery, Contract, Planning, Pilot, Migration, Integration, Hardening, Done},
+  ylabel={Toolchain-verified tests passed},
+  xtick={1,2,3,4,5,6},
+  xticklabels={c1 (nandc),c3 (nandc),c6 (checkdigit),c10b (checkdigit),c11b (checkdigit),c13 (checkdigit)},
+  x tick label style={rotate=32, anchor=east, font=\small},
   grid=major,
   grid style={gray!20},
-  legend style={at={(0.03,0.97)}, anchor=north west, font=\small, draw=gray!50},
+  ymin=0, ymax=56,
   tick label style={font=\small},
   label style={font=\small},
+  clip=false,
 ]
-% Cycle-1 autooptimise per problem set, from .artifacts/experiments/SUMMARY.md.
-% Phase rank: Discovery=0, Contract=1, Hardening=6. Rows with "no data"
-% (daemon death) carry no phase or task data; the caption scores them as
-% zero. Baseline rows: colorsys 3/6 Contract, nandc relaunch 2/5 Contract,
-% utf8 0/2, libm17 relaunch 0/3, oxidizer 0/3, alphatrans relaunch 0/3
-% (all Discovery). H1 rows with data: nandc 12/13 Hardening, utf8 1/5
-% Contract, oxidizer 1/5 Discovery, alphatrans 0/1 Discovery.
-% Overlapping Discovery points are jittered horizontally so each run
-% stays visible.
-\addplot[
-  only marks, mark=square*, mark size=2.6pt, color=gray!60!black,
-] table {
-x y
-3 1
-2 1
-0 0
-0.15 0
-0.3 0
-0.45 0
-};
-\addlegendentry{baseline (4096 output tokens)}
-
+% Champion lineage by cycle, from the experiment directories'
+% result/ records and SUMMARY.md:
+%   c1   20260927T112000Z-c1-h1-crust-nandc          2 tests, Hardening
+%   c3   20260928T002550Zc3-h3-crust-nandc           17 tests
+%   c6a  20260928T121320Zc6-c6a-oxidizer-checkdigit  run died pre-workspace
+%   c10b 20260928T173947Zc10-c10b-...               48 tests (champion)
+%   c11b 20260928T191024Zc11-c11b-...               36 tests
+%   c13  20260929T232452c13-c13a-...                 stall at Contract, no gain
 \addplot[
   only marks, mark=*, mark size=2.8pt, color=blue!70!black,
-] table {
-x y
-12 6
-1 1
-1.15 0
-1.3 0
+] coordinates {
+  (1,2) (2,17) (4,48) (5,36) (6,0)
 };
-\addlegendentry{H1 (8192 output tokens)}
-
-% Champion annotation: the only candidate that produced a translated,
-% toolchain-verified project.
-\node[font=\small, text=blue!70!black, anchor=west, align=left]
-  at (axis cs:12.4,6) {crust/nandc: Hardening,\\12/13 tasks, 2/2 tests pass};
-
+\addplot[
+  dashed, thick, color=gray!60,
+] coordinates {
+  (2,17) (3,0) (4,48)
+};
+\node[font=\scriptsize\itshape, text=blue!50!black, anchor=east, align=right]
+  at (axis cs:3.85,50) {champion c10b, closed at Hardening:\\48/48 tests, 12/13 tasks, workspace verified};
+\node[font=\scriptsize\itshape, text=red!55!black, anchor=west, align=left]
+  at (axis cs:2.1,30) {c6a and c13 carry the lineage but\\died before a compiling workspace};
+\node[font=\scriptsize\itshape, text=gray!50!black, anchor=east]
+  at (axis cs:5.9,7) {c13: no depth gain, plateau closes the loop};
 \end{axis}
 \end{tikzpicture}
 \end{document}

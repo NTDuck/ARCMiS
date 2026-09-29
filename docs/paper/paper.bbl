@@ -1,4 +1,4 @@
-\begin{thebibliography}{20}
+\begin{thebibliography}{22}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -31,6 +31,14 @@ Ali~Reza Ibrahimzada, Kaiyao Ke, Mrigank Pawagi, Muhammad~Salman Abid, Rangeet
   repository-level code translation and validation.
 \newblock \emph{Proceedings of the ACM on Software Engineering (PACMSE), FSE},
   2, 2025.
+
+\bibitem[Ibrahimzada et~al.(2026)Ibrahimzada, Paulsen, Kroening, and
+  Jabbarvand]{recodeagent2026}
+Ali~Reza Ibrahimzada, Brandon Paulsen, Daniel Kroening, and Reyhaneh
+  Jabbarvand.
+\newblock {ReCodeAgent}: A multi-agent workflow for language-agnostic
+  translation and validation of large-scale repositories.
+\newblock \emph{arXiv preprint arXiv:2604.07341 (ASE 2026)}, 2026.
 
 \bibitem[Jimenez et~al.(2024)Jimenez, Yang, Wettig, Yao, Pei, Press, and
   Narasimhan]{jimenez2024swebench}
@@ -76,6 +84,11 @@ Guohao Li, Hasan Abed Al~Kader Hammoud, Hani Itani, Dmitrii Khizbullin, and
 \newblock In \emph{Advances in Neural Information Processing Systems
   (NeurIPS)}, 2023.
 
+\bibitem[Li et~al.(2026)Li, Miao, Krishnan, and Padman]{li2026jevjudge}
+Jun Li, Chen Miao, Sanjay Krishnan, and Raghu Padman.
+\newblock {JEV}-as-a-judge: Accept when confident, escalate when unsure.
+\newblock \emph{arXiv preprint arXiv:2609.26550}, 2026.
+
 \bibitem[Madaan et~al.(2023)Madaan, Tandon, Gupta, Hallinan, Gao, Wiegreffe,
   Alon, Dziri, Prabhumoye, Yang, Gupta, Majumder, Hermann, Welleck,
   Yazdanbakhsh, and Clark]{madaan2023selfrefine}
@@ -102,11 +115,6 @@ Shishir~G. Patil, Tianjun Zhang, Xin Wang, and Joseph~E. Gonzalez.
 {Qwen Team}.
 \newblock Qwen3 technical report.
 \newblock \emph{arXiv preprint arXiv:2505.09388}, 2025.
-
-\bibitem[{ReCodeAgent authors}(2026)]{recodeagent2026}
-{ReCodeAgent authors}.
-\newblock {ReCodeAgent}: A pipeline agent for repository-level code migration.
-\newblock \emph{arXiv preprint arXiv:2604.07341}, 2026.
 
 \bibitem[Schick et~al.(2023)Schick, Dwivedi-Yu, Dess{\`i}, Raileanu, Lomeli,
   Hambro, Zettlemoyer, Cancedda, and Scialom]{schick2023toolformer}
@@ -154,5 +162,11 @@ Shunyu Yao, Jeffrey Zhao, Dian Yu, Nan Du, Izhak Shafran, Karthik Narasimhan,
 \newblock {ReAct}: Synergizing reasoning and acting in language models.
 \newblock In \emph{International Conference on Learning Representations
   (ICLR)}, 2023.
+
+\bibitem[Zhu et~al.(2026)Zhu, Liu, Yu, and Zhang]{zhu2026orchestration}
+Yiwen Zhu, Lihe Liu, Jiaqian Yu, and Di~Zhang.
+\newblock {LLM}-based multi-agent orchestration: A survey of frameworks,
+  communication protocols, and emerging patterns.
+\newblock \emph{Future Internet}, 18\penalty0 (6):\penalty0 326, 2026.
 
 \end{thebibliography}

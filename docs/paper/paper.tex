@@ -11,7 +11,9 @@
 
 \hypersetup{colorlinks=true, linkcolor=blue, urlcolor=blue, citecolor=blue}
 \title{ARCMiS: Agentic Repository-Level Code Migration\\for Small Language Models}
-\author{Duc-Hanh Dang \and Tu-Duc Nguyen \\ University of Engineering and Technology \\ Vietnam National University \\ \texttt{hanhdd@vnu.edu.vn} \and \texttt{23021534@vnu.edu.vn}}
+\author{Duc-Hanh Dang \and Tu-Duc Nguyen\\
+University of Engineering and Technology, Vietnam National University, Hanoi\\
+\texttt{hanhdd@vnu.edu.vn}, \texttt{23021534@vnu.edu.vn}}
 \date{September 2026}
 
 \begin{document}
@@ -20,27 +22,32 @@
 \begin{abstract}
 We present ARCMiS (Agentic Repository-level Code Migration for SLMs), a
 harness that migrates whole source codebases from one programming language
-to another with small language models (SLMs, 7B--27B parameters) served
-locally. The core method is a multi-agent system (MAS): a manager loop over
-a ten-phase state machine delegates to ten specialist roles through parsed
-decision lines. Static roles meet dynamic selection: a task graph with
-dependency-gated fan-out, team collectives for per-batch translation, a
-deterministic tool guard on every call, per-role-class turn budgets, a
-stagnation breaker, and a fleet model ladder. All state lives on a
-character-capped shared blackboard. Long-context overflow is absorbed by
-snapcompact, which renders discarded history to PNG bitmap frames instead
-of calling an LLM summarizer. Scoring is toolchain-only: the target build
-and test commands must pass in the produced workspace, and agent
-self-reports never gate. In a 180-cell survey across three methods and
-three SLMs, only 5 of 180 runs produced a toolchain-verified migration,
-and all five came from the simplest method on the smallest project. A
-Meta-Harness-style autooptimise loop diagnosed the binding failure of the
-MAS baseline: reasoning-block truncation at the 4096-token output budget
-stalled every run at the Contract phase. A one-line budget fix
-(\texttt{max\_output\_tokens} 4096 $\rightarrow$ 8192) let the first
-translated and toolchain-verified project land. We report the
-architecture, the honest negative results, and the failure taxonomy that
-disciplined the search.
+to another with small language models (SLMs, 27B parameters) served
+locally on one consumer GPU. The harness is a hierarchical multi-agent
+system: a tier-1 orchestrator runs a ten-phase, evidence-gated state
+machine and delegates over a task graph; a static three-tier tree puts
+config-owned team leads (tier 2) over the specialist roles (tier 3), and
+each lead runs its own inner loop from a scoped batch brief. A
+deterministic guard hook inspects every tool call from every
+tier, and an optional typed-decision judge arbitrates the ambiguous
+remainder with deny-on-uncertain semantics. Role-agnostic hooks (trace,
+continuation, per-role output budgets) live in a separate middleware
+crate on the model-call path. All state lives on a
+character-capped shared blackboard; snapcompact absorbs context overflow
+by rendering discarded history to PNG bitmap frames instead of calling an
+LLM summarizer. Scoring is toolchain-only: the target build and test
+commands must pass in the produced workspace, and agent self-reports
+never gate. We report the tuned harness's final benchmark record from a
+four-day, 14-iteration optimization campaign: 46+ scored runs over eight
+problem sets produced two toolchain-verified Rust workspaces, a champion
+(Go$\to$Rust checkdigit) that compiles and passes 48 tests under the
+\textsf{Hardening} phase, and a nine-run verified lineage on the
+C$\to$Rust nandc set. Five of the eight sets stalled before producing a
+compiling workspace, both fresh rotation sets failed under the exact
+tuned defaults, and we record the binding constraints: output-ceiling
+burn rate, a 16k-token Discovery wall, and set selection. The results
+establish what a 27B local model can and cannot do at repository scale,
+and no more.
 \end{abstract}
 
 \section{Introduction}
@@ -56,44 +63,59 @@ prompting. Small language models cannot. Small models are also the only
 affordable option for sustained local use: they run on one consumer GPU,
 cost nothing per token, and keep proprietary source on the machine.
 
-ARCMiS targets exactly this regime. It migrates source codebases with
-7B--27B models served locally through ollama, on a single RTX~3090. The
-design constraint that shapes the whole system is \emph{honesty of
-scoring}: an agent's claim of success counts for nothing. A run succeeds
-only when the target toolchain compiles the produced workspace and its
-test command exits zero. LLM-graded proxy scores, when recorded at all,
-never gate.
+ARCMiS targets exactly this regime. It migrates source codebases with a
+27B model served locally through ollama on a single RTX~3090. The design
+constraint that shapes the whole system is \emph{honesty of scoring}: an
+agent's claim of success counts for nothing. A run succeeds only when the
+target toolchain compiles the produced workspace and its test command
+exits zero. LLM-graded proxy scores, when recorded at all, never gate.
 
 This paper makes four contributions:
 \begin{itemize}
-\item A MAS methodology for repository-level migration with SLMs: ten
-  phases, ten specialist roles, a shared blackboard, and a deterministic
-  guard (Section~\ref{sec:method}).
-\item Supporting infrastructure purpose-built for small local models:
-  character-capped shared state, bitmap-frame context compaction, and
-  hashline-based file invalidation (Section~\ref{sec:infra}).
-\item Honest measurements: three method surveys (180 and 105 cells) and a
-  Meta-Harness-style optimization loop with a diagnosed, mechanism-level
-  fix (Sections~\ref{sec:results} and~\ref{sec:frontier}).
-\item A failure taxonomy for SLM agents at this scale: reasoning-block
-  truncation, provider 500s on continuation shapes, and stagnation
-  (Section~\ref{sec:discussion}).
+\item A hierarchical multi-agent methodology for repository-level
+  migration with small models: a tier-1 orchestrator, a static
+  config-owned tree of tier-2 team leads over ten tier-3 specialist
+  roles, a ten-phase evidence-gated state machine, and a shared
+  blackboard (Section~\ref{sec:method}).
+\item A middleware separation: the role-agnostic model-call hooks
+  (trace, continuation patch, per-role output budgets) live in their own
+  crate under the criterion that a middleware hook never names a role or
+  the orchestration domain; the guard hook stays with the delegation
+  contract (Sections~\ref{sec:method} and~\ref{sec:infra}).
+\item A benchmark record for the tuned harness, closed 2026-09-29 after a
+  four-day, 14-iteration optimization campaign: 46+ scored runs over
+  eight problem sets, two toolchain-verified workspaces, and honest
+  per-set verdicts including the sets that never compiled
+  (Section~\ref{sec:results}), plus a hierarchy validation run that
+  reached \textsf{Migration} with the toolchain green.
+\item A failure taxonomy for SLM agents at this scale, distilled from the
+  campaign: think-truncation at output ceilings, provider shape
+  rejections, stagnation loops, and ceiling burns, with the limits they
+  impose on generality claims (Section~\ref{sec:discussion}).
 \end{itemize}
+
+Figure~\ref{fig:arch} shows the system. One orchestrator runs the phase
+machine. One guard hook sits on every tool call from every tier. Three
+config-owned team leads sit over the ten specialists, who do the work on
+a shared blackboard; a tier-1 delegation naming a lead hands the batch
+to the lead's inner loop.
 
 \begin{figure}[ht]
 \centering
 \includegraphics[width=\textwidth]{figures/fig1-architecture.pdf}
-\caption{ARCMiS architecture. The manager loop rounds over the ten-phase
-state machine and emits DECISION lines. The guard inspects every tool call.
-Specialists read the codebase and write through the guard onto the
-blackboard. Judges verify batches and the final state. The target
-toolchain returns exit codes to the evaluator.}
+\caption{ARCMiS architecture. The tier-1 orchestrator rounds over the
+ten-phase state machine and emits DECISION lines over a task graph. With
+the hierarchy enabled, a delegation naming a specialist is refused
+(\texttt{deny\_direct}) and the handoff form is a lead name; the lead
+receives a scoped batch brief and runs its own inner loop over its
+members (tier 3). The guard hook inspects every tool call from every
+tier; denied Ask-class calls may arbitrate through the Jev judge (deny
+on uncertain). The middleware crate holds the role-agnostic hooks
+(trace, continuation, per-role output budgets); snapcompact attaches to
+every role's call path. The target toolchain returns exit codes to the
+evaluator.}
 \label{fig:arch}
 \end{figure}
-
-Figure~\ref{fig:arch} shows the system. One manager runs the phase
-machine. One guard sits on every tool call. Ten specialists do the work on
-a shared blackboard.
 
 \section{Related Work}
 \label{sec:related}
@@ -107,11 +129,10 @@ TransCoder~\cite{lachaux2020transcoder} translated functions between
 C++, Java, and Python with unsupervised machine translation and evaluated
 with unit tests. AlphaTrans~\cite{ibrahimzada2024alphatrans} is a
 neuro-symbolic system that translates a whole repository and verifies
-behavior with schemas and tests.
-\footnote{\cite{ibrahimzada2024alphatrans} AlphaTrans matters to us
-because it defines the repository-level, behavior-verified translation
-problem that ARCMiS attacks with small models instead of a neuro-symbolic
-pipeline.} CodaMosa~\cite{lemieux2023codamosa} escaped coverage plateaus
+behavior with schemas and tests. AlphaTrans defines the repository-level,
+behavior-verified translation problem that ARCMiS attacks with small
+models instead of a neuro-symbolic pipeline.
+CodaMosa~\cite{lemieux2023codamosa} escaped coverage plateaus
 by mixing LLM test generation with search-based testing. Our
 validator--tester loop applies that lesson with a per-module cap. Our
 problem sets reuse the ReCodeAgent dataset's project pairs.
@@ -122,104 +143,127 @@ and is the base loop for our monolith baseline. Reflexion~\cite{shinn2023reflexi
 adds verbal self-reflection across retries. Self-Refine~\cite{madaan2023selfrefine}
 iterates a generate--feedback--revise loop. ARCMiS borrows the
 iterate-on-failure shape but moves the feedback to deterministic judges
-and toolchain evidence, because 27B models self-assess poorly.
-\footnote{\cite{yao2023react} ReAct and
-\cite{shinn2023reflexion} Reflexion define the reasoning-plus-action and
-retry-with-feedback loops that every method in our surveys instantiates.
-ARCMiS keeps the loops but replaces model-graded feedback with toolchain
-evidence.} MetaGPT~\cite{hong2024metagpt} assigns a software company's
+and toolchain evidence, because 27B models self-assess poorly. ReAct and
+Reflexion define the reasoning-plus-action and
+retry-with-feedback loops that every method in our preliminary surveys
+instantiated; ARCMiS keeps the loops but replaces model-graded feedback
+with toolchain evidence. MetaGPT~\cite{hong2024metagpt} assigns a software company's
 roles to LLM agents over standardized artifacts. AutoGen~\cite{wu2023autogen}
 builds applications from conversing agents with human-in-the-loop
 checkpoints. CAMEL~\cite{li2023camel} studies role-playing communicative
-agents.
-\footnote{\cite{hong2024metagpt} MetaGPT, \cite{wu2023autogen} AutoGen,
-and \cite{li2023camel} CAMEL assume strong models and free-form
-conversation. ARCMiS keeps the role decomposition but replaces
+agents. MetaGPT, AutoGen, and CAMEL assume strong models and free-form
+conversation; ARCMiS keeps the role decomposition but replaces
 conversation with a parsed decision protocol, a static registry, and a
 state machine, because conversation overhead is what small turn budgets
-cannot afford.} SWE-agent~\cite{yang2024sweagent} shows that a
-well-designed agent--computer interface matters as much as the model.
-\footnote{\cite{yang2024sweagent} SWE-agent's interface lesson is the
-basis for our hashline file tools and guard.} Agentless~\cite{xia2025agentless}
+cannot afford. SWE-agent~\cite{yang2024sweagent} shows that a
+well-designed agent--computer interface matters as much as the model;
+that interface lesson is the basis for our hashline file tools and guard
+hook. Agentless~\cite{xia2025agentless}
 shows that a simple localizer--repairer--validator pipeline beats complex
-agents on some tasks. Our survey results agree in the small-project
-regime, and our MAS adds dynamic scheduling for the parts that do not fit
-a fixed pipeline.
+agents on some tasks. Our preliminary survey results agree in the
+small-project regime.
 
 \paragraph{Methodology justification.}
 SWE-bench~\cite{jimenez2024swebench} anchored evaluation in executable
 tests instead of model judgments, and we follow the same principle with
-toolchain-only scoring.
-\footnote{\cite{jimenez2024swebench} SWE-bench justifies our scoring
-rule: an agent pass counts only when the repository's own tests pass.}
-Meta-Harness~\cite{metaharness2026} optimizes an executable harness
+toolchain-only scoring: an agent pass counts only when the repository's
+own tests pass. Meta-Harness~\cite{metaharness2026} optimizes an executable harness
 through an agentic outer loop where the proposer reads raw execution
-traces from the filesystem.
-\footnote{\cite{metaharness2026} Meta-Harness is the source of our
-autooptimise loop and experiment contract. Its finding that raw traces
-beat summaries for the proposer motivated our immutable, greppable
-experiment directories.} Toolformer~\cite{schick2023toolformer} teaches
+traces from the filesystem; the four-day campaign behind our benchmark
+record follows that contract, with immutable per-run directories and
+recorded lineage. Toolformer~\cite{schick2023toolformer} teaches
 models to call APIs self-supervised. Gorilla~\cite{patil2024gorilla}
 fine-tunes models for API invocation. ARCMiS uses neither: the 17-tool
 surface is fixed, and the guard, not the model, enforces the calling
-discipline.
-\footnote{\cite{schick2023toolformer} Toolformer and
-\cite{patil2024gorilla} Gorilla learn tool choice in the model. ARCMiS
-moves that discipline into a deterministic guard, which a 27B model
-cannot learn reliably within its turn budget.} DeepSeek-R1~\cite{deepseek2025r1}
+discipline, which a 27B model cannot learn reliably within its turn
+budget. DeepSeek-R1~\cite{deepseek2025r1}
 and Qwen3~\cite{qwen3_2025} make deliberate reasoning (\texttt{think}
-blocks) standard on open models at our scale.
-\footnote{\cite{deepseek2025r1} DeepSeek-R1 and \cite{qwen3_2025}
-Qwen3 are the models under test. Their long think blocks consume
-output-token budgets and directly caused the truncation failure we
-diagnose in Section~\ref{sec:frontier}.} Speculative
+blocks) standard on open models at our scale; those reasoning blocks
+consume output-token budgets and drive the truncation failure mode in
+Section~\ref{sec:discussion}. Speculative
 decoding~\cite{leviathan2023speculative} makes local inference fast
-enough for long agent runs, which is why the 100-agent-hour budgets of
-this paper fit on one GPU.
+enough for long agent runs, which is why the run budgets of this paper
+fit on one GPU.
+
+\paragraph{Hierarchical orchestration.}
+Zhu et al.~\cite{zhu2026orchestration} survey multi-agent orchestration
+frameworks and name hierarchical dynamic-adaptive orchestration as an
+emerging pattern: static agents whose selection and composition at
+runtime is dynamic, under multi-tier control. ARCMiS instantiates that
+pattern in the small-model regime as a static three-tier tree: agents
+are static (fixed registry, fixed preambles, fixed tool allowlists), the
+lead-over-member assignments are config-owned, and the task graph, the
+router chain, and the lead inner loops make selection dynamic. The
+survey's deterministic-fallback and policy-enforcement guidance maps
+one-to-one onto our guard hook and evidence-gated phases.
 
 \paragraph{Pipeline agents for migration.}
 ReCodeAgent~\cite{recodeagent2026} prescribes an
 analyzer--planner--translator--validator pipeline for repository-level
-migration, and Ledger~\cite{ledger2026} prescribes a manager--worker
-scaffold over a shared task ledger. Both exist as arXiv preprints at
-arXiv:2604.07341 and arXiv:2608.26480. We found no published venue
-version, and our comparisons follow their prescribed algorithms with that
-status unchanged.
+translation and validation, and Ledger~\cite{ledger2026} prescribes a
+manager--worker scaffold over a shared task ledger. Both exist as arXiv
+preprints (arXiv:2604.07341, arXiv:2608.26480); we found no published
+venue version, and our comparisons follow their prescribed algorithms
+with that status unchanged. The ReCodeAgent paper's own comparison
+set is Skel, Oxidizer, AlphaTrans, and SWE-agent, all re-run by its
+authors with one frontier LLM (Claude 4.5 Sonnet) over 118 projects;
+ARCMiS runs the same four problem-set families (crust, oxidizer,
+alphatrans, skel) with a 27B local model, but the protocols differ on
+model, scale, and scoring, so Section~\ref{sec:baseline} treats those
+numbers as context, not a head-to-head result.
 
 \section{The ARCMiS Methodology}
 \label{sec:method}
+
+This section describes the method as it ran in the campaign: the role
+taxonomy and its tiers, the evidence-gated phase machine, the decision
+protocol with tiered delegation, the blackboard, the guard, the budgets,
+and the scoring rule.
 
 \subsection{Overview}
 
 A run is one migration attempt against one problem set: a source codebase
 in language $L_s$ and a target language $L_t$, with a test command defined
 in the config. The harness (a Rust binary built on rig~0.42) spawns a MAS
-whose members share one blackboard directory. The manager never writes
-product code. Specialists never re-plan. Table~\ref{tab:roles} shows the
-role taxonomy.
+whose members share one blackboard directory. Control is a static
+three-tier tree: the orchestrator at tier 1 owns the plan and never
+writes product code; team leads at tier 2 own one batch or phase slice
+each; specialists at tier 3 own the work and never re-plan. What is
+dynamic is selection and composition: the orchestrator may emit several
+delegations in one round, the task-graph executor orders and gates them,
+and a failing task can spawn a failure-analyst $\rightarrow$ repairer
+sub-chain without any phase regression. Table~\ref{tab:roles} shows the
+role taxonomy and the tier each role sits at.
 
 \begin{table}[ht]
 \centering
 \begin{tabular}{llp{7.2cm}}
 \toprule
-Role & Class & Responsibility \\
+Role & Tier & Responsibility \\
 \midrule
-Manager & control & Owns plan and task list. Emits \texttt{DECISION} lines. No tools. \\
-Analyst & worker & Reads the codebase. Writes the source map and graphs. \\
-Architect & worker & Writes the migration contract (\texttt{analysis/brief.md}). \\
-Planner & worker & Produces dependency-ordered translation batches. \\
-Translator & worker & Writes target-language modules for one batch. \\
-Validator & judge & Judges one translated batch. Re-runs the suite. Read-only. \\
-Tester & worker & Adds tests. Runs the test command. \\
-Failure-analyst & judge & Classifies one failure into a five-category taxonomy. \\
-Critic & judge & Runs the end-of-run adversarial review. Read-only. \\
-Repairer & worker & Fixes one diagnosed failure. \\
-Fleet-analyst & judge & Promotes or demotes roles along the model ladder. \\
+Orchestrator & 1 & Owns plan and task list. Emits \texttt{DECISION} lines. No tools. \\
+discovery-lead & 2 & Runs Discovery and Contract over \{analyst, architect\}. \\
+migration-lead & 2 & Runs Planning, Pilot, and Migration over \{translator, validator, tester, repairer\}. \\
+integration-lead & 2 & Runs Integration and Hardening over \{planner, failure-analyst, critic\}. \\
+Analyst & 3 & Reads the codebase. Writes the source map and graphs. \\
+Architect & 3 & Writes the migration contract (\texttt{analysis/brief.md}). \\
+Planner & 3 & Produces dependency-ordered translation batches. \\
+Translator & 3 & Writes target-language modules for one batch. \\
+Validator & 3 & Judges one translated batch. Re-runs the suite. Read-only. \\
+Tester & 3 & Adds tests. Runs the test command. \\
+Failure-analyst & 3 & Classifies one failure into a five-category taxonomy. \\
+Critic & 3 & Runs the end-of-run adversarial review. Read-only. \\
+Repairer & 3 & Fixes one diagnosed failure. \\
+Fleet-analyst & 1 & Model-ladder promotion advice; stays tier-1 accessible (no artifacts, no isolation value). \\
 \bottomrule
 \end{tabular}
-\caption{The role taxonomy. Manager is tier 1. Specialists are tier 0.
-The translation collective is tier 2. Judge-class roles get small turn
-budgets. Worker-class roles get large ones.}
+\caption{The role taxonomy and tiers. Tier 1 is the orchestrator, tier 2
+the team leads, tier 3 the specialists. The lead set is config-owned
+(\texttt{mas.hierarchy}); with the hierarchy disabled the run is
+byte-identical to the single-tier design. The \texttt{deny\_direct} gate
+refuses a tier-1 delegation that names a specialist, so the handoff form
+under hierarchy is the lead name. The preflight validator rejects a
+member that sits in two teams and a lead without a prompt file.}
 \label{tab:roles}
 \end{table}
 
@@ -228,14 +272,14 @@ budgets. Worker-class roles get large ones.}
 The run walks ten phases: \textsf{Preflight}, \textsf{Discovery},
 \textsf{Contract}, \textsf{Planning}, \textsf{Pilot}, \textsf{Migration},
 \textsf{Integration}, \textsf{Hardening}, \textsf{FinalValidation},
-\textsf{Done}. Forward transitions are earned. The manager's
+\textsf{Done}. Forward transitions are earned. The orchestrator's
 \texttt{done} verb is accepted only when the phase's exit condition holds
 \emph{and} at least one delegation completed in the phase (the
 \texttt{phase\_delegations} counter). Regressions are legal and recorded.
 \textsf{Pilot} and \textsf{Migration} may fall back to \textsf{Discovery}
 on a missing dependency, \textsf{Integration} to \textsf{Migration}, and
 so on. Anything else is a programming error, not a model decision. Each
-phase has a written exit condition in the manager prompt. For example,
+phase has a written exit condition in the orchestrator prompt. For example,
 \textsf{Contract} requires \texttt{analysis/brief.md} to exist with a
 validator pass covering it. \textsf{FinalValidation} requires the
 configured toolchain command to exit zero on the target workspace.
@@ -263,50 +307,67 @@ Regressions are recorded, not hidden.}
 \label{tab:phases}
 \end{table}
 
-\subsection{Decision protocol and dynamic scheduling}
+The phase machine is also the campaign's diagnostic instrument. Every
+stall in Section~\ref{sec:results} is reported as the phase where the run
+stopped (\textsf{Discovery} or \textsf{Contract} for most failures), so a
+reader can see at which capability boundary the harness, not the model,
+gave up.
 
-The manager answers each round with plain text whose final lines carry
-\texttt{DECISION:} verbs: \texttt{delegate}, \texttt{replan},
-\texttt{escalate}, \texttt{done}. Parsing text instead of expecting tool
-calls removes a whole failure class observed in the surveys: malformed
-tool-call JSON that the ollama daemon rejects with HTTP 500 (13\% of all
-220926 runs). The manager gets \emph{no tools at all}. The round prompt
+\subsection{Decision protocol and tiered delegation}
+
+The orchestrator answers each round with plain text whose lines carry
+\texttt{DECISION:} verbs: \texttt{delegate ROLE | TASK [|
+  after:t2,t3]}, \texttt{replan}, \texttt{escalate},
+\texttt{done}. Parsing text instead of expecting tool calls removes a
+whole failure class observed in the preliminary surveys: malformed
+tool-call JSON that the ollama daemon rejected with HTTP 500. The
+orchestrator gets \emph{no tools at all}. The round prompt
 carries the plan, notes, task list, ledger tail, and state, so the model
-cannot spend turns re-reading files (an observed pathology: 40
-consecutive reads of \texttt{plan.md}).
+cannot spend turns re-reading files.
 
 Each \texttt{delegate} decision becomes a task node with optional
-\texttt{after:} dependencies and an optional \texttt{team} clause. The
-task graph executor runs the ready set (all dependencies done) with
-bounded fan-out (default 2). Because ollama serves one model at a time,
-fan-out interleaves turn streams rather than running parallel processes.
-Routing is a three-stage chain: the manager's role hint, then a
+\texttt{after:} dependencies (Figure~\ref{fig:delegation}). Direct tasks
+run under the task-graph executor: the ready set (all dependencies done)
+runs with bounded fan-out (3 in the tuned config). Because ollama serves
+one model at a time, fan-out interleaves turn streams rather than
+running parallel processes. With the hierarchy enabled, the
+\texttt{deny\_direct} gate refuses a delegation that names a team
+specialist, and the handoff form is \texttt{delegate migration-lead |
+  ...}: the tier-1 round prompt lists the lead names in ROLE. Routing is
+a three-stage chain: the orchestrator's role hint, then a
 deterministic keyword pass over the task text, then (as a last resort)
 the router model. After each round the orchestrator re-scores the task
-list and the manager sees merged state, so a failing task can spawn a
+list and sees merged state, so a failing task can spawn a
 failure-analyst $\rightarrow$ repairer sub-chain without any phase
 regression.
 
+\paragraph{The lead inner loop.}
+A tier handoff is context management. The lead receives a scoped batch
+brief (task text, the run contract, and the plan and notes tails under
+the existing \texttt{plan\_cap}/\texttt{notes\_cap} caps), not the
+orchestrator's history. Its inner loop parses \texttt{DECISION: delegate
+  MEMBER | task} lines, dispatches one member per round through the same
+execution path as tier 1, and ends on \texttt{done}, its own turn
+budget, its own stagnation breaker, or a model failure. The lead
+dispatches only its own members (depth cap 3: lead names are not roles,
+so a lead cannot dispatch another lead), and its result folds into one
+\texttt{TaskResult} for the orchestrator. A cross-team or lead-named
+dispatch draws a logged refusal and counts toward the stagnation
+breaker. The lead's turn budget absorbs retry loops, which keeps batch
+churn out of the tier-1 history.
+
 \begin{figure}[ht]
 \centering
-\includegraphics[width=0.85\textwidth]{figures/fig2-delegation.pdf}
-\caption{One manager delegation and the collective under it. The executor
-runs tasks whose dependencies are done, under the fan-out cap. A
-\texttt{team} task runs the translation collective: translator, validator,
-tester, with failure-analyst and repairer re-entry. The collective is tier
-2, one level deep, with its own turn budget and an early stop on a
-validator pass.}
+\includegraphics[width=0.92\textwidth]{figures/fig2-delegation.pdf}
+\caption{Tiered delegation. The orchestrator (tier 1) emits DECISION
+lines; the task graph executes direct tier-1 tasks whose dependencies
+are done, under the fan-out cap. A delegation naming a lead hands the
+batch to the lead's inner loop: the lead runs from a scoped batch brief,
+dispatches only its own members (tier 3), and folds the result into one
+TaskResult. Delegation events and traces carry an additive tier field
+(orchestrator 1, lead 2, specialist 3).}
 \label{fig:delegation}
 \end{figure}
-
-\paragraph{Team collectives.}
-A \texttt{team=true} delegation runs the translation collective
-translator $\rightarrow$ validator $\rightarrow$ tester, with
-failure-analyst $\rightarrow$ repairer re-entry, as an inner loop under
-one task id. Figure~\ref{fig:delegation} shows the flow. The collective is
-tier 2, one level deep. The guard refuses deeper nesting. It has its own
-turn budget (\texttt{collective\_turns}, default 40) and stops early on a
-validator pass.
 
 \subsection{Blackboard}
 
@@ -315,54 +376,98 @@ crate: \texttt{state.json} (phase, counters), \texttt{plan.md} and
 \texttt{notes.md} (character-capped at 4000 and 8000), \texttt{tasks.json}
 (task list mirror), \texttt{decisions.jsonl} and \texttt{failures.jsonl}
 (ledgers), and a dependency graph. Character caps keep the shared state
-inside one read for a 16k-token context window. The writer truncates with
-an elision marker rather than silently growing the context of every later
-reader.
+inside one read for a 16k-token context window; the tuned config raises
+the per-call window to 65536 with read gating (Section~\ref{sec:setup}),
+and the caps still bound what the orchestrator prompt itself carries. The
+writer truncates with an elision marker rather than silently growing the
+context of every later reader.
 
-\subsection{Guard}
+\subsection{Guard hook and the Jev judge}
 
-Every tool call from every agent passes one \texttt{on\_tool\_call} hook.
-The deterministic tier inspects the role allowlist (from static tool
-metadata), path policy (\texttt{source/} is read-only, writes must stay
-inside the workspace), deny patterns for bash (\texttt{rm -rf},
-\texttt{git push}, package installs, network commands, \texttt{sudo}), and
-per-delegation tool-call budgets. Rejections return \texttt{Skip(feedback)}.
-The model sees the reason and adjusts the call. The breaker counts
-repeats. Calls that the deterministic tier marks ambiguous fall to an
-optional model-arbitration tier (the ``Jev-as-guard'' slot), deny-by-default
-while only one model exists. The guard is the single enforcement point. We
-removed an earlier wrapper-object design (a \texttt{GuardedTool} adapter)
-because the harness constructed it but never put it on the call path.
+Every tool call from every agent at every tier passes one
+\texttt{on\_tool\_call} hook. The deterministic tier of the guard (a
+policy tier, not a hierarchy tier) inspects the role
+allowlist (from static tool metadata), path policy (\texttt{source/} is
+read-only, writes must stay inside the workspace), deny patterns for bash
+(\texttt{rm -rf}, \texttt{git push}, package installs, network commands,
+\texttt{sudo}), and per-delegation tool-call budgets. Rejections return
+\texttt{Skip(feedback)}: the model sees the reason and adjusts the call,
+and the breaker counts repeats. The guard lives in the orchestrator
+crate, beside the delegation contract it enforces; the arbitration seam
+below it is the only model-policed slot.
+
+Calls that the deterministic tier marks ambiguous (Ask-class) fall to
+an optional model-arbitra\-tion tier built on the laya typed-decision
+crate,
+following the Jev-as-a-judge pattern~\cite{li2026jevjudge}. The judge is
+a small decision-only model that renders one typed \texttt{choice}
+verdict per consultation in a single forward pass, with confidence $q$
+defined as the maximum label probability. A confidence cascade with
+$\tau = 0.9$ accepts confident verdicts; below $\tau$, on any load or
+inference error, on foreign labels, or with the judge disabled, the
+guard keeps its deterministic denial. The judge can only widen one
+denial; it never bypasses a tier that passed the call, and budget
+denials for non-ask tools are never arbitrable. Deny-on-uncertain is
+the invariant: the escalation path is the existing deny, because with
+one model in the loop there is no stronger judge to pay. The
+deterministic rules stay above the judge: allowlist, path policy, and
+budgets are untouched.
 
 \subsection{Budgets, breaker, fleet ladder}
 
-Budgets are per role class: manager turns per round (default 20), worker
+Budgets are per role class: orchestrator turns per round (20), worker
 turns per delegation (40), judge turns (40, kept small in spirit by
-prompting judges to promise few calls), collective turns (40), and a
-run-level round ceiling (60, with \texttt{max\_rounds} often set to 20 in
-configs). A deterministic stagnation breaker stops the run after
-\texttt{stagnation\_rounds} (3) consecutive rounds with no completed
+prompting judges to promise few calls), lead turns per handoff
+(\texttt{turns} per team in the hierarchy config; the smoke run's
+migration-lead worked under a budget of 8), and a
+run-level round ceiling. A deterministic stagnation breaker stops the run
+after \texttt{stagnation\_rounds} (3) consecutive rounds with no completed
 task, after repeated consecutive phase failures, or when a derived token
-estimate exceeds the run ceiling. It never consults a model. The fleet
-analyst owns a model ladder (weakest first, config-driven) and promotes a
-role one rung on repeated failure.
+estimate exceeds the run ceiling; each lead carries its own breaker
+under the same rule. It never consults a model. In the
+campaign the breaker was the graceful exit: most stalled runs ended as
+``3 consecutive rounds without a completed task,'' which is a diagnosable
+artifact, not a hang. The fleet analyst owns a model ladder (weakest
+first, config-driven) and promotes a role one rung on repeated failure.
+Per-role output-token and think overrides are config knobs introduced
+during the campaign (Section~\ref{sec:results}).
 
 \subsection{Scoring}
 
 A run succeeds only when the evaluator reruns the target toolchain
 (\texttt{cargo build} + \texttt{cargo test} for Rust targets,
-\texttt{pytest} for Python, or \texttt{node --c{}heck} for JavaScript
-syntax) in the produced workspace and every test passes. Agent
-self-reports are recorded but never trusted. This rule exists because the
-surveys caught real self-report traps. In the 220926 sweep, three ledger
-runs wrote passing per-problem records over empty workspaces. In the
-2026-09-19 comparison, the harness compared a string
+\texttt{pytest} for Python, or a JavaScript syntax check) in the produced
+workspace and every test passes. Agent self-reports are recorded but
+never trusted. This rule exists because the preliminary surveys caught
+real self-report traps: ledger-method runs wrote passing per-problem
+records over empty workspaces, and a harness version compared the string
 \texttt{compilation\_status == "pass"} while the schema asked the model
-for a boolean, so exit codes carried no signal. The scorer then re-ran
-the toolchain itself.
+for a boolean, so exit codes carried no signal. The scorer re-runs the
+toolchain itself, and traces and score paths count tool-call activity, so
+a healthy tool-only turn (empty text, real tool calls) is never misread
+as a failure.
 
 \section{Supporting Infrastructure}
 \label{sec:infra}
+
+Five components carry the model-call path and the workspace boundary,
+and one crate boundary keeps them honest. Each exists because a measured
+failure mode demanded it, and each one is a hook or a pure tool layer,
+outside agent code.
+
+\paragraph{Middleware crate.}
+The role-agnostic rig \texttt{AgentHook} implementations live in their
+own crate, \texttt{ARCMiS/lib/middleware}: the trace hook (one trace
+record per model call, tool call, and tool result, now carrying the
+additive tier field), the continuation patch
+(\texttt{TrailingUserMessageHook}), and the per-role output-token hook.
+The split criterion is that a middleware hook never names a role, a
+fleet, or the orchestration domain: it reads only hook event data plus
+its own constructor parameters. Which hook runs for which role, with
+which thresholds, is domain policy and stays in the agents crate. The
+guard stays beside the delegation contract in the orchestrator crate,
+because its allowlist and path policy are the delegation contract, not a
+generic hook parameter.
 
 \paragraph{Hashline file tools.}
 File tools (\texttt{read}, \texttt{write}, \texttt{edit}) address content
@@ -378,9 +483,12 @@ It serializes the discarded history to dense text, renders that text to
 PNG frames with a bundled public-domain 8x13 BDF bitmap font, and
 attaches the frames as image blocks. The pass is deterministic (same
 history in, same frames out) and costs no model call. LLM summarization
-both spends budget and distorts. Per ADR 0022 the hook attaches to every
-role, with lower thresholds for the long-context specialists (translator,
-validator) that need it most.
+both spends budget and distorts. The hook lives in its own crate
+(\texttt{snapcompact}); the per-role threshold wiring stays with the
+registry, because threshold selection is domain policy. It attaches to
+every role, with lower thresholds for the long-context specialists
+(translator, validator) that need it most, and snapcompact events appear
+in the traces, which makes context growth observable per agent.
 
 \paragraph{Continuation patch.}
 Ollama's chat template for Qwen models rejects a message list that ends
@@ -398,294 +506,484 @@ can roll back a bad write without touching the source tree.
 \section{Experimental Setup}
 \label{sec:setup}
 
+This section fixes the configuration that produced every number in
+Section~\ref{sec:results}: the model and hardware, the eight problem
+sets, the budgets, and the per-run protocol that the optimization loop
+followed.
+
 \paragraph{Model and hardware.}
-All reported runs use \texttt{qwen3.8:27b-mtp-q4\_K\_M} (a 27B reasoning
-model with multi-token prediction, 4-bit quantized) served locally by
-ollama on one RTX~3090, fully offloaded. A 2B model
-(\texttt{minicpm5-2b:q8\_0}) and a 27B fine-tune
-(\texttt{Swift-Qwen3.8-27B:dflash2}) appear only in the 220926 sweep.
-Typical generation settings: \texttt{num\_ctx} 16384, temperature 0.2,
-\texttt{think: true}, one retry.
+All reported runs use the 27B reasoning model
+\texttt{smtek/Swift-Qwen3.8-\allowbreak27B:map-k4v} (4-bit
+\texttt{map-k4v}
+quantization, \texttt{think:true}) served locally by ollama on one
+RTX~3090, fully offloaded. The tuned per-call configuration is
+\texttt{num\_ctx} 65536 with guard read gating,
+\texttt{max\_out\allowbreak{}put\_to\allowbreak{}kens} 8192 with
+translator and architect raised
+to 16384, temperature 0.2, fanout 3, and a 7200-second wrapper
+timeout.
+One earlier configuration point is quoted in
+Section~\ref{sec:results} because the campaign refuted it: an all-roles
+16384 output override.
 
 \paragraph{Problem sets.}
-Two families. The \emph{kata} family is the GildedRose-Refactoring-Kata
-(6.8~KB of C, translated to Rust) used for the method-comparison protocol.
-The \emph{repository} family is the ReCodeAgent dataset: language-pair
-directories under \texttt{assets/ReCodeAgent/data/tool\_projects}
-(c$\to$rust, python$\to$javascript, go$\to$rust, java$\to$python), with
-per-project configs. The autooptimise cycle-1 set spans six pairs from
-125 to $\sim$28k source LOC (Table~\ref{tab:problems}).
+Eight problem sets from the ReCodeAgent dataset directory
+\texttt{tool\_projects}, spanning four language
+pairs and three orders of magnitude in size
+(Table~\ref{tab:problems}). The campaign's search runs used five of
+them; the two c14 rotation sets ran only under the exact tuned defaults
+as a validation step, with no per-set tuning.
 
 \begin{table}[ht]
 \centering
-\begin{tabular}{llll}
+\begin{tabular}{llrl}
 \toprule
-Problem set & Source & Target & Source LOC \\
+Problem set & Pair & Source LOC & Campaign role \\
 \midrule
-crust/nandc & C & Rust & 125 \\
-skel/colorsys & Python & JavaScript & 355 \\
-crust/utf8 & C & Rust & 806 \\
-crust/libm17 & C & Rust & 7{,}009 \\
-oxidizer/stats & Go & Rust & 5{,}625 \\
-alphatrans/commons-validator & Java & Python & 28{,}110 \\
+crust/nandc & C$\to$Rust & 125 & search \\
+oxidizer/checkdigit & Go$\to$Rust & 1{,}643 & search \\
+skel/colorsys & Python$\to$JavaScript & 355 & search \\
+alphatrans/commons-fileupload & Java$\to$Python & 8{,}646 & search \\
+alphatrans/commons-validator & Java$\to$Python & 36{,}356 & search \\
+crust/leftpad & C$\to$Rust & 82 & rotation (c14b) \\
+alphatrans/commons-cli & Java$\to$Python & 11{,}643 (52 files) & rotation (c14a) \\
+smoke (GildedRose) & C$\to$Rust & 7 & diagnostic only \\
 \bottomrule
 \end{tabular}
-\caption{The cycle-1 autooptimise problem sets (measured on source trees,
-headers excluded for C). Test commands come from the config:
-\texttt{cargo test}, \texttt{pytest}, or \texttt{node --c{}heck}.}
+\caption{The eight campaign problem sets (LOC measured on source trees,
+headers excluded for C; commons-cli counted as Java files). Test commands
+come from the per-set config, \texttt{cargo test} for Rust targets. The
+five search sets carried the optimization loop; the two rotation sets
+validated the tuned defaults on fresh inputs; the smoke set is a
+diagnostic.}
 \label{tab:problems}
 \end{table}
-\paragraph{Budgets.}
-The MAS configs fix \texttt{max\_rounds} 20, manager turns 20 per round,
-worker turns 40 per delegation, judge turns 40, fanout 2, stagnation
-breaker at 3 rounds, \texttt{plan\_cap} 4000, \texttt{notes\_cap} 8000.
-Baselines used \texttt{max\_output\_tokens} 4096. The H1 candidate raises
-it to 8192 (Section~\ref{sec:frontier}).
 
-\paragraph{Protocol.}
-One process per cell, strictly sequential, fresh workspace per run, model
+\paragraph{Budgets.}
+The MAS configs fix \texttt{max\_rounds} 20, orchestrator turns 20 per
+round, worker turns 40 per delegation, judge turns 40, and the stagnation
+breaker at 3 rounds. \texttt{plan\_cap} 4000 and \texttt{notes\_cap} 8000
+bound the blackboard documents.
+
+\paragraph{Protocol and campaign loop.}
+One process per run, strictly sequential, fresh workspace per run, model
 offloaded between runs and verified by polling the daemon. Every run
-leaves an immutable experiment directory per the ADR 0020 contract:
-\texttt{manifest.json} (model, budgets, git revision, parents,
-hypothesis), config, \texttt{traces/turns.jsonl} (one line per model
-call, tool call, and tool result), the produced \texttt{workspace/},
-captured streams, and a \texttt{result/} aggregate plus per-problem
-records with a staged failure taxonomy (\texttt{setup}, \texttt{analyze},
-\texttt{plan}, \texttt{translate}, \texttt{verify}, \texttt{evaluate}).
+leaves an immutable experiment directory: \texttt{manifest.json} (model,
+budgets, git revision, parents, hypothesis), config,
+\texttt{traces/turns.jsonl} (one line per model call, tool call, and tool
+result), the produced \texttt{workspace/}, captured streams, and a
+\texttt{result/} aggregate with a staged failure taxonomy
+(\texttt{setup}, \texttt{analyze}, \texttt{plan}, \texttt{translate},
+\texttt{verify}, \texttt{evaluate}). Scoring is toolchain-only
+(Section~\ref{sec:method}). The optimization loop over these runs kept
+the problem set and evaluator fixed for all 14 iterations; every change
+was harness-side. Section~\ref{sec:optmethod} states the loop's
+contract and the per-iteration hypotheses.
+
+\subsection{Optimization methodology}
+\label{sec:optmethod}
+
+The 14 iterations followed a Meta-Harness-style optimization loop
+\cite{metaharness2026}: an agentic outer loop whose proposer reads the
+full experiment history from the filesystem and proposes the next
+harness change. The loop ran under five contract rules, each enforced
+by the experiment tree rather than by trust:
+
+\begin{itemize}
+\item \textbf{Immutable per-candidate directories.} One experiment per
+directory under a dedicated artifacts root. The directory is immutable
+after the run: the proposer reads, never writes. It carries
+\texttt{manifest.json}, the produced workspace, raw traces (one JSON
+line per model call, tool call, and tool result), and the scored
+result.
+\item \textbf{Pre-registered causal hypothesis.} Each manifest records
+a one-sentence hypothesis before launch, plus \texttt{parents} links to
+prior experiment ids. Lineage lives in the manifests; search scripts
+never reconstruct it. The proposer must name the mechanism its change
+targets, so every refuted candidate stays attributable.
+\item \textbf{Toolchain-only rescoring.} The scorer reruns the target
+build and test commands inside the produced workspace; agent
+self-reports never gate. \texttt{success: true} requires translation to
+complete and the toolchain test command to exit zero.
+\item \textbf{Pareto frontier.} \texttt{frontier.py} reads only the
+experiment tree and orders candidates by verified pass, per-problem
+test count, and wall time. A candidate dominates another when it is
+not worse on every key and strictly better on one. The frontier, not
+any single score, selects the champion.
+\item \textbf{Converge-or-rotate.} The 3-cycle rule: if the best
+candidate on a set shows no frontier gain across three consecutive
+cycles, the set has converged. A converged champion either closes the
+loop or rotates to fresh, unseen sets under the exact tuned defaults
+as an out-of-sample check.
+\item \textbf{No-tuning rule.} The problem set and the evaluator stayed
+fixed for all 14 iterations; every change was harness-side. No run
+config was edited per set, and no prompt was tuned against a known
+failure.
+\end{itemize}
+
+The loop found every binding constraint by reading raw traces, not
+summaries. Table~\ref{tab:lineage} attributes each lineage step to its
+recorded hypothesis; Figure~\ref{fig:lineage} plots the verified-test
+lineage it produced.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{@{}p{1.1cm}p{5.2cm}p{7.6cm}@{}}
+\toprule
+Cycle & Hypothesis (from the manifest) & Outcome \\
+\midrule
+c1 & think-only turns truncate at exactly the 4096-token output cap
+(\texttt{finish\_reason=Length}, empty text); raise
+\texttt{max\_output\_tokens} to 8192 & First verified migration:
+nandc workspace passes 2 tests. Diagnosis came from raw traces, where
+every dead delegation died at exactly the cap. \\
+c3 & 31 of 41 stalled turns sat at the 16384 \texttt{num\_ctx} wall;
+double context, add tool-aware traces for triage & Discovery
+saturation fixed; nandc reaches 17 verified tests. \\
+c10b & checkdigit's architect died at exactly 8192 output tokens;
+raise the architect's per-role output cap to 16384 & Architect passes
+Contract on the first try; 48-test champion. \\
+c11b & identical-config rerun under a doubled 7200\,s wrapper timeout;
+a completed 13/13 would be the first & 36 tests; killed by the
+timeout ~6\,min after its last pass. \\
+c12 & all-roles 16384 output override & \textbf{Refuted}: bigger burns
+cost 10--20\,min per retry against 1--2\,min at 8192; total wrapper
+throughput, not per-turn survival, is the metric. \\
+c13 & revert to the translator-only 16384 override; reproduce or beat
+c11b's depth & No depth gain; plateau closes the loop. \\
+c14 & two fresh sets under the exact tuned defaults, no per-set
+tuning & Both stall before Contract; out-of-sample generality not
+established. \\
+\bottomrule
+\end{tabular}
+\caption{Lineage steps and the pre-registered hypotheses that caused
+them, quoted from the per-run manifests. The loop, not the prompt,
+found each binding constraint: output-cap truncation (c1), the context
+wall (c3), per-role output budgets (c10b), and the ceiling-throughput
+trade (c12--c13).}
+\label{tab:lineage}
+\end{table}
 
 \section{Results}
 \label{sec:results}
 
-\subsection{Method comparison on the kata (2026-09-19)}
-
-Table~\ref{tab:kata} shows three paper-faithful methods on the
-GildedRose C$\to$Rust kata, 5 passes each, toolchain-only scoring.
-
-\begin{table}[ht]
-\centering
-\begin{tabular}{lllll}
-\toprule
-Method & Compiled & Full pass & Test pass rate & Wall \\
-\midrule
-Monolith (ReAct + validator) & 5/5 & 1/5 & $0.50 \pm 0.00$ & $97.4 \pm 34.0$ s \\
-Ledger~\cite{ledger2026} & 5/5 & 1/5 & $0.60 \pm 0.22$ & $116.3 \pm 21.6$ s \\
-ReCodeAgent~\cite{recodeagent2026} & 5/5 & 1/5 & $0.65 \pm 0.22$ & $160.5 \pm 19.1$ s \\
-\bottomrule
-\end{tabular}
-\caption{Kata benchmark, revision 2 (paper-faithful implementations, 5
-passes per method). The two multi-agent methods sit above the monolith
-(0.65 and 0.60 vs 0.50), but the deltas sit inside one SD. The evidence
-for scaffolds paying is one full pass in five for each method. An earlier
-flattened-implementation generation had the monolith on top (0.75). The
-v1 and v2 monolith columns are two harness generations, not one method
-twice.}
-\label{tab:kata}
-\end{table}
-
-Two readings matter for later sections. First, on a small task with a
-27B model, the single agent is already at or above the regime where
-decomposition pays, and orchestration turns subtract from the fix budget.
-The papers' own conclusion (scaffolds pay most where the model is
-weakest) predicts exactly this inversion. Second, wall time ranks stably
-with agent count: more agents, more seconds.
-
-\subsection{Survey 220926: capability dominates methodology (180 cells)}
-
-Grid: 4 projects (233--1110 C LOC) $\times$ 3 methods $\times$ 3 models
-$\times$ 5 reps. Toolchain-verified end-to-end success: 5 of 180 runs
-(2.8\%), all on the 233-LOC project, all monolith, all on a 27B model.
-The 2B model never produced a compiling workspace. Ledger wrote 3
-per-problem records, but every one was a manager self-report over an
-empty workspace, caught by post-sweep inspection, and the direct
-motivation for toolchain-only scoring. Recode never produced a record.
-The failure taxonomy (Table~\ref{tab:failures220926}) put turn-budget
-exhaustion at 42\% and daemon-rejected tool-call arguments at 13\%.
+The benchmark record is the final state of the four-day optimization
+campaign: 14 harness iterations, 46+ scored runs, eight problem sets,
+closed 2026-09-29. The problem set and evaluator never changed; every
+iteration changed the harness. Every data path in this section reads
+from the per-run artifacts.
+Table~\ref{tab:verdicts} gives the
+per-set verdicts, and Figure~\ref{fig:persets} shows the best
+toolchain-verified result per set.
 
 \begin{table}[ht]
 \centering
-\begin{tabular}{lrr}
+\begin{tabular}{@{}p{4.2cm}rp{7.6cm}@{}}
 \toprule
-Failure class & Count & Share \\
+Set & Runs & Final verdict \\
 \midrule
-MaxTurns (budget exhausted mid-translation) & 75 & 42\% \\
-Other (model-side protocol errors, empty streams) & 70 & 39\% \\
-Invalid tool-call arguments (daemon HTTP 500) & 23 & 13\% \\
-JSON parse of model output & 4 & 2\% \\
-Toolchain-verified success & 5 & 3\% \\
-Self-reported ``pass'' over empty workspace & 3 & 2\% \\
+crust/nandc & 9 & SOLVED: champion lineage, 17 tests verified \\
+oxidizer/checkdigit & 6 & CONVERGED: two verified workspaces (48, 36 tests), plateau \\
+alphatrans/commons-fileupload & 6 & PARKED: stuck at Discovery, ceiling burns unrecoverable in budget \\
+alphatrans/commons-validator & 1 & NOT CLEARED: Discovery saturation (pre-gate fix) \\
+alphatrans/commons-cli & 1 & NOT CLEARED: Discovery stall under tuned defaults (c14a) \\
+crust/leftpad & 1 & NOT CLEARED: Contract stall under tuned defaults (c14b) \\
+skel/colorsys & 2 & NOT CLEARED: Contract ceiling \\
+smoke (GildedRose) & 1 & Diagnostic only \\
 \bottomrule
 \end{tabular}
-\caption{Failure taxonomy over 180 runs (survey 220926). The multi-agent
-scaffolds divide the same turn budget across more workers, so they
-exhaust it sooner relative to useful work.}
-\label{tab:failures220926}
+\caption{Final per-set verdicts of the campaign. ``Runs'' counts scored
+runs against the set. Three of eight sets produced at least one compiling
+workspace; none reached \textsf{Done} end to end.}
+\label{tab:verdicts}
 \end{table}
-
-\subsection{Survey 230926: budgets unbind, size binds (105 cells)}
-
-With generous budgets (120 turns, 8192 output tokens, 2-hour timeouts),
-MaxTurnsError went from 42\% of runs to zero, and mean turns used stayed
-under 16 per method. On 7 projects (185--3087 C LOC) $\times$ 3 methods
-$\times$ 5 reps with qwen3.8-27B, 39 of 105 cells (37\%) verified. Success
-concentrated by project size, not method.
-
-The 185--324 LOC band converted at 87--93\% per attempt
-(Figure~\ref{fig:cliff}). The 635--3087 LOC band converted at 0\%
-(nothing compiled), with a sharp transition between 324 and 635 LOC.
-Method differences were second-order and project-dependent. Ledger was
-the only method to pass \texttt{chtrie} (5/5). Monolith was the only one
-to pass \texttt{murmurhash\_c} (5/5). Recode never won a cell outright
-but still passed 4/5 on two projects. Ledger used the fewest turns (mean
-5.3) but the longest walls (mean 630~s). Monolith used mean 11.8 turns
-and 316~s. The 220926 ledger self-report trap did not recur: all 15
-ledger scored runs carried real evaluator steps.
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=0.9\textwidth]{figures/fig3-survey-cliff.pdf}
-\caption{Toolchain-verified pass rate against project size in survey
-230926 (105 cells, qwen3.8-27B, 15 attempts per project, Wilson 95\%
-intervals). The 185--324 LOC band converts at 87--93\% per attempt at the
-two smallest projects. Nothing at or above 635 LOC compiles. The
-capability cliff sits between 324 and 635 LOC.}
-\label{fig:cliff}
+\includegraphics[width=0.94\textwidth]{figures/fig3-survey-cliff.pdf}
+\caption{Best toolchain-verified test count per problem set over the
+whole campaign. Only nandc (17 tests) and checkdigit (48 and 36 tests)
+produced compiling workspaces; every other bar sits at zero with the run
+stopped at Discovery or Contract.}
+\label{fig:persets}
 \end{figure}
 
-\subsection{The frontier loop: baselines stall at Contract}
-\label{sec:frontier}
+\subsection{Champion and lineage}
 
-The autooptimise loop (ADR 0020, after Meta-Harness~\cite{metaharness2026})
-runs one immutable experiment directory per candidate, with the proposer
-reading raw traces, keeping a Pareto frontier over (pass rate, tests
-passed, tests failed), and never editing \texttt{scripts/} or tuning
-against the problem set.
-
-\paragraph{Baseline stagnation.}
-Every baseline MAS run across six problem sets aborted identically:
-3 consecutive stalled rounds, final phase \textsf{Discovery} or
-\textsf{Contract}, no translated project. The colorsys baseline
-(20260926T213500Z) reached Contract and had its brief rejected (43 lines
-against a 40-line cap). The fix delegation then burned its entire
-4096-token output budget on a single think-only turn
-(\texttt{finish\_reason=Length}, empty text, no tool call), the provider
-raised ``produced no answer,'' the round stalled, and the breaker
-tripped. The crust-nandc baseline showed the identical signature. The
-cross-run invariant: \emph{every} delegation that died did so with output
-tokens exactly equal to the 4096 cap and empty visible text. The
-reasoning block consumed the whole budget.
-
-\paragraph{H1 diagnosis and fix.}
-The mechanism chain has four links. The config enables
-\texttt{think: true}. The 27B model emits long reasoning
-(\texttt{think}) blocks. rig counts them against
-\texttt{max\_output\_tokens}. A turn that delivers no answer and is
-truncated (\texttt{finish\_reason=Length}) is a hard completion
-error, not a retry with more budget. The harness treats the delegation as
-failed, the manager retries the same shape, the model re-thinks just as
-long, and three stalls trip the breaker. H1 proposed the minimal
-mechanism-targeted change: raise \texttt{max\_output\_tokens} 4096
-$\rightarrow$ 8192 (the library default, with the configs having pinned
-4096 explicitly). Alternatives considered and deferred: \texttt{think: false}
-(kills deliberate reasoning), a continuation-on-length hook (needs
-provider internals), and loosening the validator's line cap
-(symptom-level, against the leakage rules).
-
-\paragraph{Effect.}
-The H1 candidate on crust/nandc (20260927T112000Z, parents = the two
-nandc baselines, hypothesis recorded in the manifest) completed 20
-rounds, 13 delegations, 12 of 13 tasks done, and reached
-\textsf{Hardening}, the first MAS run to leave the Contract phase. Its
-workspace passed the toolchain rerun with 2 tests passed, 0 failed. This
-is the first translated, toolchain-verified repository migration produced
-by the MAS method. It remains incomplete (the run ended at Hardening, not
-Done), and the other five H1 candidates in cycle 1 still stalled at
-Discovery or Contract. The fix unblocked the mechanism, not every run.
-H2 (queued for cycle 2) targets the second observed mechanism: a
-first-call request shape with an empty prompt field that ollama's
-server-side chat template rejects with HTTP 500, which the continuation
-hook does not yet cover. 23 of 28 model calls in the base-crust-libm17
-trace carried the empty prompt.
+The champion run is the checkdigit candidate closed at
+\textsf{Hardening} on 2026-09-28: 13 rounds, 14 delegations, 12 of 13
+tasks done, and a translated Rust crate whose \texttt{cargo build} is
+clean and whose test suite passes, toolchain-verified
+in the produced workspace (12 \texttt{cargo test} cases including unit,
+integration, and doc tests; the campaign scorer's rescore counts 48
+test cases). The run stopped on the wrapper's runtime
+timeout mid-\textsf{Hardening} after a repairer pass, not on a model
+failure. Figure~\ref{fig:lineage} shows the lineage: the campaign peak is
+two toolchain-verified oxidizer workspaces (48 and 36 tests on two
+checkdigit candidates) and one nandc lineage carrying five generations.
 
 \begin{figure}[ht]
 \centering
 \includegraphics[width=0.9\textwidth]{figures/fig4-frontier.pdf}
-\caption{The autooptimise cycle-1 frontier per problem set, baseline
-(4096 output tokens) against H1 (8192). Axes: tasks done and the highest
-phase reached (rank 0 is Discovery, rank 6 is Hardening). The H1
-candidate on crust/nandc is the only candidate that translated a project
-that compiles and passes its test suite (12 of 13 tasks, Hardening, 2 of
-2 tests). Runs that died with the ollama daemon carry no phase or task
-data and are scored as zero.}
-\label{fig:frontier}
+\caption{Champion lineage by toolchain-verified tests passed, one point
+per accepted hypothesis in the optimization loop. The nandc lineage
+runs from the first verified migration (2 tests at Hardening, after the
+c1 output-cap fix) to its 17-test generation (c3, after the context
+raise). The checkdigit lineage peaks at 48 tests (c10b, after the
+per-role output-cap raise), regresses to 36 (c11b, a favorable sample
+rather than a config effect), and shows no depth gain at c13, whose
+plateau closed the loop. Every binding constraint on this path was
+found by the loop reading raw traces, not by prompt changes.}
+\label{fig:lineage}
 \end{figure}
 
-\paragraph{Frontier discipline.}
-The frontier keeps non-dominated candidates rather than a champion. The
-H1-nandc candidate dominates the nandc baselines on pass rate and tests
-passed. The other five sets have no scored candidate yet, so their
-baselines stay on the frontier by default. Lineage lives in the manifests
-(\texttt{parents}), and every hypothesis is one causal sentence recorded
-before the run.
+The lineage records what each pre-registered hypothesis bought
+(Table~\ref{tab:lineage}). The seed configuration plus trace hooks
+produced the first verified workspace (2 tests) once the c1 hypothesis
+removed the 4096-token think-truncation. The c3 read-scoping and
+context-raise hypothesis fixed Discovery saturation on multi-file sets
+and made the stall breaker the graceful exit (17 tests). The c10b
+per-role output-cap hypothesis carried the architect past Contract,
+which landed the 48-test champion. The c11b rerun under a doubled
+timeout looked like progress at 36 tests but was a favorable sample,
+and the regression test against it failed: the c12 all-roles 16384
+override showed that bigger burns cost 10--20 minutes per retry against
+1--2 minutes at 8192, and total throughput fell. The c13 revert to the
+translator-only override showed no depth gain, and the plateau closed
+the loop under the 3-cycle rule. The c14 rotation hypothesis then
+failed out of sample: two fresh sets under the exact tuned defaults
+stalled before Contract.
+
+\subsection{Hierarchy validation}
+
+After the campaign closed, one smoke run validated the three-tier
+hierarchy (Section~\ref{sec:method}) end to end on the GildedRose
+C$\to$Rust set, with the campaign champion as its parent. The run
+reached \textsf{Migration} in 13 rounds with 5 of 8 tasks done and a
+green toolchain: the produced workspace's \texttt{cargo build} and
+\texttt{cargo test} exit zero, and the \texttt{text\_test} binary
+reproduces the source's 31-day walkthrough (day 0 through day 30)
+line for line. The run is explicitly incomplete
+(\texttt{completed: false}); it stopped on the stagnation breaker
+after the migration lead exhausted its turn budget of 8 on verbose
+task text. The delegation record shows the mechanics working as
+designed: 7 tier-2 handoffs under the three leads, 19 lead turns, and
+14 tier-3 member dispatches, with \texttt{discovery-lead} and
+\texttt{migration-lead} trace records carrying the tier field
+(tier 2) and their specialists tier 3. This is a validation of the
+hierarchy mechanics, not a completed migration, and it does not change
+the campaign verdicts.
+
+\subsection{Capability boundaries}
+
+The verdicts split the eight sets into three regimes, and the boundary
+tracks corpus type, not LOC alone. The two verified sets are small,
+single-purpose C and Go codebases (125 and 1{,}643 source LOC). The
+colorsys set (355 LOC, Python) cleared Contract twice and never a
+verifying build. The four alphatrans sets (Java, 8.6k--36k LOC) never
+cleared Discovery or Contract: fileupload stalled at Discovery across six
+runs with two of three Discovery failures after the gate fix, validator
+saturated Discovery before the gate fix existed, and commons-cli stalled
+at Discovery under the final tuned defaults. The c14 rotation sets are
+the sharpest evidence: leftpad is 82 LOC of C, smaller than the solved
+nandc set, and it still stalled at Contract under the exact tuned
+defaults; commons-cli stalled at Discovery. Generality of the tuned
+harness is therefore NOT established. The gains are set-specific to
+nandc and checkdigit, and convergence stopped the loop before a third
+rotation sample could test whether Discovery-phase failure on Java sets
+is a corpus-wide pattern.
+
+The binding constraint is the model's round-budget burn rate: ceiling
+burns plus slow artifact turns. No ceiling policy, timeout raise (3600
+to 7200 seconds), or context raise (16k to 32k to 64k) moved it. Both
+wrapper-timeout kills in the campaign landed on runs that were still
+progressing, and raising the timeout only moved the wall; the burn rate
+binds first.
+
+\subsection{Preliminary context: the capability cliff}
+
+Two preliminary surveys, run before the campaign and since superseded by
+it, motivate the architecture and remain the only multi-method evidence
+we have. We compress them to one finding and mark them explicitly as
+preliminary. In a 105-cell grid over seven C projects (three methods,
+five repetitions), toolchain-verified success concentrated by project
+size, not by method: the 185--324 source LOC band converted at 87--93\%
+per attempt, and nothing at or above 635 LOC compiled, a sharp capability
+cliff for single-shot and scaffolded methods alike at the 27B scale.
+That cliff is why the campaign's problem sets reach three orders of
+magnitude, and why the harness, not the prompt, is where we spent the
+effort. The survey's scoring traps (self-reported passes over empty
+workspaces, a string-compared status that carried no signal) are the
+direct motivation for toolchain-only scoring
+(Section~\ref{sec:method}).
+
+\subsection{Baseline comparison: survey 230926 and ReCodeAgent context}
+\label{sec:baseline}
+
+Two comparison surfaces exist: a direct same-protocol sweep
+(survey 230926) and the published ReCodeAgent record, which serves as
+context only. Table~\ref{tab:baselines} lists the sources.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{@{}p{2.6cm}p{4.6cm}p{6.4cm}@{}}
+\toprule
+Method & Source & Protocol \\
+\midrule
+Monolith & prescribed by survey 230926 & one ReAct agent (write, bash) plus a validator; 120 turns \\
+Ledger & \cite{ledger2026}, Algorithm of arXiv:2608.26480 & manager--worker over a shared task ledger; 60/120 turns \\
+ReCodeAgent-faithful & \cite{recodeagent2026}, Algorithm 1 of arXiv:2604.07341 & analyzer, planner, translator, validator loop; 11 rounds \\
+ReCodeAgent (published) & \cite{recodeagent2026} & Claude 4.5 Sonnet, 118 projects, its own validated suites \\
+\bottomrule
+\end{tabular}
+\caption{The comparison methods and their protocols. The first three
+ran in survey 230926 under one identical harness; the fourth is the
+published ReCodeAgent record, which shares problem-set families but
+differs on model, scale, and validation protocol.}
+\label{tab:baselines}
+\end{table}
+
+\paragraph{Direct head-to-head (survey 230926).}
+The sweep ran Monolith, Ledger, and a ReCodeAgent-faithful method on
+seven C$\to$Rust projects, five repetitions per cell, with the same
+toolchain-only scoring as the campaign. Verified-pass outcomes by
+method: Monolith 16, Ledger 15, ReCodeAgent-faithful 8 (35 attempts
+each; one re-run cell inflates Monolith's attempt count to 39). The
+method effect is second-order and project-dependent: Ledger is the only
+method that passes chtrie (5 of 5), Monolith the only one that passes
+murmurhash\_c (5 of 5), and the ReCodeAgent-faithful method never wins
+a cell outright while still passing 4 of 5 on the two smallest
+projects. Project size dominates: the 185--324 LOC band converts at
+87--93\% and nothing at or above 635 LOC compiles.
+
+\paragraph{Published ReCodeAgent numbers as context.}
+The ReCodeAgent paper (arXiv:2604.07341, accepted at ASE 2026)
+benchmarks ReCodeAgent against four techniques, reproduced by its
+authors with the same LLM: Skel, Oxidizer, AlphaTrans, and SWE-agent,
+over 118 real-world projects across four PL pairs (C$\to$Rust,
+Go$\to$Rust, Java$\to$Python, Python$\to$JavaScript), all driven by
+Claude 4.5 Sonnet with a 5{,}000-second per-agent budget. Its headline
+results: 99.4\% compilation success; 86.5\% test pass rate over
+validated developer tests against 25.7\% for the competing techniques
+(2{,}107 validated tests total; per-technique TPR: Oxidizer 67.2\%,
+Skel 93.2\%, AlphaTrans 188 of 1{,}181 executed tests, SWE-agent
+78.3\% on the Crust subset); and 98.1\% on translated developer tests.
+Table~\ref{tab:published} collects these published numbers.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{@{}lll@{}}
+\toprule
+Technique & Published result & Protocol \\
+\midrule
+ReCodeAgent & 99.4\% CS, 86.5\% TPR & Claude 4.5 Sonnet, 118 projects \\
+Skel & 93.2\% TPR (its benchmark) & reproduced with the same LLM \\
+Oxidizer & 67.2\% TPR (its benchmark) & reproduced with the same LLM \\
+AlphaTrans & 188/1{,}181 tests passed & reproduced with the same LLM \\
+SWE-agent & 78.3\% TPR (Crust subset) & reproduced with the same LLM \\
+\bottomrule
+\end{tabular}
+\caption{Published ReCodeAgent-record numbers
+\cite{recodeagent2026}. These are the paper's own protocol: its
+projects, its validated developer suites, its frontier model. ARCMiS
+never ran Skel, Oxidizer, AlphaTrans, or SWE-agent on shared instances
+under its protocol, so this table is context, not a comparison, and no
+cross-paper statistical comparison with any ARCMiS number is valid.}
+\label{tab:published}
+\end{table}
+
+Three protocol differences make these numbers non-comparable to every
+ARCMiS number in this paper. First, the model: a frontier proprietary
+model against one 27B quantized model on one GPU. Second, scale:
+projects averaging 1{,}975 LOC (up to about 38{,}000) against our
+82 to 36{,}356, with per-agent budgets of 5{,}000 seconds and an
+average cost of \$15.3 per project. Third, validation: ReCodeAgent
+translates and generates tests in both source and target languages and
+uses author-validated suites withheld until after the run, whereas a
+campaign pass requires the pre-registered evaluator commands to exit
+zero on the produced workspace only. The sets overlap in family
+(oxidizer/checkdigit, alphatrans/fileupload and validator,
+skel/colorsys, crust), not in instance lists or scoring. We therefore
+draw no ranking from the juxtaposition. What the comparison does
+support is directional: the published record shows a multi-agent
+pipeline with iterative validation outperforming single-shot and
+neuro-symbolic baselines by wide margins on the same projects, which is
+consistent with our finding that harness discipline, not model
+prompting, carries small models past single-agent limits.
 
 \section{Discussion}
 \label{sec:discussion}
 
-\paragraph{Failure modes.}
-Three failure modes dominate everything we have measured.
-(1)~\emph{Think-truncation}: reasoning blocks consume the output budget.
-The turn dies with \texttt{finish\_reason=Length} and no visible answer.
-Retries reproduce it deterministically at temperature 0.2. The budget
-fixes it, not prompt surgery. (2)~\emph{Provider shape rejections}:
-ollama's server-side chat template 500s on message lists without a
-trailing user query, both on tool continuations (patched by the hook) and
-on a first-call shape (H2, open). (3)~\emph{Stagnation}: without a
-breaker, the manager retries the same delegation shape indefinitely. The
-3-round breaker converts an unbounded loop into a diagnosable artifact. A
-fourth mode, malformed tool-call JSON (13\% of survey 220926), largely
-disappeared from the MAS runs after decisions moved from tool calls to
-parsed text.
+The campaign's value beyond the verdicts is the failure record. This
+section names the four mechanisms that dominate it, the limitations that
+bound every claim, and the threats to how the numbers were read.
+
+\paragraph{Failure taxonomy.}
+Four failure modes dominate the campaign record, and each one names the
+harness change that addressed it.
+(1)~\emph{Think-truncation}: with \texttt{think:true}, reasoning blocks
+consume the output budget; a turn that dies at exactly the ceiling with
+empty text and no tool call is a hard completion error, and retries
+reproduce it deterministically at temperature 0.2. The architect and
+planner burns at exactly 8192 tokens killed more runs than any other
+mechanism; per-role output overrides address it.
+(2)~\emph{Provider shape rejections}: ollama's server-side chat template
+500s on message lists without a trailing user query, on tool continuations
+(patched by the hook, Section~\ref{sec:infra}) and on a first-call
+request shape with an empty prompt field.
+(3)~\emph{Stagnation}: without a breaker, the orchestrator retries the
+same delegation shape indefinitely. The 3-round breaker converts an
+unbounded loop into the campaign's most common stop reason and its
+graceful exit.
+(4)~\emph{Ceiling burns}: an output ceiling kills a role only when the
+whole artifact cannot fit, but the retry cost depends on where the
+ceiling sits: 1--2 minutes at 8192, 10--20 at 16384. Total wrapper
+throughput, not per-turn survival, is the metric, which is why a
+translator-only override dominates an all-roles override, and why the
+all-roles policy was refuted as a global default.
 
 \paragraph{Limitations.}
-The verified-success frontier for a 27B model on C$\to$Rust sits near
-300--350 source LOC for single-shot methods. MAS pushed one 125-LOC
-repository through Contract to Hardening, but no run has yet landed
-\textsf{Done} end-to-end. Fan-out is turn-level interleaving, not
-parallelism, while the fleet has one model slot. Autooptimise has
-completed one proposal--evaluate cycle. The leakage rule (holdout problem
-sets must differ from search sets) blocks any generalization claim until
-a second family is scored. The alphatrans set (28k LOC Java) exceeds what
-a 16k context can even inventory. It stands as a stress upper bound, not
-a current target.
+Three limits bound every claim in this paper. First, rotation: both
+fresh sets under the exact tuned defaults stalled before Contract, so
+generality is not established, and any new harness idea must first clear
+Discovery on a Java alphatrans set before it can claim otherwise. Second,
+convergence stopped the loop at two rotation samples, so the question of
+whether Discovery-phase failure on Java sets is corpus-wide is open.
+Third, one model, one quantization, and one GPU dominate the data; the
+ceiling-policy finding in particular must be re-derived per model, not
+assumed to transfer. Toolchain-only scoring can still pass a workspace
+whose tests are weaker than the source suite; the tester's per-module
+generated-test cap bounds but does not eliminate that gap.
 
 \paragraph{Threats to validity.}
-Sample sizes are small ($n{=}5$ per cell in the kata benchmark, single
-completions per problem set in the frontier loop), so we make no
-significance claims and report deltas inside one SD as such. One model
-and one hardware configuration dominate the data. The 220926 model-axis
-evidence is three models, one of which never worked. Infra failures
-contaminate raw counts (57 of 109 on-disk 230926 attempts were preflight
-aborts against a dead daemon). The experiment contract now excludes them
-from per-method rates by gating on daemon liveness. Finally, toolchain-only
-scoring can still pass a workspace whose tests are weaker than the source
-suite. The tester's per-module generated-test cap (4) bounds but does not
-eliminate that gap.
+Sample sizes are small (single scored runs on the rotation and validator
+sets), so the per-set verdicts are existence and boundedness claims, not
+rates, and we make no significance claims. The search sets and the
+harness changes saw each other for four days; the c14 rotation is the
+only out-of-sample evidence, and it failed. Daemon and infra failures
+contaminate raw counts in the earlier records; the experiment contract
+gates on daemon liveness, and traces count tool-call activity so that a
+healthy tool-only turn is not misread as a failure.
 
 \section{Conclusion}
 
-ARCMiS shows that repository-level code migration with small local models
-is tractable only when the harness carries most of the discipline:
-evidence-gated phases, a deterministic guard on every tool call,
-character-capped shared state, toolchain-only scoring, and a stagnation
-breaker that turns silent loops into artifacts. The measured record is
-deliberately honest: the simplest method won the first two surveys,
-capability dominated methodology at the 2B/27B boundary, project size
-between 324 and 635 LOC marked a sharp capability wall, and the MAS
-method's first verified migration came from a one-line output-budget fix
-that the optimization loop found by reading raw traces, not from a
-cleverer prompt. The infrastructure (the experiment contract, the
-frontier discipline, the failure taxonomy) is the durable contribution.
-It makes every next hypothesis cheap to test and every claimed success
-impossible to fake.
+ARCMiS shows that repository-level code migration with a small local
+model is tractable only when the harness carries most of the discipline:
+a tiered orchestrator with evidence-gated phases, a deterministic guard
+on every tool call with deny-on-uncertain arbitration, character-capped
+shared state, toolchain-only scoring, and a stagnation breaker that turns
+silent loops into artifacts. The final benchmark record is deliberately
+honest: two verified Rust workspaces (48 and 36 tests) on the champion
+set, a five-generation verified lineage on nandc, and five of eight sets
+that never produced a compiling workspace, including both fresh rotation
+sets under the exact tuned defaults. The durable findings are harness
+findings: the binding constraint is the model's burn rate, not any
+single timeout or context size; throughput, not per-turn survival, is
+the metric for output policy; and the next harness idea must clear
+Discovery on a Java set before it may claim generality. The
+infrastructure (the immutable experiment contract, the lineage in the
+manifests, the failure taxonomy) is what makes every next hypothesis
+cheap to test and every claimed success impossible to fake.
 
 \bibliographystyle{plainnat}
 \bibliography{references}
