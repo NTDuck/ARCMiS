@@ -45,7 +45,11 @@ sed "s#^[[:space:]]*dir:[[:space:]].*#  dir: $OUT#" "$CONFIG_PATH" > "$cfg"
 # historically died at 3600 mid-Hardening; prior 3600-second runs stay
 # comparable because each manifest records the wrapper rc.
 TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-7200}"
-OLLAMA_API_BASE_URL="${OLLAMA_API_BASE_URL:-http://localhost:11434}" \
+# v3 engine policy (binding): ninfer (OpenAI-compatible :8081) through
+# the harness netmind provider path is the default engine. Ollama is
+# not to be used. Override only with an explicit author directive.
+NETMIND_BASE_URL="${NETMIND_BASE_URL:-http://localhost:8081/v1}" \
+NETMIND_API_KEY="${NETMIND_API_KEY:-x}" \
   timeout "$TIMEOUT_SECONDS" cargo run --quiet -p harness --manifest-path "$REPO/Cargo.toml" -- \
     --config "$cfg" --experiment "$CANDIDATE" \
   > "$OUT/stdout.log" 2> "$OUT/stderr.log"
