@@ -66,7 +66,7 @@ the harness `netmind` provider path with `NETMIND_BASE_URL` and
 `NETMIND_API_KEY` set. Do not use ollama. Record provider + model in
 every manifest hypothesis line so lineage stays comparable.
 
-## v3 protocol: one set at a time, LoC ascending (binding)
+## autoopt-v0.3 protocol: one set at a time, LoC ascending (binding)
 
 The v1/v2 full-set sweep flow is retired. One round = **one candidate ×
 one active set** (the smallest non-converged set):

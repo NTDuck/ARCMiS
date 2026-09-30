@@ -49,6 +49,25 @@ import sys
 from pathlib import Path
 
 TAG_RE = re.compile(r"(?:^|-)(v[23]r\d+)(?:-|$)")
+
+# Rename scheme (2026-10-01 directive): protocol versions map to
+# autoopt-v0.N.x candidate names. On-disk directory names are timestamped
+# history and stay; this mapping applies to the metadata layer only
+# (ROUNDS.yaml round fields, SUMMARY headings, future manifest ids).
+PROTOCOL_NAME = {
+    1: "autoopt-v0.1",
+    2: "autoopt-v0.2",
+    3: "autoopt-v0.3",
+}
+
+
+def autoopt_name(tag: str) -> str:
+    """Round tag v3r8 -> autoopt-v0.3.8 (protocol version, then number)."""
+    protocol = int(tag[1])
+    number = int(tag.split("r")[1])
+    return f"{PROTOCOL_NAME.get(protocol, 'autoopt-v0.' + str(protocol))}.{number}"
+
+
 HYPOTHESIS_DEFECT_KEYWORDS = [
     ("output cap", "output-cap"),
     ("output-cap", "output-cap"),
@@ -345,7 +364,8 @@ def build_entry(tag: str, exp_dir: Path, rounds: dict) -> dict:
     )
     metrics["output_cap_deaths"] = count_output_cap_deaths(exp_dir, caps)
     return {
-        "round": tag,
+        "round": autoopt_name(tag),
+        "legacy_tag": tag,
         "protocol": f"v{tag[1]}",
         "candidate_id": exp_dir.name,
         "parents": manifest.get("parents", []),
