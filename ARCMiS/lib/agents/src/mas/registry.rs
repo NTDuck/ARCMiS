@@ -196,9 +196,12 @@ where
 }
 
 /// Provider-neutral extra params. Ollama models need the context window and
-/// the think switch. the OpenAI wire has no counterpart, so the params ride
-/// only when the run config says the provider is ollama. A per-role think
-/// override (`mas.role_think`) wins over the run default.
+/// the native think switch. The OpenAI wire has no `num_ctx` counterpart,
+/// but the thinking switch still matters: ninfer ignores ollama-style keys
+/// and reads a top-level `enable_thinking` bool instead (verified against
+/// the local daemon 2026-10-02; `reasoning_effort` works too, `think` and
+/// `thinking` do not). A per-role think override (`mas.role_think`) wins
+/// over the run default on either wire.
 fn extra_params(run: &Run, think_override: Option<bool>) -> Option<serde_json::Value> {
     if run.provider_is_ollama() {
         Some(serde_json::json!({
@@ -206,6 +209,8 @@ fn extra_params(run: &Run, think_override: Option<bool>) -> Option<serde_json::V
             "think": think_override.unwrap_or(run.think),
         }))
     } else {
-        None
+        Some(serde_json::json!({
+            "enable_thinking": think_override.unwrap_or(run.think),
+        }))
     }
 }
