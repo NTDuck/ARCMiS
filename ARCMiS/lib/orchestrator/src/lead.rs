@@ -251,7 +251,13 @@ fn record_triage(
             verdict,
         } => verdict,
         crate::jev_triage::TriageConsultation::Fallback => {
-            tracing::debug!(role, task = task_id, "jev triage fell back; no verdict recorded");
+            // Name the reason: a silent fallback makes the instrumentation
+            // invisible exactly when it misbehaves.
+            if let Err(error) = triage.explain_fallback(role, &format!("{phase:?}"), result.passed, &result.output) {
+                tracing::debug!(role, task = task_id, error = %error, "jev triage fell back");
+            } else {
+                tracing::debug!(role, task = task_id, "jev triage fell back below the confidence threshold");
+            }
             return;
         },
     };
