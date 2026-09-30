@@ -242,6 +242,7 @@ async fn run() -> anyhow::Result<()> {
     // The run loop.
     let events = observability::EventLog::new(&output_dir)?;
     let mut orchestrator_loop = OrchestratorLoop {
+        last_round_replanned: false,
         run_dir: run_dir.clone(),
         agents: agents_set,
         config: config.mas.clone(),
@@ -262,6 +263,7 @@ async fn run() -> anyhow::Result<()> {
 
     for _round in 0..config.mas.max_rounds {
         let progress_before = orchestrator::progress::snapshot(&run_dir)?;
+        let mut productive_replans = 0usize;
         let outcome = orchestrator_loop.round().await?;
         let progress = orchestrator::progress::snapshot(&run_dir)?;
 
@@ -275,7 +277,19 @@ async fn run() -> anyhow::Result<()> {
                 cli_sink::emit("delegate", &format!("{} <- {}", role.name(), task));
                 events.record("delegation", serde_json::json!({"role": role.name(), "task": task}))?;
             },
-            RoundOutcome::Replanned => cli_sink::emit("replan", "orchestrator rewrote the plan"),
+            RoundOutcome::Replanned {
+                plan_persisted,
+            } => {
+                cli_sink::emit("replan", "orchestrator rewrote the plan");
+                // A replan that actually persisted a plan body is
+                // productive orchestrator work, not a stalled round
+                // (v3r3: three honest replans tripped the stagnation
+                // breaker). Without a persisted body the round still
+                // counts as stalled.
+                if *plan_persisted {
+                    productive_replans += 1;
+                }
+            },
             RoundOutcome::Escalated(reason) => {
                 cli_sink::emit("escalate", reason);
                 events.record("escalate", serde_json::json!({"reason": reason}))?;
@@ -294,7 +308,10 @@ async fn run() -> anyhow::Result<()> {
         }
 
         // Breaker: stalled rounds trip the run.
-        if progress.done_tasks > progress_before.done_tasks {
+        if progress.done_tasks > progress_before.done_tasks || productive_replans > 0 {
+            // A completed task or a persisted plan body is productive
+            // orchestrator work (v3r3: honest replans tripped the
+            // stagnation breaker).
             breaker_state.record_productive_round();
             breaker_state.record_progress();
             round_ledger_observation(&run_dir, false);

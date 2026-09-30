@@ -30,8 +30,12 @@ pub enum RoundOutcome {
         /// Specialist's final text.
         output: String,
     },
-    /// The orchestrator rewrote the plan.
-    Replanned,
+    /// The orchestrator rewrote the plan. `true` when a plan body was
+    /// persisted (a productive replan, not a bare verb).
+    Replanned {
+        /// Plan body persisted to `plan.md` this round.
+        plan_persisted: bool,
+    },
     /// The orchestrator escalated (repeated failure).
     Escalated(String),
     /// The orchestrator declared the phase done.
@@ -59,18 +63,23 @@ pub struct OrchestratorLoop {
     pub round: usize,
     /// Retries per model call on transient provider errors.
     pub max_retries: u32,
+    /// The previous round was a replan. The next prompt then demands a
+    /// delegation: the plan is persisted, the next action is work
+    /// (v3r3: three replans in a row tripped the stagnation breaker).
+    pub last_round_replanned: bool,
 }
 
 impl OrchestratorLoop {
     /// Run one round: read state, ask the orchestrator, execute the decision.
     pub async fn round(&mut self) -> anyhow::Result<RoundOutcome> {
         self.round += 1;
+        let previous_replanned = std::mem::take(&mut self.last_round_replanned);
         let state = blackboard::state::read(&self.run_dir)?
             .ok_or_else(|| anyhow::anyhow!("run state missing; preflight must write it"))?;
         // Mirror the blackboard into workspace/meta so every role reads the
         // run state through its sandbox. run/ itself is outside the tool root.
         self.mirror_blackboard()?;
-        let prompt = self.round_prompt(&state)?;
+        let prompt = self.round_prompt(&state, previous_replanned)?;
         let orchestrator =
             self.agents.agent(Role::Orchestrator).ok_or_else(|| anyhow::anyhow!("orchestrator agent missing"))?;
 
@@ -142,8 +151,11 @@ impl OrchestratorLoop {
             // Every delegation queued behind its dependencies. The
             // orchestrator's next round sees the pending tasks.
             // Report replan, not a delegation with a fabricated
-            // role.
-            return Ok(RoundOutcome::Replanned);
+            // role. Queuing work is productive: the plan body was
+            // persisted by the earlier replan that created the tasks.
+            return Ok(RoundOutcome::Replanned {
+                plan_persisted: true,
+            });
         }
 
         // Single non-delegate decision (first one wins). `Delegate` cannot
@@ -156,7 +168,9 @@ impl OrchestratorLoop {
             // verb. The arm only satisfies exhaustiveness.
             DecisionVerb::Delegate {
                 ..
-            } => Ok(RoundOutcome::Replanned),
+            } => Ok(RoundOutcome::Replanned {
+                plan_persisted: false,
+            }),
             DecisionVerb::Replan => {
                 // Persist the plan body the orchestrator wrote in its answer
                 // (c15b3: the model emitted a full proposed plan.md and the
@@ -174,7 +188,10 @@ impl OrchestratorLoop {
                     detail: serde_json::json!({"round": self.round, "plan_persisted": plan_persisted}),
                     reasoning: "orchestrator rewrote the plan".into(),
                 })?;
-                Ok(RoundOutcome::Replanned)
+                self.last_round_replanned = plan_persisted;
+                Ok(RoundOutcome::Replanned {
+                    plan_persisted,
+                })
             },
             DecisionVerb::Escalate {
                 reason,
@@ -221,7 +238,7 @@ impl OrchestratorLoop {
     }
 
     /// Compose the orchestrator's round prompt from the blackboard.
-    fn round_prompt(&self, state: &blackboard::State) -> anyhow::Result<String> {
+    fn round_prompt(&self, state: &blackboard::State, previous_replanned: bool) -> anyhow::Result<String> {
         let tasks = TaskList::new(&self.run_dir).read()?;
         let plan = read_or_empty(&self.run_dir.join("plan.md"))?;
         let notes = read_or_empty(&self.run_dir.join("notes.md"))?;
@@ -265,7 +282,7 @@ impl OrchestratorLoop {
              new plan under a `PLAN:` heading before the DECISION line; the harness persists that section as plan.md. \
              Empty-plan replans change nothing.\nYou MAY emit several delegate lines in one round when the tasks are \
              independent; the harness runs up to {fanout} of them in parallel and queues the rest. `after:` lists \
-             task ids this one waits on.             {hierarchy_note}",
+             task ids this one waits on.             {hierarchy_note}{replan_note}",
             self.round,
             state.phase,
             state.current_batch,
@@ -287,6 +304,11 @@ impl OrchestratorLoop {
             role_list = role_list,
             team_verb = team_verb,
             hierarchy_note = hierarchy_note,
+            replan_note = if previous_replanned {
+                "\n\nThe previous round rewrote the plan and it is persisted. This round MUST delegate at least                  one task (DECISION: delegate ...); another replan is not a valid next action unless a delegation                  also happens."
+            } else {
+                ""
+            },
         ))
     }
 }
