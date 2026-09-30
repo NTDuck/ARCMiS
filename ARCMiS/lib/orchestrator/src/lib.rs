@@ -7,6 +7,7 @@ pub mod guard;
 pub mod guard_hook;
 pub mod hierarchy;
 pub mod jev_judge;
+pub mod jev_triage;
 pub mod judges;
 pub mod lead;
 #[cfg(test)]
@@ -28,6 +29,9 @@ pub use jev_judge::map_ask_answer;
 pub use jev_judge::AskVerdict;
 pub use jev_judge::Consultation;
 pub use jev_judge::JevJudge;
+pub use jev_triage::JevTriage;
+pub use jev_triage::TriageConsultation;
+pub use jev_triage::TriageVerdict;
 pub use judges::parse_diagnosis;
 pub use judges::parse_repair;
 pub use judges::parse_verdict;

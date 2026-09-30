@@ -98,6 +98,7 @@ pub async fn execute(
     workspace: &Workspace,
     ledger: &Ledger,
     run_dir: &Path,
+    jev_triage: &crate::jev_triage::JevTriage,
     phase: blackboard::Phase,
     delegations: Vec<Delegation>,
 ) -> anyhow::Result<BatchOutcome> {
@@ -148,7 +149,7 @@ pub async fn execute(
 
     let mut results = Vec::new();
     for (id, delegation) in ready {
-        let result = dispatch(agents, config, workspace, ledger, run_dir, phase, &id, &delegation).await;
+        let result = dispatch(agents, config, workspace, ledger, run_dir, jev_triage, phase, &id, &delegation).await;
         if result.passed {
             tasks.set_status(&result.id, TaskStatus::Done)?;
         } else {
@@ -173,6 +174,7 @@ async fn dispatch(
     workspace: &Workspace,
     ledger: &Ledger,
     run_dir: &Path,
+    jev_triage: &crate::jev_triage::JevTriage,
     phase: blackboard::Phase,
     task_id: &str,
     delegation: &Delegation,
@@ -205,7 +207,10 @@ async fn dispatch(
             }
         },
         TierRoute::Lead(lead_name) =>
-            crate::lead::run_lead_batch(agents, config, workspace, ledger, phase, task_id, &lead_name, delegation).await,
+            crate::lead::run_lead_batch(
+                agents, config, workspace, ledger, jev_triage, phase, task_id, &lead_name, delegation,
+            )
+            .await,
         TierRoute::Direct =>
             if delegation.team {
                 run_collective(agents, config, workspace, ledger, run_dir, phase, task_id, delegation).await

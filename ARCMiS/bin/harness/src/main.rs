@@ -225,6 +225,14 @@ async fn run() -> anyhow::Result<()> {
     };
     agents_set.attach_leads(leads);
 
+    // Typed-decision triage (ADR 0027): build once per run when enabled, so
+    // the 850 MB checkpoint loads once, not per batch. A disabled section
+    // constructs the off judge; the run behavior is unchanged.
+    let jev_triage = orchestrator::JevTriage::from_config(&config.mas.jev_triage);
+    if jev_triage.is_enabled() {
+        cli_sink::emit("preflight", "jev triage judge loaded");
+    }
+
     // Initial state + task list.
     let state = State {
         phase: Phase::Preflight,
@@ -248,6 +256,7 @@ async fn run() -> anyhow::Result<()> {
         config: config.mas.clone(),
         workspace,
         ledger: Ledger::new(run_dir.join("ledgers")),
+        jev_triage,
         round: 0,
         max_retries: config.run.max_retries,
     };

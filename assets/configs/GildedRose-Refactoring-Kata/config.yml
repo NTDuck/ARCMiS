@@ -14,3 +14,10 @@ source:
   target:
     language: rust
     test_command: cargo test
+mas:
+  # Typed-decision triage on lead member dispatches (ADR 0027). Uncomment
+  # to enable; the checkpoint stays local (assets/models is gitignored).
+  # jev_triage:
+  #   enabled: true
+  #   checkpoint: assets/models/laya-typed-decisions
+  #   confidence_threshold: 0.9

@@ -32,3 +32,7 @@ qlora/runs/
 # Benchmark sweeps: committed records (result.yml, logs, traces) live under
 # benchmarks/; raw runs (workspace, run/ blackboard, per-run config) stay
 # under .artifacts/ (ignored above) and are never committed.
+
+# Laya checkpoints (ADR 0023/0027): model weights are large artifacts,
+# never in git. Staged locally from the HF hub, not fetched by the harness.
+assets/models/

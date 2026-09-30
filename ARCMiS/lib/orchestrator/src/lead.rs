@@ -54,6 +54,7 @@ pub(crate) async fn run_lead_batch(
     config: &MasConfig,
     workspace: &Workspace,
     ledger: &Ledger,
+    jev_triage: &crate::jev_triage::JevTriage,
     phase: blackboard::Phase,
     task_id: &str,
     lead_name: &str,
@@ -180,6 +181,13 @@ pub(crate) async fn run_lead_batch(
                 // policy (same judge/tester tool-call caps). The trace
                 // hook marks its records tier 3 via the role agent build.
                 let result = run_single(agents, config, workspace, ledger, phase, task_id, &inner, 3).await;
+                // Typed-decision triage (ADR 0027): one laya forward pass
+                // classifies the dispatch result instead of burning a lead
+                // LLM turn on it. Instrumentation only this round: a
+                // fallback or a disabled judge leaves the loop byte
+                // identical, and the verdict lands in the ledger for the
+                // campaign A/B. Dispatch-policy changes are the follow-up.
+                record_triage(jev_triage, ledger, phase, &result, task_id);
                 transcript.push_str(&format!(
                     "- [{}] {}: {}\n",
                     if result.passed {
@@ -221,6 +229,58 @@ pub(crate) async fn run_lead_batch(
     }
     tracing::warn!(lead = lead_name, turns = team.turns, "lead turn budget exhausted; batch fails");
     finish(ledger, task_id, lead_name, false, "lead turn budget exhausted".into(), results)
+}
+
+/// Consult the typed-decision triage judge on one dispatch result and land
+/// the verdict in the ledger. Disabled judge or `Fallback` writes nothing:
+/// the ledger stays byte-identical to the uninstrumented run. `fail` plus
+/// `needs_review` is the round-1 observation the A/B reads.
+fn record_triage(
+    triage: &crate::jev_triage::JevTriage,
+    ledger: &Ledger,
+    phase: blackboard::Phase,
+    result: &TaskResult,
+    task_id: &str,
+) {
+    if !triage.is_enabled() {
+        return;
+    }
+    let role = result.role.name();
+    let verdict = match triage.consult_delegation(role, &format!("{phase:?}"), result.passed, &result.output) {
+        crate::jev_triage::TriageConsultation::Decided {
+            verdict,
+        } => verdict,
+        crate::jev_triage::TriageConsultation::Fallback => {
+            tracing::debug!(role, task = task_id, "jev triage fell back; no verdict recorded");
+            return;
+        },
+    };
+    tracing::info!(
+        role,
+        outcome = %verdict.outcome,
+        risk = verdict.risk,
+        urgency = verdict.urgency,
+        confidence = verdict.confidence,
+        "jev triage classified a member dispatch"
+    );
+    ledger
+        .append_observation(&blackboard::Observation {
+            at: now_string(),
+            kind: "jev_triage".into(),
+            detail: serde_json::json!({
+                "role": role,
+                "task": task_id,
+                "tier": 3,
+                "passed": result.passed,
+                "outcome": verdict.outcome,
+                "needs_review": verdict.needs_review,
+                "risk": verdict.risk,
+                "urgency": verdict.urgency,
+                "action": verdict.action,
+                "confidence": verdict.confidence,
+            }),
+        })
+        .ok();
 }
 
 /// Workspace paths named in the task's `Acceptance:` clause that do not

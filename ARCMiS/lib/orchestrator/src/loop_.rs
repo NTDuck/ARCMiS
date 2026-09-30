@@ -59,6 +59,9 @@ pub struct OrchestratorLoop {
     pub workspace: Workspace,
     /// Ledger for decisions.
     pub ledger: Ledger,
+    /// Typed-decision triage judge over member dispatch results (ADR 0027).
+    /// Built once at the call site; a disabled section keeps it off.
+    pub jev_triage: crate::jev_triage::JevTriage,
     /// Round counter.
     pub round: usize,
     /// Retries per model call on transient provider errors.
@@ -114,6 +117,7 @@ impl OrchestratorLoop {
                 &self.workspace,
                 &self.ledger,
                 &self.run_dir,
+                &self.jev_triage,
                 state.phase,
                 delegates,
             )

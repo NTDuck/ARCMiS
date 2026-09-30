@@ -134,6 +134,9 @@ pub struct MasConfig {
     /// Hierarchical static orchestration (ADR 0026). Default off: the run
     /// behaves exactly as the single-tier ADR 0022 design.
     pub hierarchy: HierarchyConfig,
+    /// Laya-backed typed triage on the lead's member dispatches (ADR 0027).
+    /// Off by default: without a section the lead loop is uninstrumented.
+    pub jev_triage: JevTriageConfig,
 }
 
 /// Tier-2 team layout for hierarchical orchestration. Teams are fixed at
@@ -232,6 +235,36 @@ impl Default for JevJudgeConfig {
     }
 }
 
+/// Configuration for the laya-backed typed triage on the lead's member
+/// dispatches (ADR 0027). One `agent_trace_observability` predict call per
+/// dispatch result. The confidence threshold gates acceptance per the
+/// cascade rule of arXiv:2609.26550 §7: accept when confident, fall back
+/// when unsure.
+#[derive(Debug, Clone, Deserialize, serde::Serialize)]
+#[serde(default)]
+pub struct JevTriageConfig {
+    /// Consult the triage judge after each member dispatch when true.
+    pub enabled: bool,
+    /// Local laya checkpoint directory (the typed-decisions checkpoint).
+    /// No hub download happens: an empty path with `enabled` keeps the
+    /// judge off.
+    pub checkpoint: String,
+    /// Minimum top-label probability across all five answers that accepts a
+    /// verdict. Below it the lead loop falls back to uninstrumented
+    /// behavior (arXiv:2609.26550 §7).
+    pub confidence_threshold: f64,
+}
+
+impl Default for JevTriageConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            checkpoint: String::new(),
+            confidence_threshold: 0.9,
+        }
+    }
+}
+
 impl Default for GuardConfig {
     fn default() -> Self {
         Self {
@@ -270,6 +303,7 @@ impl Default for MasConfig {
             role_think: BTreeMap::new(),
             guard: GuardConfig::default(),
             hierarchy: HierarchyConfig::default(),
+            jev_triage: JevTriageConfig::default(),
         }
     }
 }
