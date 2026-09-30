@@ -206,6 +206,26 @@ impl OrchestratorLoop {
                 Ok(RoundOutcome::Escalated(reason.clone()))
             },
             DecisionVerb::Done => {
+                // A phase with blocked tasks is not done (v3r6: the
+                // orchestrator declared Pilot done while two tasks sat
+                // blocked; the refusal tail must steer it to unblock or
+                // re-plan around them first).
+                let tasks = blackboard::tasks::TaskList::new(&self.run_dir).read().unwrap_or_default();
+                let blocked = tasks.iter().filter(|task| task.status == blackboard::tasks::TaskStatus::Blocked).count();
+                if blocked > 0 {
+                    self.ledger.append_failure(&blackboard::Failure {
+                        at: now_string(),
+                        phase: format!("{:?}", state.phase),
+                        category: "gate".into(),
+                        root_cause: format!(
+                            "{blocked} blocked task(s) still in the run; done is not available while work is blocked"
+                        ),
+                        suggested_action: "re-plan around the blocked tasks or fix and retry them (DECISION: replan \
+                                           with a PLAN: section, or delegate the fix)"
+                            .into(),
+                    })?;
+                    return Ok(RoundOutcome::Refused);
+                }
                 // A phase advances on evidence: at least one completed
                 // delegation since the phase began. A bare claim advances
                 // nothing (observed: the walk Pilot -> Migration ->
