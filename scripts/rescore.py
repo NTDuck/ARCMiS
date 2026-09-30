@@ -74,6 +74,24 @@ def rescore(exp_dir: Path) -> dict:
     project_root = find_project_root(workspace, target_language)
     record = {"problem": "workspace", "success": False, "stage": "evaluate",
               "tests_passed": 0, "tests_failed": 0, "detail": ""}
+    # Wall-time metric: run wall from the trace span, per completed task.
+    trace_path = exp_dir / "traces" / "turns.jsonl"
+    if trace_path.is_file():
+        try:
+            stamps = [json.loads(line)["at"] for line in trace_path.read_text().splitlines() if line.strip()]
+            if stamps:
+                wall = stamps[-1] - stamps[0]
+                record["wall_seconds"] = wall
+                tasks_path = exp_dir / "run" / "tasks.json"
+                if tasks_path.is_file():
+                    tasks = json.loads(tasks_path.read_text())
+                    done = sum(1 for task in tasks if task.get("status") == "done")
+                    record["tasks_done"] = done
+                    record["tasks_total"] = len(tasks)
+                    if done:
+                        record["wall_seconds_per_task"] = round(wall / done, 1)
+        except (json.JSONDecodeError, KeyError, TypeError):
+            pass
     if project_root is None:
         # No translated project under target/: the run never reached the
         # migration phase. Score as a translate-stage failure.
