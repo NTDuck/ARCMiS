@@ -89,6 +89,16 @@ one active set** (the smallest non-converged set):
    count, MaxTurns deaths, output-cap deaths.
 6. **Versioning**: manifests carry `version: 3` (the round-1 dir carries a v2r1 tag from a mid-launch naming correction; its manifest says version 3); v1/v2-era results are
    invalid for comparison.
+7. **Time metric triple (mandatory in every SUMMARY verdict line)**:
+   every round close reports (a) wall seconds per completed task,
+   (b) compile rate, (c) test pass rate. A verdict line without all
+   three is incomplete.
+8. **Traceability ledger**: every round close appends its entry to
+   `.artifacts/experiments/ROUNDS.yaml` by running
+   `python3 scripts/rounds_ledger.py`. The script regenerates the
+   ledger from the on-disk artifacts. The YAML is its output. Ground
+   every number in `result/`, `run/ledgers/`, and `traces/`. Write
+   `unknown` for missing data, never a guess.
 
 ## The loop
 
