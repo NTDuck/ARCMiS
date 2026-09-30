@@ -38,6 +38,21 @@ def load_candidate(exp_dir: Path) -> dict | None:
         "hypothesis": manifest.get("hypothesis", ""),
         "git_revision": manifest.get("git_revision", "unknown"),
     }
+    # Wall-time metric: run wall seconds from result/aggregate.json, with
+    # per-task wall (run wall / completed tasks) as the cost key.
+    agg_path = exp_dir / "result" / "aggregate.json"
+    if agg_path.is_file():
+        try:
+            agg = json.loads(agg_path.read_text())
+            wall = agg.get("run_time_seconds")
+            done = agg.get("tasks_done", 0)
+            if wall is not None:
+                cand["wall_seconds"] = wall
+                cand["wall_seconds_per_task"] = round(wall / done, 1) if done else None
+            cand["tasks_done"] = done
+            cand["tasks_total"] = agg.get("tasks_total")
+        except json.JSONDecodeError:
+            pass
     problems_path = exp_dir / "result" / "per_problem.json"
     if problems_path.is_file():
         try:
@@ -64,9 +79,22 @@ def load_candidate(exp_dir: Path) -> dict | None:
 
 
 def dominates(a: dict, b: dict) -> bool:
-    ge = (a["pass_rate"] >= b["pass_rate"], a["tests_passed"] >= b["tests_passed"], a["tests_failed"] <= b["tests_failed"])
-    gt = (a["pass_rate"] > b["pass_rate"], a["tests_passed"] > b["tests_passed"], a["tests_failed"] < b["tests_failed"])
-    return all(ge) and any(gt)
+    keys_ge = [
+        a["pass_rate"] >= b["pass_rate"],
+        a["tests_passed"] >= b["tests_passed"],
+        a["tests_failed"] <= b["tests_failed"],
+    ]
+    keys_gt = [
+        a["pass_rate"] > b["pass_rate"],
+        a["tests_passed"] > b["tests_passed"],
+        a["tests_failed"] < b["tests_failed"],
+    ]
+    # Time is a first-class metric: lower is better. Only comparable when
+    # both candidates recorded it.
+    if a.get("wall_seconds_per_task") is not None and b.get("wall_seconds_per_task") is not None:
+        keys_ge.append(a["wall_seconds_per_task"] <= b["wall_seconds_per_task"])
+        keys_gt.append(a["wall_seconds_per_task"] < b["wall_seconds_per_task"])
+    return all(keys_ge) and any(keys_gt)
 def main():
     root = Path(sys.argv[1] if len(sys.argv) > 1 else ".artifacts/experiments")
     candidates = []
