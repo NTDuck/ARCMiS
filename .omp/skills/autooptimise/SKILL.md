@@ -87,7 +87,7 @@ one active set** (the smallest non-converged set):
    each round with the primary metric (verified tests) AND the
    defect-class keys: wall seconds per completed task, stalled-round
    count, MaxTurns deaths, output-cap deaths.
-6. **Versioning**: manifests carry `version: 3`; v1/v2-era results are
+6. **Versioning**: manifests carry `version: 3` (the round-1 dir carries a v2r1 tag from a mid-launch naming correction; its manifest says version 3); v1/v2-era results are
    invalid for comparison.
 
 ## The loop
