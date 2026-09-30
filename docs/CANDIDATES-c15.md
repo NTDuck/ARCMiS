@@ -60,6 +60,17 @@ with defaults; no problem-set-specific constants.
   output cap (finish_reason=Length with no text) as a defect-class
   metric; no code change, scoring-side. Hypothesis: none (metric only).
 
+## v2 protocol (2026-09-30, author directive)
+
+One sample codebase at a time, LoC ascending: iterate candidates on the
+smallest active non-converged set until convergence (compiles AND >0
+percent tests AND no meaningful pass-rate increase over 3 consecutive
+candidate rounds), then bank it and escalate size. No set switching while
+a set is unconverged; blocked sets get a recorded blocker note, then size
+escalates with that note. Never regress to a smaller set except to
+re-verify a hypothesis. Every candidate still targets the defect classes
+below; scoring reports the defect-class keys next to the primary metric.
+
 ## Scoring keys added per set (from this round on)
 
 - primary: verified tests (unchanged)
