@@ -136,20 +136,12 @@ impl JevTriage {
     /// predict + map pipeline, or `Ok(())` when the fallback was a
     /// confidence-gate rejection. Diagnostic counterpart to
     /// `consult_delegation`; never called on the hot decision path.
-    pub fn explain_fallback(
-        &self,
-        role: &str,
-        phase: &str,
-        passed: bool,
-        output_snippet: &str,
-    ) -> anyhow::Result<()> {
+    pub fn explain_fallback(&self, role: &str, phase: &str, passed: bool, output_snippet: &str) -> anyhow::Result<()> {
         let Some(agent) = &self.agent else {
             anyhow::bail!("triage judge not loaded");
         };
         let state = delegation_state(role, phase, passed, output_snippet);
-        let prediction = agent
-            .predict(&state, &workflow_questions())
-            .context("jev triage predict failed")?;
+        let prediction = agent.predict(&state, &workflow_questions()).context("jev triage predict failed")?;
         let verdict = map_prediction(&prediction)?;
         anyhow::bail!(
             "confidence {:.2} below threshold {:.2} (outcome {}, action {})",
