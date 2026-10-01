@@ -47,15 +47,31 @@ launch_round() {
     [ -f "$ov" ] && python3 "$ROOT/scripts/override_merge.py" "$exp/config.yml" "$ov"
     # Manifest lineage comes from the harness binary itself (ADR 0020
     # contract): pass the mandatory hypothesis through the environment.
-    local hyp="${HYPOTHESIS:-}" 
+    local hyp="${HYPOTHESIS:-}"
     if [ -z "$hyp" ] && [ -f "$exp/hypothesis.txt" ]; then hyp=$(cat "$exp/hypothesis.txt"); fi
     [ -n "$hyp" ] || { echo "REFUSING launch without hypothesis: $exp" >&2; return 1; }
     local prior
     prior=$(ls -d "$ROOT"/.artifacts/experiments/*v3s* 2>/dev/null | sed 's|.*/||' | awk -v me="${exp##*/}" '$0 < me' | tail -2 | paste -sd, -)
-    NETMIND_API_KEY=x NETMIND_BASE_URL=http://localhost:8081/v1 \
-        HARNESS_HYPOTHESIS="$hyp" HARNESS_PARENTS="$prior" HARNESS_GIT_REV="$(git -C "$ROOT" rev-parse --short HEAD)" \
-        nohup "$HARNESS" --config "$exp/config.yml" --experiment "${exp##*/}" \
-        > "/tmp/sweep-${name}-${idx}.stdout.log" 2>&1 < /dev/null &
+    # Engine-admission retry: a fresh process's first inference can expire
+    # in ninfer's admission queue behind an established stream (503
+    # request_queue_timeout, v3s9/v3s10/v3s11). Relaunch the same
+    # experiment dir with spaced attempts; the harness resumes from the
+    # snapshot and the manifest stays untouched.
+    local attempt rc=1
+    for attempt in 1 2 3 4; do
+        NETMIND_API_KEY=x NETMIND_BASE_URL=http://localhost:8081/v1 \
+            HARNESS_HYPOTHESIS="$hyp" HARNESS_PARENTS="$prior" HARNESS_GIT_REV="$(git -C "$ROOT" rev-parse --short HEAD)" \
+            nohup "$HARNESS" --config "$exp/config.yml" --experiment "${exp##*/}" \
+            > "/tmp/sweep-${name}-${idx}.stdout.log" 2>&1 < /dev/null &
+        wait $! || rc=$?
+        if [ "$rc" -eq 0 ]; then break; fi
+        if grep -q "request_queue_timeout" "/tmp/sweep-${name}-${idx}.stdout.log"; then
+            echo "== launch attempt $attempt died on admission timeout; retrying in $((attempt * 300))s" >&2
+            sleep $((attempt * 300))
+        else
+            break
+        fi
+    done
     echo "${exp##*/}"
 }
 
