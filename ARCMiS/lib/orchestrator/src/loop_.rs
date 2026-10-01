@@ -43,6 +43,11 @@ pub enum RoundOutcome {
     /// The harness refused a decision (evidence gate). The orchestrator sees
     /// the refusal in the next round's failure tail.
     Refused,
+    /// The orchestrator closed a bookkeeping task without a dispatch.
+    Closed {
+        /// Task id that was marked done.
+        task: String,
+    },
     /// The orchestrator asked to stop the run.
     Finished(String),
 }
@@ -265,6 +270,38 @@ impl OrchestratorLoop {
                 tracing::info!(from = ?record.from, to = ?record.to, "phase transition");
                 Ok(RoundOutcome::PhaseDone(record.to))
             },
+            DecisionVerb::Close {
+                task,
+                reason,
+            } => {
+                // Orchestrator-owned bookkeeping: mark the task done
+                // without a dispatch. Guarded by a non-empty reason; a
+                // close on an unknown id is a refused round, not an
+                // error kill.
+                let tasks = blackboard::tasks::TaskList::new(&self.run_dir);
+                let known = tasks.read().unwrap_or_default();
+                if !known.iter().any(|known_task| &known_task.id == task) {
+                    self.ledger.append_failure(&blackboard::Failure {
+                        at: now_string(),
+                        phase: format!("{:?}", state.phase),
+                        category: "gate".into(),
+                        root_cause: format!("close targets unknown task {task}"),
+                        suggested_action: "close one of the TASKS ids listed in the round prompt".into(),
+                    })?;
+                    return Ok(RoundOutcome::Refused);
+                }
+                tasks.set_status(task, blackboard::tasks::TaskStatus::Done)?;
+                self.ledger.append_decision(&Decision {
+                    at: now_string(),
+                    phase: format!("{:?}", state.phase),
+                    action: "close".into(),
+                    detail: serde_json::json!({"round": self.round, "task": task}),
+                    reasoning: reason.clone(),
+                })?;
+                Ok(RoundOutcome::Closed {
+                    task: task.clone(),
+                })
+            },
             DecisionVerb::Finish {
                 reason,
             } => Ok(RoundOutcome::Finished(reason.clone())),
@@ -312,11 +349,12 @@ impl OrchestratorLoop {
              FAILURES:\n{}\n\nTASKS:\n{}\n\nDecide the next action. Answer with one or more DECISION lines (plain \
              words, no angle brackets, no function-call syntax):\nDECISION: delegate ROLE | TASK TEXT\nDECISION: \
              delegate ROLE | TASK TEXT | after:t2,t3\n{team_verb}DECISION: replan\nDECISION: escalate | \
-             REASON\nDECISION: done\nDECISION: finish | REASON\nROLE is one of: {role_list}.\nFor replan: write the \
-             new plan under a `PLAN:` heading before the DECISION line; the harness persists that section as plan.md. \
-             Empty-plan replans change nothing.\nYou MAY emit several delegate lines in one round when the tasks are \
-             independent; the harness runs up to {fanout} of them in parallel and queues the rest. `after:` lists \
-             task ids this one waits on.             {hierarchy_note}{replan_note}",
+             REASON\nDECISION: done\nDECISION: close TASK_ID | REASON\nDECISION: finish | REASON\nROLE is one of: \
+             {role_list}.\nFor replan: write the new plan under a `PLAN:` heading before the DECISION line; the \
+             harness persists that section as plan.md. Empty-plan replans change nothing.\nYou MAY emit several \
+             delegate lines in one round when the tasks are independent; the harness runs up to {fanout} of them in \
+             parallel and queues the rest. `after:` lists task ids this one waits on.             \
+             {hierarchy_note}{replan_note}",
             self.round,
             state.phase,
             state.current_batch,
@@ -348,6 +386,7 @@ impl OrchestratorLoop {
 }
 
 /// The orchestrator's decision verbs.
+#[derive(Debug)]
 pub(crate) enum DecisionVerb {
     /// Delegate to a role (named or router-chosen).
     Delegate {
@@ -362,6 +401,16 @@ pub(crate) enum DecisionVerb {
     },
     /// Declare the phase done.
     Done,
+    /// Close bookkeeping tasks the orchestrator owns: mark one task done
+    /// without a specialist dispatch (v3s4: blocked-by-bookkeeping tasks
+    /// whose intent other work already satisfied left the done gate
+    /// locked with no legal move).
+    Close {
+        /// Task id to close.
+        task: String,
+        /// Why the intent is satisfied.
+        reason: String,
+    },
     /// Stop the run.
     Finish {
         reason: String,
@@ -436,6 +485,14 @@ fn parse_decision_line(line: &str) -> Option<DecisionVerb> {
             reason: rest.trim_start_matches('|').trim().to_owned(),
         }),
         "done" => Some(DecisionVerb::Done),
+        "close" => {
+            // `close <task-id> | <reason>`.
+            let (id, reason) = rest.split_once('|').unwrap_or((rest, ""));
+            Some(DecisionVerb::Close {
+                task: id.trim().to_owned(),
+                reason: reason.trim().to_owned(),
+            })
+        },
         "finish" => Some(DecisionVerb::Finish {
             reason: rest.trim_start_matches('|').trim().to_owned(),
         }),
@@ -649,6 +706,39 @@ impl OrchestratorLoop {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn close_verb_parses_id_and_reason() {
+        let decisions = parse_decisions(
+            "Phase check: the work is bookkeeping only.\nDECISION: close t7 | superseded by t2's verified map",
+        );
+        assert_eq!(decisions.len(), 1);
+        match &decisions[0] {
+            DecisionVerb::Close {
+                task,
+                reason,
+            } => {
+                assert_eq!(task, "t7");
+                assert_eq!(reason, "superseded by t2's verified map");
+            },
+            other => panic!("expected close, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn close_verb_without_reason_still_parses() {
+        let decisions = parse_decisions("DECISION: close t1");
+        match &decisions[0] {
+            DecisionVerb::Close {
+                task,
+                reason,
+            } => {
+                assert_eq!(task, "t1");
+                assert!(reason.is_empty());
+            },
+            other => panic!("expected close, got {other:?}"),
+        }
+    }
 
     #[test]
     fn judgeable_annotates_tool_only_turn() {

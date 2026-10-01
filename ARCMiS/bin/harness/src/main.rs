@@ -316,6 +316,15 @@ async fn run() -> anyhow::Result<()> {
             RoundOutcome::Refused => {
                 cli_sink::emit("gate", "decision refused; see the failure ledger");
             },
+            RoundOutcome::Closed {
+                task,
+            } => {
+                cli_sink::emit("close", &format!("orchestrator closed {task}"));
+                events.record(
+                    "delegation",
+                    serde_json::json!({"role": "orchestrator", "task": format!("{task} [orchestrator] pass")}),
+                )?;
+            },
             RoundOutcome::Finished(reason) => {
                 stop_reason = Some(reason.clone());
                 break;
