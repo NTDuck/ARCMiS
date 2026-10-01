@@ -48,7 +48,7 @@ import re
 import sys
 from pathlib import Path
 
-TAG_RE = re.compile(r"(?:^|-)(v[23]r\d+)(?:-|$)")
+TAG_RE = re.compile(r"(?:^|[^a-z])(v[23][rs]\d+)(?:-|$)")
 
 # Rename scheme (2026-10-01 directive): protocol versions map to
 # autoopt-v0.N.x candidate names. On-disk directory names are timestamped
@@ -62,9 +62,13 @@ PROTOCOL_NAME = {
 
 
 def autoopt_name(tag: str) -> str:
-    """Round tag v3r8 -> autoopt-v0.3.8 (protocol version, then number)."""
+    """Round tag v3r8 / v3s0 -> autoopt-v0.3.8 / autoopt-v0.3.8.
+
+    Round and sweep tags share one candidate-numbering space (the sweep
+    continues the campaign), so `s` maps like `r`.
+    """
     protocol = int(tag[1])
-    number = int(tag.split("r")[1])
+    number = int(re.search(r"[rs](\d+)", tag).group(1))
     return f"{PROTOCOL_NAME.get(protocol, 'autoopt-v0.' + str(protocol))}.{number}"
 
 
@@ -118,7 +122,7 @@ def find_round_dirs(root: Path) -> dict:
 
 def round_tag_order(tag: str):
     protocol = int(tag[1])
-    number = int(tag.split("r")[1])
+    number = int(re.search(r"[rs](\d+)", tag).group(1))
     return (protocol, number)
 
 
