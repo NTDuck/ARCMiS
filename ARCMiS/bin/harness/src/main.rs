@@ -264,6 +264,7 @@ async fn run() -> anyhow::Result<()> {
         jev_triage,
         round: 0,
         max_retries: config.run.max_retries,
+        done_refusals: 0,
     };
     let mut breaker_state = orchestrator::breaker::BreakerState::new();
     let mut delegations = 0usize;

@@ -70,6 +70,11 @@ pub struct OrchestratorLoop {
     /// delegation: the plan is persisted, the next action is work
     /// (v3r3: three replans in a row tripped the stagnation breaker).
     pub last_round_replanned: bool,
+    /// Consecutive refused `done` claims with no delegation in between.
+    /// One refusal prods the orchestrator to find phase work; a second
+    /// means the carried passes stand as evidence and the phase advances
+    /// (v3s3: fft stalled at Planning with nothing left to dispatch).
+    pub done_refusals: u32,
 }
 
 impl OrchestratorLoop {
@@ -129,6 +134,9 @@ impl OrchestratorLoop {
                 }
             }
             blackboard::state::write(&self.run_dir, &state)?;
+            // Fresh phase evidence arrived: the carried-work advance loses
+            // its justification until two refusals stack up again.
+            self.done_refusals = 0;
             let summary: Vec<String> = outcome
                 .results
                 .iter()
@@ -234,7 +242,9 @@ impl OrchestratorLoop {
                 // delegation since the phase began. A bare claim advances
                 // nothing (observed: the walk Pilot -> Migration ->
                 // Integration in 18 s with no validation work).
-                if state.phase_delegations <= state.phase_delegation_watermark {
+                if state.phase_delegations <= state.phase_delegation_watermark
+                    && !carried_work_advance(&mut self.done_refusals, state.phase)
+                {
                     self.ledger.append_failure(&blackboard::Failure {
                         at: now_string(),
                         phase: format!("{:?}", state.phase),
@@ -587,6 +597,23 @@ fn snapshot_phase(run_dir: &Path) -> anyhow::Result<blackboard::State> {
     blackboard::state::read(run_dir)?.ok_or_else(|| anyhow::anyhow!("state missing in {run_dir:?}"))
 }
 
+/// Consecutive-refusal gate for the carried-work advance. Returns `true`
+/// when a `done` claim may advance despite no fresh pass in the phase:
+/// the first refusal prods the orchestrator to dispatch the remaining
+/// phase work, a second means it has nothing left to dispatch and the
+/// passes carried from the previous phase stand as evidence (v3s3: fft
+/// burned three rounds at Planning with the deliverable already
+/// complete). Fresh phase evidence resets the counter (the delegate arm
+/// clears it on every judged pass).
+fn carried_work_advance(done_refusals: &mut u32, phase: Phase) -> bool {
+    *done_refusals += 1;
+    let advance = *done_refusals >= 2;
+    if advance {
+        tracing::info!(?phase, "advancing on carried passes; nothing left to dispatch");
+    }
+    advance
+}
+
 impl OrchestratorLoop {
     /// Harvest agent-written files from `workspace/meta/` into the run
     /// blackboard, then mirror the run state back. The run/ dir stays the
@@ -644,6 +671,21 @@ mod tests {
             tool_calls: vec!["write_file".into()],
         };
         assert_eq!(turn.judgeable(), "wrote target/src/lib.rs");
+    }
+
+    #[test]
+    fn carried_work_advance_refuses_once_then_advances() {
+        // v3s3 regression: fft stalled three rounds at Planning with the
+        // deliverable complete and nothing left to dispatch. The gate
+        // must refuse the first bare done and advance on the second.
+        let mut refusals = 0u32;
+        assert!(!carried_work_advance(&mut refusals, Phase::Planning));
+        assert_eq!(refusals, 1);
+        assert!(carried_work_advance(&mut refusals, Phase::Planning));
+        // Fresh evidence resets: two more refusals needed again.
+        refusals = 0;
+        assert!(!carried_work_advance(&mut refusals, Phase::Pilot));
+        assert!(carried_work_advance(&mut refusals, Phase::Pilot));
     }
 
     #[test]
