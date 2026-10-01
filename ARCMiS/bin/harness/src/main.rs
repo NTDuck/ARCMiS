@@ -112,9 +112,14 @@ async fn run() -> anyhow::Result<()> {
         problem_set: source_root.parent().map(|parent| parent.display().to_string()).unwrap_or_default(),
         source_language: config.source.language.clone(),
         target_language: config.source.target.language.clone(),
-        git_revision: String::new(),
-        parents: Vec::new(),
-        hypothesis: String::new(),
+        git_revision: std::env::var("HARNESS_GIT_REV").unwrap_or_default(),
+        parents: std::env::var("HARNESS_PARENTS")
+            .unwrap_or_default()
+            .split(',')
+            .filter(|s| !s.is_empty())
+            .map(str::to_owned)
+            .collect(),
+        hypothesis: std::env::var("HARNESS_HYPOTHESIS").unwrap_or_default(),
         created_at: now_rfc3339(),
     };
     // Preflight the model registry before any agent runs: every configured
