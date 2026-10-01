@@ -435,9 +435,13 @@ async fn run_collective(
             lead: None,
         };
         let diagnosis = run_single(agents, config, workspace, ledger, phase, task_id, &diagnose, 1).await;
+        // The diagnosis rides inside the repair task text; uncapped it
+        // re-feeds the whole failure log into every repair turn (v3s6:
+        // 96 repairer calls with 300-800 s turns on one problem).
+        let diagnosis_text: String = diagnosis.output.chars().take(1200).collect();
         let repair = Delegation {
             role: Some("repairer".into()),
-            task: format!("Apply this repair to the target workspace: {}", diagnosis.output),
+            task: format!("Apply this repair to the target workspace: {diagnosis_text}"),
             depends_on: Vec::new(),
             team: false,
             lead: None,
