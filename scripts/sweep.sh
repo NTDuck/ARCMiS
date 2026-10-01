@@ -60,9 +60,27 @@ launch_round() {
 }
 
 wait_close() {
-    # $1 = experiment dir; block until the harness process is gone
+    # $1 = experiment dir; block until the harness process is gone.
+    # Echoes "clean" when the run emitted its terminal done event,
+    # "dead" when the process exited silently (needs an abort note).
     local tag="$1"
     while pgrep -f "$tag" > /dev/null; do sleep 300; done
+    if grep -q '"event":"done"' "$ROOT/.artifacts/experiments/$tag/events.jsonl" 2>/dev/null; then
+        echo clean
+    else
+        echo dead
+    fi
+}
+
+annotate_aborted() {
+    # A round that died without a `done` event gets an abort note so the
+    # ledger records ABORTED instead of stale counters (v3s4).
+    local exp="$ROOT/.artifacts/experiments/$1"
+    [ -f "$exp/result/abort-note.txt" ] && return 0
+    mkdir -p "$exp/result"
+    printf 'harness process exited without a done event. annotated by the sweep driver; see the stdout log for the harness error line.\n' \
+        > "$exp/result/abort-note.txt"
+    echo "== annotated ABORTED: $1"
 }
 
 score_round() {
@@ -105,8 +123,12 @@ while [ "$i" -lt "${#ROUNDS[@]}" ]; do
     fi
 
     # wait for BOTH slots of this pair
-    wait_close "$a_tag"
-    [ -n "$slotB_spec" ] && wait_close "$b_tag"
+    a_close=$(wait_close "$a_tag")
+    [ "$a_close" = dead ] && annotate_aborted "$a_tag"
+    if [ -n "$slotB_spec" ]; then
+        b_close=$(wait_close "$b_tag")
+        [ "$b_close" = dead ] && annotate_aborted "$b_tag"
+    fi
     echo "== pair ($a_tag $b_tag) closed $(date -u +%H:%M); scoring next cycle"
     i=$((i+2))
 done
