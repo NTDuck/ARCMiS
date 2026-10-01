@@ -1,12 +1,23 @@
 #!/usr/bin/env python3
-"""Write the manifest for one sweep round (autoopt-v0.3.N naming)."""
-import json, subprocess, sys, pathlib, datetime
+"""Write the manifest for one sweep round (autoopt-v0.3.N naming).
+
+The hypothesis is mandatory (ADR 0020): pass $HYPOTHESIS or write
+hypothesis.txt in the experiment dir before calling. Parents are the
+newest prior round dirs of this sweep lineage.
+"""
+import json, os, subprocess, sys, pathlib, datetime
 
 exp, idx, name, root = sys.argv[1:5]
-parents = sorted(
-    p.name for p in pathlib.Path(".artifacts/experiments").glob("*v3s*")
-    if p.name.endswith(f"v3s{int(idx)-1}-*") or f"v3s{int(idx)-1}-" in p.name
-)[-1:]
+hypothesis = os.environ.get("HYPOTHESIS", "").strip()
+hf = pathlib.Path(exp, "hypothesis.txt")
+if not hypothesis and hf.exists():
+    hypothesis = hf.read_text().strip()
+if not hypothesis:
+    sys.exit(f"manifest requires a hypothesis: set $HYPOTHESIS or {hf}")
+
+here = pathlib.Path(exp).name
+prior = sorted(p.name for p in pathlib.Path(".artifacts/experiments").glob("*v3s*")
+               if p.name < here)
 man = {
     "version": 3,
     "round": f"autoopt-v0.3.{int(idx)+8}",
@@ -19,7 +30,7 @@ man = {
     "config_path": f".artifacts/experiments/{exp}/config.yml",
     "problem_set": root,
     "problem_name": name,
-    "hypothesis": pathlib.Path(exp, "hypothesis.txt").read_text().strip() if pathlib.Path(exp, "hypothesis.txt").exists() else "coverage sweep round",
-    "parents": parents,
+    "hypothesis": hypothesis,
+    "parents": prior[-2:],
 }
 pathlib.Path(exp, "manifest.json").write_text(json.dumps(man, indent=2) + "\n")
