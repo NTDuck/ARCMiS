@@ -605,12 +605,19 @@ pub(crate) async fn prompt_with_retries(
             },
             Err(error) if attempt < max_retries && is_transient(&error) => {
                 attempt += 1;
+                // Admission-queue timeouts (ninfer 503 request_queue_timeout)
+                // clear in tens of seconds to minutes; an immediate retry
+                // re-enters the same saturated queue and dies (v3s16-s18).
+                // Wait before re-trying, exponential with a cap.
+                let delay = std::cmp::min(60 * attempt, 300);
                 tracing::warn!(
                     attempt,
                     max_retries,
+                    backoff_seconds = delay,
                     error = %error,
                     "transient provider failure; retrying model call"
                 );
+                tokio::time::sleep(std::time::Duration::from_secs(delay as u64)).await;
             },
             Err(error) => return Err(error.into()),
         }
