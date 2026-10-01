@@ -47,4 +47,9 @@ mas:
         stagnation_rounds: 3
 
 snapcompact:
-  threshold_tokens: 0
+  # Match the tuned campaign default (assets/configs/mas/config.yml).
+  # Zeroing this disabled history compaction for the whole coverage
+  # sweep; the v3s14 critic accumulated ~820 KB of source reads and
+  # died on context_length_exceeded.
+  threshold_tokens: 12000
+  keep_recent_tokens: 4000
