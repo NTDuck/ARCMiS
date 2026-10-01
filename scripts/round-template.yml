@@ -1,0 +1,50 @@
+run:
+  model: qwen3.8-27b
+  provider: netmind
+  max_turns: 14
+  num_ctx: 65536
+  max_output_tokens: 8192
+  max_retries: 1
+  think: true
+  temperature: 0.2
+output:
+  dir: @OUTDIR@
+source:
+  language: @SOURCE_LANG@
+  root: @PROBLEM_ROOT@
+  target:
+    language: rust
+    test_command: sh -c '(cd target 2>/dev/null && cargo test) || cargo test'
+mas:
+  fanout: 3
+  max_rounds: 20
+  orchestrator_turns: 20
+  worker_turns: 40
+  judge_turns: 40
+  role_output_tokens:
+    translator: 16384
+    architect: 16384
+    repairer: 16384
+    orchestrator: 16384
+  role_think:
+    translator: false
+    orchestrator: false
+  hierarchy:
+    enabled: true
+    deny_direct: true
+    teams:
+      - lead: migration-lead
+        members: [translator, validator, tester, repairer]
+        turns: 16
+        stagnation_rounds: 3
+      - lead: discovery-lead
+        members: [analyst, architect]
+        turns: 10
+        stagnation_rounds: 3
+      - lead: integration-lead
+        members: [planner, failure-analyst, critic]
+        turns: 10
+        stagnation_rounds: 3
+
+snapcompact:
+  threshold_tokens: 0
