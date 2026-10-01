@@ -62,14 +62,18 @@ PROTOCOL_NAME = {
 
 
 def autoopt_name(tag: str) -> str:
-    """Round tag v3r8 / v3s0 -> autoopt-v0.3.8 / autoopt-v0.3.8.
+    """Round/sweep tag -> candidate name.
 
-    Round and sweep tags share one candidate-numbering space (the sweep
-    continues the campaign), so `s` maps like `r`.
+    Round tags map to autoopt-v0.N.M. Sweep rounds keep their own series
+    autoopt-v0.N.sweep.sM so the leftpad v0.3.x history and the sweep
+    series never collide on one number.
     """
     protocol = int(tag[1])
     number = int(re.search(r"[rs](\d+)", tag).group(1))
-    return f"{PROTOCOL_NAME.get(protocol, 'autoopt-v0.' + str(protocol))}.{number}"
+    base = PROTOCOL_NAME.get(protocol, "autoopt-v0." + str(protocol))
+    if "s" in tag[2:]:
+        return f"{base}.sweep.s{number}"
+    return f"{base}.{number}"
 
 
 HYPOTHESIS_DEFECT_KEYWORDS = [
@@ -255,6 +259,29 @@ def wall_seconds(exp_dir: Path):
     return "unknown"
 
 
+def run_in_flight(exp_dir: Path) -> bool:
+    """True while the harness run has not emitted its terminal `done`
+    event. Live runs hold partial counters; mark them instead of
+    scoring stale mid-flight values. Killed or aborted runs leave no
+    `done` either, but they carry a scored `result/` tree (or an
+    abort note) - those count as settled."""
+    if (exp_dir / "result" / "abort-note.txt").is_file():
+        return False
+    if (exp_dir / "result").is_dir() and any((exp_dir / "result").iterdir()):
+        return False
+    events = exp_dir / "events.jsonl"
+    if not events.is_file():
+        return True
+    try:
+        with events.open() as handle:
+            for line in handle:
+                if line.strip() and json.loads(line).get("event") == "done":
+                    return False
+    except (json.JSONDecodeError, OSError):
+        return True
+    return True
+
+
 def derive_verdict(exp_dir: Path) -> str:
     if (exp_dir / "result" / "abort-note.txt").is_file():
         return "ABORTED"
@@ -358,27 +385,36 @@ def artifacts_entry(exp_dir: Path) -> dict:
 def build_entry(tag: str, exp_dir: Path, rounds: dict) -> dict:
     manifest = read_json(exp_dir / "manifest.json") or {}
     caps = read_output_caps(exp_dir / "config.yml")
+    in_flight = run_in_flight(exp_dir)
     metrics = problem_metrics(exp_dir)
     metrics["wall_seconds"] = wall_seconds(exp_dir)
-    metrics["stalled_rounds"] = count_ledger_rows(
-        exp_dir / "run" / "ledgers" / "observations.jsonl", "round_stalled"
-    )
-    metrics["max_turns_deaths"] = count_max_turns_deaths(
-        exp_dir / "run" / "ledgers" / "failures.jsonl"
-    )
-    metrics["output_cap_deaths"] = count_output_cap_deaths(exp_dir, caps)
+    # Mid-flight ledgers hold partial counters; only score them when the
+    # run has settled.
+    if not in_flight:
+        metrics["stalled_rounds"] = count_ledger_rows(
+            exp_dir / "run" / "ledgers" / "observations.jsonl", "round_stalled"
+        )
+        metrics["max_turns_deaths"] = count_max_turns_deaths(
+            exp_dir / "run" / "ledgers" / "failures.jsonl"
+        )
+        metrics["output_cap_deaths"] = count_output_cap_deaths(exp_dir, caps)
+    else:
+        metrics["stalled_rounds"] = "unknown"
+        metrics["max_turns_deaths"] = "unknown"
+        metrics["output_cap_deaths"] = "unknown"
     return {
         "round": autoopt_name(tag),
         "legacy_tag": tag,
         "protocol": f"v{tag[1]}",
         "candidate_id": exp_dir.name,
+        "in_flight": in_flight,
         "parents": manifest.get("parents", []),
         "hypothesis": manifest.get("hypothesis") or "unknown",
         "defect_class_targeted": defect_class_from_slug(exp_dir, manifest),
         "metrics": metrics,
         "delta_vs_parent": delta_vs_parent(exp_dir, rounds, metrics),
         "regression_flags": regression_flags(exp_dir, rounds, metrics),
-        "verdict": derive_verdict(exp_dir),
+        "verdict": "IN FLIGHT" if in_flight else derive_verdict(exp_dir),
         "artifacts": artifacts_entry(exp_dir),
     }
 
