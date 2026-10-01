@@ -45,8 +45,15 @@ launch_round() {
     # per-problem override lines (single-variable deltas) appended under mas:
     local ov="$ROOT/scripts/overrides/${name}.yml"
     [ -f "$ov" ] && python3 "$ROOT/scripts/override_merge.py" "$exp/config.yml" "$ov"
-    python3 "$ROOT/scripts/round_manifest.py" "$exp" "$idx" "$name" "$root"
+    # Manifest lineage comes from the harness binary itself (ADR 0020
+    # contract): pass the mandatory hypothesis through the environment.
+    local hyp="${HYPOTHESIS:-}" 
+    if [ -z "$hyp" ] && [ -f "$exp/hypothesis.txt" ]; then hyp=$(cat "$exp/hypothesis.txt"); fi
+    [ -n "$hyp" ] || { echo "REFUSING launch without hypothesis: $exp" >&2; return 1; }
+    local prior
+    prior=$(ls -d "$ROOT"/.artifacts/experiments/*v3s* 2>/dev/null | sed 's|.*/||' | awk -v me="${exp##*/}" '$0 < me' | tail -2 | paste -sd, -)
     NETMIND_API_KEY=x NETMIND_BASE_URL=http://localhost:8081/v1 \
+        HARNESS_HYPOTHESIS="$hyp" HARNESS_PARENTS="$prior" HARNESS_GIT_REV="$(git -C "$ROOT" rev-parse --short HEAD)" \
         nohup "$HARNESS" --config "$exp/config.yml" --experiment "${exp##*/}" \
         > "/tmp/sweep-${name}-${idx}.stdout.log" 2>&1 < /dev/null &
     echo "${exp##*/}"
