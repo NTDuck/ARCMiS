@@ -12,6 +12,8 @@ use blackboard::Workspace;
 
 use crate::loop_::now_string;
 use crate::loop_::parse_decisions;
+use crate::round_triage::policy::gate;
+use crate::round_triage::policy::RoundAction;
 use crate::taskgraph::run_single;
 use crate::taskgraph::TaskResult;
 
@@ -183,11 +185,36 @@ pub(crate) async fn run_lead_batch(
                 let result = run_single(agents, config, workspace, ledger, phase, task_id, &inner, 3).await;
                 // Typed-decision triage (ADR 0027): one laya forward pass
                 // classifies the dispatch result instead of burning a lead
-                // LLM turn on it. Instrumentation only this round: a
-                // fallback or a disabled judge leaves the loop byte
-                // identical, and the verdict lands in the ledger for the
-                // campaign A/B. Dispatch-policy changes are the follow-up.
-                record_triage(jev_triage, ledger, phase, &result, task_id);
+                // LLM turn on it. Instrumentation plus (ADR 0028) the
+                // enforce policy: a confident stop-or-harmful verdict ends
+                // the batch early with a triage failure row. A fallback or
+                // a disabled judge leaves the loop byte identical.
+                let consultation = record_triage(jev_triage, ledger, phase, &result, task_id);
+                if jev_triage.policy() == agents::TriagePolicy::Enforce
+                    && gate(jev_triage.policy(), &consultation) == RoundAction::Stop
+                {
+                    let _ = ledger.append_failure(&blackboard::Failure {
+                        at: now_string(),
+                        phase: format!("{phase:?}"),
+                        category: "triage".into(),
+                        root_cause: format!(
+                            "dispatch triage stop: {} task={task_id}",
+                            consultation_verdict(&consultation).map_or_else(
+                                || "no verdict".to_owned(),
+                                |v| format!("outcome={} action={} confidence={:.2}", v.outcome, v.action, v.confidence)
+                            ),
+                        ),
+                        suggested_action: "inspect the jev_triage observations".into(),
+                    });
+                    return finish(
+                        ledger,
+                        task_id,
+                        lead_name,
+                        false,
+                        "dispatch triage policy stopped the batch".into(),
+                        results,
+                    );
+                }
                 transcript.push_str(&format!(
                     "- [{}] {}: {}\n",
                     if result.passed {
@@ -241,9 +268,9 @@ fn record_triage(
     phase: blackboard::Phase,
     result: &TaskResult,
     task_id: &str,
-) {
+) -> crate::jev_triage::TriageConsultation {
     if !triage.is_enabled() {
-        return;
+        return crate::jev_triage::TriageConsultation::Fallback;
     }
     let role = result.role.name();
     let verdict = match triage.consult_delegation(role, &format!("{phase:?}"), result.passed, &result.output) {
@@ -258,7 +285,7 @@ fn record_triage(
             } else {
                 tracing::debug!(role, task = task_id, "jev triage fell back below the confidence threshold");
             }
-            return;
+            return crate::jev_triage::TriageConsultation::Fallback;
         },
     };
     tracing::info!(
@@ -287,6 +314,21 @@ fn record_triage(
             }),
         })
         .ok();
+    crate::jev_triage::TriageConsultation::Decided {
+        verdict,
+    }
+}
+
+/// The verdict of a decided consultation, for failure-row text.
+fn consultation_verdict(
+    consultation: &crate::jev_triage::TriageConsultation,
+) -> Option<crate::jev_triage::TriageVerdict> {
+    match consultation {
+        crate::jev_triage::TriageConsultation::Decided {
+            verdict,
+        } => Some(verdict.clone()),
+        crate::jev_triage::TriageConsultation::Fallback => None,
+    }
 }
 
 /// Workspace paths named in the task's `Acceptance:` clause that do not
@@ -385,11 +427,12 @@ pub(crate) fn parse_lead_decision(answer: &str, team: &agents::mas::leads::Team)
             } => {
                 let resolved = role.as_deref().and_then(agents::Role::from_name);
                 match resolved {
-                    Some(role) if team.permits(role) && !task.trim().is_empty() =>
+                    Some(role) if team.permits(role) && !task.trim().is_empty() => {
                         return Some(LeadDecision::Delegate {
                             role,
                             task,
-                        }),
+                        })
+                    },
                     other => {
                         tracing::warn!(
                             lead = %team.lead,
