@@ -67,6 +67,7 @@ pub enum TriageConsultation {
 pub struct JevTriage {
     agent: Option<Arc<Agent>>,
     confidence_threshold: f64,
+    policy: agents::TriagePolicy,
 }
 
 impl JevTriage {
@@ -88,6 +89,7 @@ impl JevTriage {
         Self {
             agent,
             confidence_threshold: config.confidence_threshold,
+            policy: config.policy,
         }
     }
 
@@ -101,6 +103,12 @@ impl JevTriage {
     #[must_use]
     pub fn is_enabled(&self) -> bool {
         self.agent.is_some()
+    }
+
+    /// The configured dispatch policy (ADR 0028).
+    #[must_use]
+    pub fn policy(&self) -> agents::TriagePolicy {
+        self.policy
     }
 
     /// Consult the judge on one member dispatch result. Never fails: any
@@ -171,7 +179,7 @@ fn delegation_state(role: &str, phase: &str, passed: bool, output_snippet: &str)
 /// dataset (test split, first case's `questions` column), which is the data
 /// this checkpoint fine-tuned on. Keep the labels byte-identical: a
 /// mismatched label set turns every consult into a fallback.
-fn workflow_questions() -> Value {
+pub(crate) fn workflow_questions() -> Value {
     serde_json::json!({
         "action": {
             "type": "choice",
@@ -227,7 +235,7 @@ fn workflow_questions() -> Value {
 /// Map one prediction into a verdict. Any missing question id or foreign
 /// label fails the whole consultation: a partially usable verdict is not a
 /// verdict.
-fn map_prediction(prediction: &Prediction) -> anyhow::Result<TriageVerdict> {
+pub(crate) fn map_prediction(prediction: &Prediction) -> anyhow::Result<TriageVerdict> {
     let outcome_answer = trained_answer(prediction, "outcome")?;
     let action_answer = trained_answer(prediction, "action")?;
     let review_answer = trained_answer(prediction, "needs_review")?;
@@ -256,8 +264,9 @@ fn trained_answer<'prediction>(prediction: &'prediction Prediction, id: &str) ->
 #[must_use]
 fn map_outcome(answer: &Answer) -> Option<String> {
     match answer.choice.as_deref() {
-        Some("success") | Some("partial") | Some("failure") | Some("harmful") =>
-            answer.choice.clone().map(Some).unwrap_or_default(),
+        Some("success") | Some("partial") | Some("failure") | Some("harmful") => {
+            answer.choice.clone().map(Some).unwrap_or_default()
+        },
         _ => None,
     }
 }
@@ -266,8 +275,9 @@ fn map_outcome(answer: &Answer) -> Option<String> {
 #[must_use]
 fn map_action(answer: &Answer) -> Option<String> {
     match answer.choice.as_deref() {
-        Some("continue") | Some("observe") | Some("human_review") | Some("stop") =>
-            answer.choice.clone().map(Some).unwrap_or_default(),
+        Some("continue") | Some("observe") | Some("human_review") | Some("stop") => {
+            answer.choice.clone().map(Some).unwrap_or_default()
+        },
         _ => None,
     }
 }
@@ -354,16 +364,20 @@ mod tests {
             typed: vec![
                 (
                     "action".into(),
-                    choice_answer(Some("observe"), vec!["continue", "human_review", "observe", "stop"], vec![
-                        0.2, 0.1, 0.6, 0.1,
-                    ]),
+                    choice_answer(
+                        Some("observe"),
+                        vec!["continue", "human_review", "observe", "stop"],
+                        vec![0.2, 0.1, 0.6, 0.1],
+                    ),
                 ),
                 ("needs_review".into(), noul_answer(0.9)),
                 (
                     "outcome".into(),
-                    choice_answer(Some("failure"), vec!["failure", "harmful", "partial", "success"], vec![
-                        0.7, 0.1, 0.15, 0.05,
-                    ]),
+                    choice_answer(
+                        Some("failure"),
+                        vec!["failure", "harmful", "partial", "success"],
+                        vec![0.7, 0.1, 0.15, 0.05],
+                    ),
                 ),
                 ("risk".into(), score_answer(vec![0.3, 0.6, 0.07, 0.03])),
                 ("urgency".into(), score_answer(vec![0.1, 0.2, 0.3, 0.4])),
@@ -515,6 +529,7 @@ mod tests {
             enabled: true,
             checkpoint: String::new(),
             confidence_threshold: 0.9,
+            ..JevTriageConfig::default()
         };
         assert!(!JevTriage::from_config(&config).is_enabled());
     }
@@ -525,6 +540,7 @@ mod tests {
             enabled: true,
             checkpoint: "/nonexistent/jev-triage".into(),
             confidence_threshold: 0.9,
+            ..JevTriageConfig::default()
         };
         let triage = JevTriage::from_config(&config);
         assert!(!triage.is_enabled());

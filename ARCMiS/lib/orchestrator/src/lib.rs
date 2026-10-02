@@ -16,6 +16,7 @@ mod lead_parse_tests;
 // type inside is `OrchestratorLoop`, so no caller types the module name.
 pub mod loop_;
 pub mod progress;
+pub mod round_triage;
 pub mod router;
 pub mod state_machine;
 pub mod taskgraph;
@@ -40,5 +41,8 @@ pub use judges::FailureCategory;
 pub use loop_::OrchestratorLoop;
 pub use loop_::RoundOutcome;
 pub use progress::Progress;
+pub use round_triage::policy::RoundAction;
+pub use round_triage::RoundEvidence;
+pub use round_triage::RoundTriage;
 pub use state_machine::Advance;
 pub use state_machine::Transition;
