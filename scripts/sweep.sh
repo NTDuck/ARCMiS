@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# Coverage sweep driver: two staggered GPU slots + CPU proposer/scorer
+# Coverage sweep driver: N staggered GPU slots + CPU proposer/scorer
 # pipeline (2026-10-02 parallelism directive).
 #
 # Design:
 # - PAIRS file: one "problem_dir|variant" line per round, consumed in order.
-#   Each line = one round; the driver always runs two rounds concurrently,
-#   staggered STAGGER seconds apart. Line i and i+1 form a pair; convention:
-#   first line of a pair is a crust rust-variant problem, second is a
-#   non-crust problem (oxidizer/skel/alphatrans) for a clean family A/B.
-# - Slot model: slot A (GPU) runs round i's harness; while it grinds, the
-#   driver scores round i-1 (slot C, CPU) and stages round i+1's config
-#   (slot B, CPU). Rounds of one pair stagger so their Discovery phases
-#   interleave with the other's grind.
+#   Each line = one round. The driver runs rounds in waves of SLOTS
+#   concurrent harness rounds, staggered STAGGER seconds apart. When
+#   SLOTS=2, line i and i+1 form a pair. Convention: first line of a
+#   pair is a crust rust-variant problem, second is a non-crust problem
+#   (oxidizer/skel/alphatrans) for a clean family A/B.
+# - Slot model: the driver scores closed rounds on CPU while the current
+#   wave grinds on GPU. Round launches within a wave stagger so their
+#   Discovery phases do not collide.
 # - Resume-safe: a round whose dir already has manifest.json + result/ is
 #   skipped; the driver restarts clean rounds (manifest rewritten at launch).
 # - Config template: configs/round-template.yml with @PROBLEM_ROOT@,
@@ -25,11 +25,25 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+mkdir -p "$ROOT/.artifacts/experiments"
 PAIRS="${1:?usage: sweep.sh <pairs-file> [start-index]}"
 START="${2:-0}"
-HARNESS="$ROOT/target/release/harness"
+
+# Positive-integer check: SLOTS drives wave sizing, so refuse bad values
+# early instead of letting an empty or broken wave run.
+SLOTS="${SLOTS:-2}"
+if ! [[ "$SLOTS" =~ ^[0-9]+$ ]] || [ "$SLOTS" -le 0 ]; then
+    echo "ERROR: SLOTS must be a positive integer (got '$SLOTS')" >&2
+    exit 1
+fi
+
+HARNESS="${HARNESS:-$ROOT/target/release/harness}"
 STAGGER="${STAGGER:-900}"
 TEMPLATE="$ROOT/scripts/round-template.yml"
+# Inference engine URL. Knob default: the ninfer engine moved :8081 ->
+# :8082 on 2026-10-02 (both live rounds died in that outage), so the next
+# engine relocation is an env var away, not a driver edit.
+ENGINE_URL="${ENGINE_URL:-http://localhost:8082/v1}"
 
 round_tag() { printf 'autoopt-v0.3.%s' "$1"; }
 
@@ -57,21 +71,30 @@ launch_round() {
     # request_queue_timeout, v3s9/v3s10/v3s11). Relaunch the same
     # experiment dir with spaced attempts; the harness resumes from the
     # snapshot and the manifest stays untouched.
-    local attempt rc=1
-    for attempt in 1 2 3 4; do
-        NETMIND_API_KEY=x NETMIND_BASE_URL=http://localhost:8081/v1 \
-            HARNESS_HYPOTHESIS="$hyp" HARNESS_PARENTS="$prior" HARNESS_GIT_REV="$(git -C "$ROOT" rev-parse --short HEAD)" \
-            nohup "$HARNESS" --config "$exp/config.yml" --experiment "${exp##*/}" \
-            > "/tmp/sweep-${name}-${idx}.stdout.log" 2>&1 < /dev/null &
-        wait $! || rc=$?
-        if [ "$rc" -eq 0 ]; then break; fi
-        if grep -q "request_queue_timeout" "/tmp/sweep-${name}-${idx}.stdout.log"; then
-            echo "== launch attempt $attempt died on admission timeout; retrying in $((attempt * 300))s" >&2
-            sleep $((attempt * 300))
-        else
-            break
-        fi
-    done
+    #
+    # Runs as a background babysitter so launch_round returns the tag
+    # immediately and the wave keeps launching on schedule. The busy
+    # marker stops wait_close from declaring this round closed during a
+    # retry backoff gap, when no process carries the tag yet.
+    touch "$exp/.launcher-busy"
+    (
+        local attempt rc=1
+        for attempt in 1 2 3 4; do
+            NETMIND_API_KEY=x NETMIND_BASE_URL="$ENGINE_URL" \
+                HARNESS_HYPOTHESIS="$hyp" HARNESS_PARENTS="$prior" HARNESS_GIT_REV="$(git -C "$ROOT" rev-parse --short HEAD)" \
+                nohup "$HARNESS" --config "$exp/config.yml" --experiment "${exp##*/}" \
+                    > "/tmp/sweep-${name}-${idx}.stdout.log" 2>&1 < /dev/null &
+            wait $! || rc=$?
+            if [ "$rc" -eq 0 ]; then break; fi
+            if grep -q "request_queue_timeout" "/tmp/sweep-${name}-${idx}.stdout.log"; then
+                echo "== launch attempt $attempt died on admission timeout; retrying in $((attempt * 300))s" >&2
+                sleep $((attempt * 300))
+            else
+                break
+            fi
+        done
+        rm -f "$exp/.launcher-busy"
+    ) > "/tmp/sweep-${name}-${idx}.launcher.log" 2>&1 < /dev/null &
     echo "${exp##*/}"
 }
 
@@ -80,7 +103,8 @@ wait_close() {
     # Echoes "clean" when the run emitted its terminal done event,
     # "dead" when the process exited silently (needs an abort note).
     local tag="$1"
-    while pgrep -f "$tag" > /dev/null; do
+    local exp="$ROOT/.artifacts/experiments/$tag"
+    while pgrep -f "$tag" > /dev/null || [ -f "$exp/.launcher-busy" ]; do
         # Watchdog liveness mark: the driver is alive while it waits.
         touch "$ROOT/.artifacts/experiments/.sweep-heartbeat"
         sleep 300
@@ -106,53 +130,59 @@ annotate_aborted() {
 score_round() {
     local exp="$ROOT/.artifacts/experiments/$1"
     python3 "$ROOT/scripts/rescore.py" "$exp" 2>&1 | tail -1
-    python3 "$ROOT/scripts/rounds_ledger.py" 2>&1 | tail -1
+    python3 "$ROOT/scripts/rounds_ledger.py" "$exp" 2>&1 | tail -1
 }
 
 mapfile -t ROUNDS < <(grep -v '^#' "$PAIRS" | grep -v '^$')
-echo "== sweep: ${#ROUNDS[@]} rounds from $PAIRS (stagger ${STAGGER}s)"
+echo "== sweep: ${#ROUNDS[@]} rounds from $PAIRS (slots ${SLOTS}, stagger ${STAGGER}s)"
+
+past_dirs=()
+launch_wave_member() {
+    # Launch ROUNDS[$1]; record its experiment dir tag in past_dirs.
+    local tag
+    tag=$(launch_round "${ROUNDS[$1]}" "$1")
+    past_dirs[$1]="$tag"
+    echo "== launched slot $(($1 + 1)): $tag ($(date -u +%H:%M))"
+}
+
+wave_score_closed() {
+    # Score every launched round older than wave $1 that lacks a result.
+    local k
+    for ((k = 0; k < $1; k++)); do
+        if [ -n "${past_dirs[$k]:-}" ] && [ ! -f "$ROOT/.artifacts/experiments/${past_dirs[$k]}/result/aggregate.yml" ]; then
+            score_round "${past_dirs[$k]}" || true
+            echo "== scored slot C: ${past_dirs[$k]}"
+        fi
+    done
+}
 
 i="$START"
 while [ "$i" -lt "${#ROUNDS[@]}" ]; do
     # Watchdog liveness mark: the driver is alive at this loop iteration.
     touch "$ROOT/.artifacts/experiments/.sweep-heartbeat"
-    slotA_spec="${ROUNDS[$i]}"
-    slotB_spec=""
-    [ "$((i+1))" -lt "${#ROUNDS[@]}" ] && slotB_spec="${ROUNDS[$((i+1))]}"
-
-    # score the round before last (slot C) while staging
-    if [ "$((i-2))" -ge 0 ]; then
-        prev_dir=$(ls -dt "$ROOT"/.artifacts/experiments/*v3s$((i-2))* 2>/dev/null | head -1)
-        [ -n "$prev_dir" ] && [ -d "$prev_dir/result" ] || true
-        # scoring happens below after launch to never block the GPU
+    end=$((i + SLOTS))
+    if [ "$end" -gt "${#ROUNDS[@]}" ]; then
+        end="${#ROUNDS[@]}"
     fi
 
-    a_tag=$(launch_round "$slotA_spec" "$i")
-    echo "== launched slot A: $a_tag ($(date -u +%H:%M))"
-    if [ -n "$slotB_spec" ]; then
-        sleep "$STAGGER"
-        b_tag=$(launch_round "$slotB_spec" "$((i+1))")
-        echo "== launched slot B: $b_tag ($(date -u +%H:%M))"
-    fi
-
-    # pipeline: score round i-2 (already closed) while slots grind
-    if [ "$((i-2))" -ge 0 ]; then
-        c_dir=$(ls -dt "$ROOT"/.artifacts/experiments/*v3s$((i-2))* 2>/dev/null | head -1)
-        if [ -n "$c_dir" ] && [ ! -f "$c_dir/result/aggregate.yml" ]; then
-            score_round "${c_dir##*/}" || true
-            echo "== scored slot C: ${c_dir##*/}"
+    for ((j = i; j < end; j++)); do
+        launch_wave_member "$j"
+        # Delay between launches so Discovery phases do not collide.
+        if [ "$j" -lt $((end - 1)) ]; then
+            sleep "$STAGGER"
         fi
-    fi
+    done
 
-    # wait for BOTH slots of this pair
-    a_close=$(wait_close "$a_tag")
-    [ "$a_close" = dead ] && annotate_aborted "$a_tag"
-    if [ -n "$slotB_spec" ]; then
-        b_close=$(wait_close "$b_tag")
-        [ "$b_close" = dead ] && annotate_aborted "$b_tag"
-    fi
-    echo "== pair ($a_tag $b_tag) closed $(date -u +%H:%M); scoring next cycle"
-    i=$((i+2))
+    # score closed rounds while the current wave grinds
+    wave_score_closed "$i"
+
+    # wait for ALL slots of this wave
+    for ((j = i; j < end; j++)); do
+        tag_close=$(wait_close "${past_dirs[$j]}")
+        [ "$tag_close" = dead ] && annotate_aborted "${past_dirs[$j]}"
+    done
+    echo "== wave [$i .. $((end - 1))] closed $(date -u +%H:%M); scoring next cycle"
+    i="$end"
 done
 # drain: score any unscored round dirs
 for d in "$ROOT"/.artifacts/experiments/*v3s*; do
