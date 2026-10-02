@@ -118,8 +118,10 @@ pub struct MasConfig {
     pub model_ladder: Vec<String>,
     /// Test generations the tester may write per module (coverage-gap cap).
     pub max_generated_tests_per_module: usize,
-    /// Parallel specialist executions the orchestrator may interleave in
-    /// one round (bounded by the single ollama slot. 2 = two turn streams).
+    /// Independent specialist dispatches the harness runs concurrently
+    /// within one round or lead batch: the task-graph ready set and the
+    /// lead's member dispatches share this one dial (ADR 0029). The sweep
+    /// driver's slot count is a separate, outer layer.
     pub fanout: usize,
     /// Model context window, used by the guard's read-scoping gate (0
     /// disables the gate). Mirrors `run.num_ctx`. the orchestrator cannot
@@ -378,16 +380,28 @@ mod policy_tests {
 
     #[test]
     fn yml_parse_accepts_the_new_knobs() {
-        let run: Run = serde_yaml::from_str("model: m\nmax_turns: 14\nnum_ctx: 16384\nmax_output_tokens: 8192\nmax_retries: 1\nthink: true\ntemperature: 0.2\nprovider: ollama\nrequest_timeout_secs: 900\n").expect("run");
+        let run: Run = serde_yaml::from_str(
+            "model: m\nmax_turns: 14\nnum_ctx: 16384\nmax_output_tokens: 8192\nmax_retries: 1\nthink: \
+             true\ntemperature: 0.2\nprovider: ollama\nrequest_timeout_secs: 900\n",
+        )
+        .expect("run");
         assert_eq!(run.request_timeout_secs, 900);
-        let jev: JevTriageConfig = serde_yaml::from_str("enabled: true\ncheckpoint: assets/models/laya-typed-decisions\nconfidence_threshold: 0.9\npolicy: enforce\n").expect("jev");
+        let jev: JevTriageConfig = serde_yaml::from_str(
+            "enabled: true\ncheckpoint: assets/models/laya-typed-decisions\nconfidence_threshold: 0.9\npolicy: \
+             enforce\n",
+        )
+        .expect("jev");
         assert_eq!(jev.policy, TriagePolicy::Enforce);
         assert_eq!(jev.confidence_threshold, 0.9);
     }
 
     #[test]
     fn yml_without_the_knobs_keeps_defaults() {
-        let run: Run = serde_yaml::from_str("model: m\nmax_turns: 14\nnum_ctx: 16384\nmax_output_tokens: 8192\nmax_retries: 1\nthink: true\ntemperature: 0.2\nprovider: ollama\n").expect("run");
+        let run: Run = serde_yaml::from_str(
+            "model: m\nmax_turns: 14\nnum_ctx: 16384\nmax_output_tokens: 8192\nmax_retries: 1\nthink: \
+             true\ntemperature: 0.2\nprovider: ollama\n",
+        )
+        .expect("run");
         assert_eq!(run.request_timeout_secs, 0);
         let jev: JevTriageConfig =
             serde_yaml::from_str("enabled: true\ncheckpoint: x\nconfidence_threshold: 0.9\n").expect("jev");
@@ -400,7 +414,10 @@ mod policy_tests {
         let path = dir.path().join("config.yml");
         std::fs::write(
             &path,
-            "run:\n  model: m\n  max_turns: 14\n  num_ctx: 16384\n  max_output_tokens: 8192\n  max_retries: 1\n  think: true\n  temperature: 0.2\n  provider: ollama\n  request_timeout_secs: 300\noutput:\n  dir: /tmp/x\nsource:\n  language: go\n  root: src\n  target:\n    language: rust\n    test_command: cargo test\n",
+            "run:\n  model: m\n  max_turns: 14\n  num_ctx: 16384\n  max_output_tokens: 8192\n  max_retries: 1\n  \
+             think: true\n  temperature: 0.2\n  provider: ollama\n  request_timeout_secs: 300\noutput:\n  dir: \
+             /tmp/x\nsource:\n  language: go\n  root: src\n  target:\n    language: rust\n    test_command: cargo \
+             test\n",
         )
         .expect("write config");
         let config = super::Config::load(&path).expect("load");

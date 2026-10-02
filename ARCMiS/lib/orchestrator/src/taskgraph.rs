@@ -1,10 +1,10 @@
 //! Task-graph executor: the dynamic-selection half of the orchestration
 //! pattern (ADR 0022). The orchestrator's round may emit several `delegate`
 //! decisions. each becomes a task with optional dependencies. Ready tasks
-//! (all dependencies done) run bounded by the configured fan-out — with a
-//! single ollama slot the interleaving is turn-level, not token-level.
-//! A `team` delegation runs the translation collective (translator →
-//! validator → tester, repairer re-entry) as a nested loop under one task.
+//! (all dependencies done) run concurrently, bounded by the configured
+//! fan-out (ADR 0029). A `team` delegation runs the translation collective
+//! (translator → validator → tester, repairer re-entry) as a nested loop
+//! under one task.
 
 use std::path::Path;
 
@@ -91,6 +91,11 @@ pub struct TaskResult {
     pub tier: u8,
 }
 
+/// One spawned ready-set job: emission index, task id, and the running
+/// dispatch. The task id rides outside the handle so a panicked job still
+/// resolves its task-list status.
+type DispatchJob = (usize, String, tokio::task::JoinHandle<(usize, String, TaskResult)>);
+
 /// Register the round's delegations in the task list and run the ready set.
 pub async fn execute(
     agents: &MasAgents,
@@ -147,9 +152,33 @@ pub async fn execute(
         tasks.set_status(id, TaskStatus::InProgress)?;
     }
 
+    // Ready tasks run concurrently, bounded by fanout (ADR 0029). Status
+    // flips stay outside the concurrent section: set_status is a read-
+    // modify-write of the whole file, so concurrent flips would lose
+    // updates. Results join in ready-set order, not completion order, to
+    // keep the outcome deterministic. Shared handles clone cheaply (Arc
+    // inside MasAgents and Ledger, a path inside Workspace), so each job
+    // owns its state and satisfies JoinSet's 'static bound.
+    let mut jobs: Vec<DispatchJob> = Vec::new();
+    for (index, (id, delegation)) in ready.into_iter().enumerate() {
+        let agents = agents.clone();
+        let config = config.clone();
+        let workspace = workspace.clone();
+        let ledger = ledger.clone();
+        let run_dir = run_dir.to_path_buf();
+        let jev_triage = jev_triage.clone();
+        let task_id = id.clone();
+        let handle = tokio::spawn(async move {
+            let result =
+                dispatch(&agents, &config, &workspace, &ledger, &run_dir, &jev_triage, phase, &task_id, &delegation)
+                    .await;
+            (index, task_id, result)
+        });
+        jobs.push((index, id, handle));
+    }
+    let joined = run_bounded(jobs).await;
     let mut results = Vec::new();
-    for (id, delegation) in ready {
-        let result = dispatch(agents, config, workspace, ledger, run_dir, jev_triage, phase, &id, &delegation).await;
+    for result in joined {
         if result.passed {
             tasks.set_status(&result.id, TaskStatus::Done)?;
         } else {
@@ -161,6 +190,36 @@ pub async fn execute(
         queued: registered_count,
         results,
     })
+}
+
+/// Join spawned dispatch jobs in emission order, not completion order
+/// (ADR 0029). Each entry carries its emission index and task id; a
+/// panicked or cancelled job maps to a failure result with that id, so
+/// one bad dispatch cannot poison the batch and the task never stays
+/// InProgress. The `fanout` cap applies at spawn time (callers spawn at
+/// most `fanout` jobs. The join itself is a barrier.
+async fn run_bounded(jobs: Vec<DispatchJob>) -> Vec<TaskResult> {
+    let mut joined: Vec<(usize, TaskResult)> = Vec::new();
+    for (index, task_id, handle) in jobs {
+        let result = match handle.await {
+            Ok((_, id, mut result)) => {
+                if result.id.is_empty() {
+                    result.id = id;
+                }
+                result
+            },
+            Err(join_error) => TaskResult {
+                id: task_id,
+                role: Role::Orchestrator,
+                passed: false,
+                output: format!("dispatch panicked: {join_error}"),
+                tier: 1,
+            },
+        };
+        joined.push((index, result));
+    }
+    joined.sort_by_key(|(index, _)| *index);
+    joined.into_iter().map(|(_, result)| result).collect()
 }
 
 /// Run one ready task: single-tier dispatch (ADR 0022) or the hierarchical
@@ -206,19 +265,17 @@ async fn dispatch(
                 tier: 1,
             }
         },
-        TierRoute::Lead(lead_name) => {
+        TierRoute::Lead(lead_name) =>
             crate::lead::run_lead_batch(
                 agents, config, workspace, ledger, jev_triage, phase, task_id, &lead_name, delegation,
             )
-            .await
-        },
-        TierRoute::Direct => {
+            .await,
+        TierRoute::Direct =>
             if delegation.team {
                 run_collective(agents, config, workspace, ledger, run_dir, phase, task_id, delegation).await
             } else {
                 run_single(agents, config, workspace, ledger, phase, task_id, delegation, 1).await
-            }
-        },
+            },
     }
 }
 
@@ -271,7 +328,7 @@ fn route_tier1(
         return TierRoute::Direct;
     };
     match crate::hierarchy::lead_for(teams, role) {
-        Some(team) if lead_exists(&team.lead) => {
+        Some(team) if lead_exists(&team.lead) =>
             if config.hierarchy.deny_direct {
                 TierRoute::Refuse {
                     role,
@@ -279,8 +336,7 @@ fn route_tier1(
                 }
             } else {
                 TierRoute::Lead(team.lead.clone())
-            }
-        },
+            },
         _ => TierRoute::Direct,
     }
 }
@@ -651,5 +707,62 @@ mod tests {
         // clauses the whole body is the task.
         let delegation = parse_delegation(Some("critic".into()), "Review a|b".into());
         assert_eq!(delegation.task, "Review a|b");
+    }
+
+    /// Results return in emission order even when jobs complete out of
+    /// order (ADR 0029): the ready-set order is the ledger-visible order.
+    #[tokio::test]
+    async fn run_bounded_returns_results_in_emission_order() {
+        let jobs = vec![0usize, 1, 2]
+            .into_iter()
+            .map(|index| {
+                let handle = tokio::spawn(async move {
+                    // Later indexes finish first: reversed completion order.
+                    tokio::time::sleep(std::time::Duration::from_millis(10 * (2 - index as u64))).await;
+                    (index, format!("t{index}"), TaskResult {
+                        id: format!("t{index}"),
+                        role: Role::Orchestrator,
+                        passed: true,
+                        output: "ok".into(),
+                        tier: 1,
+                    })
+                });
+                (index, format!("t{index}"), handle)
+            })
+            .collect();
+        let results = run_bounded(jobs).await;
+        let ids: Vec<String> = results.into_iter().map(|result| result.id).collect();
+        assert_eq!(ids, vec!["t0", "t1", "t2"]);
+    }
+
+    /// A panicked job becomes one failure result. The rest of the batch
+    /// survives. The failure id falls back to the job's task id.
+    #[tokio::test]
+    async fn run_bounded_maps_panic_to_failure() {
+        let jobs = vec![0usize, 1]
+            .into_iter()
+            .map(|index| {
+                let handle = tokio::spawn(async move {
+                    if index == 0 {
+                        panic!("dispatch exploded");
+                    }
+                    (index, format!("t{index}"), TaskResult {
+                        id: format!("t{index}"),
+                        role: Role::Orchestrator,
+                        passed: true,
+                        output: "ok".into(),
+                        tier: 1,
+                    })
+                });
+                (index, format!("t{index}"), handle)
+            })
+            .collect();
+        let results = run_bounded(jobs).await;
+        assert_eq!(results.len(), 2);
+        assert!(!results[0].passed);
+        assert_eq!(results[0].id, "t0");
+        assert!(results[0].output.contains("panicked"));
+        assert!(results[1].passed);
+        assert_eq!(results[1].id, "t1");
     }
 }
