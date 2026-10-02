@@ -178,8 +178,46 @@ impl OrchestratorLoop {
         // Single non-delegate decision (first one wins). `Delegate` cannot
         // appear here: a non-empty delegate set ran through the task-graph
         // executor above, so decisions[0] is a non-delegate verb.
-        let decision = &decisions[0];
-        match decision {
+        // v3s26: a round that closes several duplicate tasks before
+        // `done` dropped the trailing verb (only decisions[0] ran), and
+        // max_rounds killed the run one round before the phase exit.
+        // Execute every leading Close (cheap bookkeeping), then honor the
+        // first trailing non-close verb as the effective decision.
+        let (closes, effective) = split_leading_closes(&decisions);
+        if !closes.is_empty() {
+            let tasks = blackboard::tasks::TaskList::new(&self.run_dir);
+            let known = tasks.read().unwrap_or_default();
+            for (task, _) in &closes {
+                if !known.iter().any(|known_task| &known_task.id == task) {
+                    self.ledger.append_failure(&blackboard::Failure {
+                        at: now_string(),
+                        phase: format!("{:?}", state.phase),
+                        category: "gate".into(),
+                        root_cause: format!("close targets unknown task {task}"),
+                        suggested_action: "close one of the TASKS ids listed in the round prompt".into(),
+                    })?;
+                    return Ok(RoundOutcome::Refused);
+                }
+            }
+            drop(known);
+            for (task, reason) in &closes {
+                tasks.set_status(task, blackboard::tasks::TaskStatus::Done)?;
+                self.ledger.append_decision(&Decision {
+                    at: now_string(),
+                    phase: format!("{:?}", state.phase),
+                    action: "close".into(),
+                    detail: serde_json::json!({"round": self.round, "task": task}),
+                    reasoning: reason.clone(),
+                })?;
+            }
+            if matches!(effective, DecisionVerb::Close { .. }) {
+                let task = closes[closes.len() - 1].0.clone();
+                return Ok(RoundOutcome::Closed {
+                    task,
+                });
+            }
+        }
+        match effective {
             // Unreachable: a non-empty delegate set ran through the
             // task-graph executor above, so decisions[0] is a non-delegate
             // verb. The arm only satisfies exhaustiveness.
@@ -427,6 +465,32 @@ pub(crate) fn parse_decisions(answer: &str) -> Vec<DecisionVerb> {
         .collect()
 }
 
+/// Split leading `Close` verbs from the rest of a round's decisions.
+/// Returns the closes (in order) and the first non-close verb, falling
+/// back to `decisions[0]` when the whole answer is closes. Callers apply
+/// the closes as bookkeeping and then execute the effective verb, so a
+/// `close t2; close t3; done` round reaches the phase gate in one round
+/// instead of dropping the trailing verb (v3s26: the drop plus max_rounds
+/// closed the run one round before the phase exit).
+pub(crate) fn split_leading_closes(decisions: &[DecisionVerb]) -> (Vec<(String, String)>, &DecisionVerb) {
+    let mut closes = Vec::new();
+    let mut pulled = None;
+    for decision in decisions.iter() {
+        match decision {
+            DecisionVerb::Close {
+                task,
+                reason,
+            } => closes.push((task.clone(), reason.clone())),
+            _ => {
+                pulled = Some(decision);
+                break;
+            },
+        }
+    }
+    let effective = pulled.unwrap_or(&decisions[0]);
+    (closes, effective)
+}
+
 /// Extract a `PLAN:` section from the orchestrator's answer. The model
 /// writes the new plan body under this heading (usually right before the
 /// DECISION lines); the replan verb persists it as `plan.md`. Returns
@@ -524,21 +588,19 @@ pub(crate) fn judge_output(role: Role, output: &str) -> Result<(), String> {
             Some((word, detail)) => Err(format!("repair {word}: {detail}")),
             None => Err("repairer produced no REPAIR line".into()),
         },
-        Role::FailureAnalyst => {
+        Role::FailureAnalyst =>
             if judges::parse_diagnosis(output).is_some() {
                 Ok(())
             } else {
                 Err("failure analyst produced no DIAGNOSIS line".into())
-            }
-        },
+            },
         // Declarative roles pass when they produced nonempty output.
-        _ => {
+        _ =>
             if output.trim().is_empty() {
                 Err("empty specialist output".into())
             } else {
                 Ok(())
-            }
-        },
+            },
     }
 }
 
@@ -746,6 +808,50 @@ mod tests {
                 assert!(reason.is_empty());
             },
             other => panic!("expected close, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn split_micro() {
+        let ds = vec![
+            DecisionVerb::Close {
+                task: "a".into(),
+                reason: String::new(),
+            },
+            DecisionVerb::Done,
+        ];
+        let (c, e) = split_leading_closes(&ds);
+        println!("MICRO closes={c:?} eff matches done={}", matches!(e, DecisionVerb::Done));
+        assert!(matches!(e, DecisionVerb::Done));
+    }
+
+    #[test]
+    fn trailing_done_after_closes_survives_split() {
+        // v3s26: only decisions[0] ran, so a round that closed duplicate
+        // tasks before `done` dropped the phase-exit verb and max_rounds
+        // closed the run one round early.
+        let decisions = parse_decisions(
+            "DECISION: close t2 | duplicate of t1\nDECISION: close t3 | duplicate of t1\nDECISION: done",
+        );
+        let (closes, effective) = split_leading_closes(&decisions);
+        assert_eq!(decisions.len(), 3, "parsed: {decisions:?}");
+        assert_eq!(closes.len(), 2);
+        assert_eq!(closes[0].0, "t2");
+        assert_eq!(closes[1].0, "t3");
+        assert!(matches!(effective, DecisionVerb::Done), "trailing verb dropped: {effective:?}");
+    }
+
+    #[test]
+    fn all_close_round_keeps_last_close() {
+        let decisions = parse_decisions("DECISION: close t4 | superseded\nDECISION: close t5 | duplicate");
+        let (closes, effective) = split_leading_closes(&decisions);
+        assert_eq!(closes.len(), 2);
+        match effective {
+            DecisionVerb::Close {
+                task,
+                ..
+            } => assert_eq!(task, "t4"),
+            other => panic!("expected close fallback, got {other:?}"),
         }
     }
 
