@@ -390,8 +390,8 @@ impl OrchestratorLoop {
              REASON\nDECISION: done\nDECISION: close TASK_ID | REASON\nDECISION: finish | REASON\nROLE is one of: \
              {role_list}.\nFor replan: write the new plan under a `PLAN:` heading before the DECISION line; the \
              harness persists that section as plan.md. Empty-plan replans change nothing.\nYou MAY emit several \
-             delegate lines in one round when the tasks are independent; the harness runs up to {fanout} of them in \
-             parallel and queues the rest. `after:` lists task ids this one waits on.             \
+             delegate lines in one round when the tasks are independent. The harness runs up to {fanout} of them in \
+             parallel and defers the rest to a later round. `after:` lists task ids this one waits on.             \
              {hierarchy_note}{replan_note}",
             self.round,
             state.phase,
