@@ -102,7 +102,7 @@ async fn run() -> anyhow::Result<()> {
         std::env::var("NETMIND_API_KEY").ok(),
         std::env::var("NETMIND_BASE_URL").ok(),
     )?;
-    let clients = provider.client()?;
+    let clients = provider.client(&config.run)?;
 
     // Output layout.
     let output_dir = PathBuf::from(&config.output.dir);
@@ -372,13 +372,7 @@ async fn run() -> anyhow::Result<()> {
             let ledger = Ledger::new(run_dir.join("ledgers"));
             let transient = ledger
                 .read_failures()
-                .map(|failures| {
-                    failures
-                        .iter()
-                        .rev()
-                        .take(3)
-                        .all(|failure| failure.category == "model")
-                })
+                .map(|failures| failures.iter().rev().take(3).all(|failure| failure.category == "model"))
                 .unwrap_or(false);
             if transient {
                 breaker_state.record_transient_stalled_round();

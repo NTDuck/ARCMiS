@@ -1,5 +1,5 @@
 //! Provider selection for the agent clients. Ollama serves the local
-//! models over its native protocol; netmind serves remote models over an
+//! models over its native protocol. netmind serves remote models over an
 //! OpenAI-compatible chat-completions endpoint. Both clients produce the
 //! same rig `Agent` through the blanket `AgentClientExt`, so every agent
 //! builder stays provider-agnostic and generic over the client type.
@@ -9,6 +9,20 @@ use rig::providers::ollama;
 use rig::providers::openai;
 
 use crate::util::config::Run;
+
+/// The shared HTTP backend for the provider client. A timeout above zero
+/// bounds every model-call request. 0 keeps the pre-knob behavior (no
+/// timeout). The same reqwest client serves both providers.
+fn http_client(request_timeout_secs: u64) -> reqwest::Client {
+    if request_timeout_secs == 0 {
+        reqwest::Client::default()
+    } else {
+        reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(request_timeout_secs))
+            .build()
+            .unwrap_or_default()
+    }
+}
 
 /// Selected model provider.
 #[derive(Debug, Clone)]
@@ -29,7 +43,7 @@ pub enum Provider {
 
 impl Provider {
     /// Resolve the provider from the CLI flags. `netmind` requires the api
-    /// key flag; ollama is the default when no name is given.
+    /// key flag. ollama is the default when the caller gives no name.
     pub fn from_cli(name: Option<String>, api_key: Option<String>, base_url: Option<String>) -> anyhow::Result<Self> {
         match name.as_deref() {
             None | Some("ollama") => Ok(Self::Ollama {
@@ -48,8 +62,13 @@ impl Provider {
 
     /// Build the concrete client for this provider. The caller matches on
     /// the provider variant and passes the client to the generic run
-    /// functions; there is no type erasure.
-    pub fn client(&self) -> anyhow::Result<Clients> {
+    /// functions. There is no type erasure. `run.request_timeout_secs`
+    /// bounds each HTTP request (0 = no timeout, the pre-knob behavior).
+    /// the timeout lives on the shared reqwest client, so every model call
+    /// on it surfaces as a transient completion error and routes through
+    /// the retry/backoff path.
+    pub fn client(&self, run: &Run) -> anyhow::Result<Clients> {
+        let http = http_client(run.request_timeout_secs);
         match self {
             Self::Ollama {
                 base_url,
@@ -60,7 +79,7 @@ impl Provider {
                 if let Some(url) = base_url {
                     builder = builder.base_url(url.clone());
                 }
-                Ok(Clients::Ollama(builder.build().context("ollama client build failed")?))
+                Ok(Clients::Ollama(builder.http_client(http).build().context("ollama client build failed")?))
             },
             Self::Netmind {
                 api_key,
@@ -72,6 +91,7 @@ impl Provider {
                 let client = openai::Client::builder()
                     .api_key(api_key.clone())
                     .base_url(base_url.clone())
+                    .http_client(http)
                     .build()
                     .context("netmind client build failed")?
                     .completions_api();
@@ -81,7 +101,7 @@ impl Provider {
     }
 
     /// Provider-specific model parameters for the agent builders. Ollama
-    /// carries the context window and the think switch; the OpenAI
+    /// carries the context window and the think switch. The OpenAI
     ///-compatible wire has no counterpart, so netmind sends none.
     pub fn extra_params(&self, run: &Run) -> Option<serde_json::Value> {
         match self {
