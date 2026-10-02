@@ -4,7 +4,7 @@ run:
   max_turns: 14
   num_ctx: 65536
   max_output_tokens: 8192
-  max_retries: 1
+  max_retries: 4
   think: true
   temperature: 0.2
 output:
