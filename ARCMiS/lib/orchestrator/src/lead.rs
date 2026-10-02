@@ -108,20 +108,22 @@ pub(crate) async fn run_lead_batch(
             format!(
                 "{}\n\nTEAM: you may delegate to one of: {}.\n\nDecide the next action. Answer with DECISION lines \
                  (plain words, no angle brackets):\nDECISION: delegate ROLE | TASK TEXT\nDECISION: done\nROLE is one \
-                 of the team members above. One dispatch per round; the harness runs it to completion before your \
-                 next round. TASK TEXT stays under 40 words: name the deliverable and the files to touch; the brief \
-                 above already carries the detail, so do not restate it.",
+                 of the team members above. You may emit several delegate lines in one round when each task touches \
+                 DIFFERENT deliverable paths. The harness runs them concurrently. Tasks that mutate the same files in \
+                 sequence are not independent: keep them in separate rounds. TASK TEXT stays under 40 words: name the \
+                 deliverable and the files to touch. The brief above already carries the detail, so do not restate it.",
                 brief(&delegation.task, config, workspace),
                 team.member_names().join(", "),
             )
         } else {
             format!(
-                "ROUND {} of your batch (task unchanged; the brief you already have). TEAM: you may delegate to one \
-                 of: {}.\n\nDISPATCH RESULTS SO FAR:\n{}\n\nDecide the next action. Answer with DECISION lines (plain \
+                "ROUND {} of your batch. The task and the brief stay as before. TEAM: you may delegate to one of: \
+                 {}.\n\nDISPATCH RESULTS SO FAR:\n{}\n\nDecide the next action. Answer with DECISION lines (plain \
                  words, no angle brackets):\nDECISION: delegate ROLE | TASK TEXT\nDECISION: done\nROLE is one of the \
-                 team members above. One dispatch per round; the harness runs it to completion before your next \
-                 round. TASK TEXT stays under 40 words; reference the brief and prior results instead of restating \
-                 them.",
+                 team members above. You may emit several delegate lines in one round when each task touches \
+                 DIFFERENT deliverable paths. The harness runs them concurrently. Tasks that mutate the same files in \
+                 sequence are not independent: keep them in separate rounds. TASK TEXT stays under 40 words. \
+                 Reference the brief and prior results instead of restating them.",
                 _round + 1,
                 team.member_names().join(", "),
                 transcript,
@@ -131,12 +133,12 @@ pub(crate) async fn run_lead_batch(
         {
             Ok(turn) => turn.judgeable(),
             Err(error) => {
-                tracing::warn!(lead = lead_name, error = %error, "lead model call failed; batch fails");
+                tracing::warn!(lead = lead_name, error = %error, "lead model call failed. The batch fails");
                 return finish(ledger, task_id, lead_name, false, format!("lead failed: {error}"), results);
             },
         };
-        match parse_lead_decision(&answer, &team) {
-            Some(LeadDecision::Done) => {
+        match parse_lead_round(&answer, &team) {
+            LeadRound::Done => {
                 // Acceptance gate: the tier-1 task text names deliverables in
                 // its `Acceptance:` line; a batch that declares done without
                 // them fails instead of passing a half-delivered brief
@@ -168,88 +170,136 @@ pub(crate) async fn run_lead_batch(
                 }
                 return finish(ledger, task_id, lead_name, passed, summary, results);
             },
-            Some(LeadDecision::Delegate {
-                role,
-                task,
-            }) => {
-                let inner = crate::taskgraph::Delegation {
-                    role: Some(role.name().to_owned()),
-                    task,
-                    depends_on: Vec::new(),
-                    team: false,
-                    lead: None,
-                };
-                // Tier 3: the member executes under the tier-1 dispatch
-                // policy (same judge/tester tool-call caps). The trace
-                // hook marks its records tier 3 via the role agent build.
-                let result = run_single(agents, config, workspace, ledger, phase, task_id, &inner, 3).await;
+            LeadRound::Dispatches(dispatches) => {
+                if dispatches.is_empty() {
+                    // Every line refused or no DECISION at all: the same
+                    // stagnation path as before ADR 0029, no new state.
+                    stalled += 1;
+                    if stalled >= stagnation_cap {
+                        tracing::warn!(
+                            lead = lead_name,
+                            "lead emitted no usable decision; stagnation breaker ends the batch"
+                        );
+                        return finish(
+                            ledger,
+                            task_id,
+                            lead_name,
+                            false,
+                            "lead stagnation breaker tripped".into(),
+                            results,
+                        );
+                    }
+                    continue;
+                }
+                // Over-fanout tail: truncate at the execution site (no
+                // in-code queue, ADR 0029). The truncated dispatches get a
+                // transcript note so the lead re-emits them next round.
+                let fanout = config.fanout.max(1);
+                let queued: Vec<_> = dispatches.iter().skip(fanout).collect();
+                for (role, task) in &queued {
+                    transcript.push_str(&format!(
+                        "- [deferred] {}: emitted but not dispatched this round (fanout cap {}): {}\n",
+                        role.name(),
+                        fanout,
+                        task.chars().take(120).collect::<String>()
+                    ));
+                }
+                let runnable: Vec<_> = dispatches.into_iter().take(fanout).collect();
+                // Member dispatches run concurrently, bounded by fanout
+                // (ADR 0029). Shared handles clone cheaply (Arc inside
+                // MasAgents and Ledger, a path inside Workspace).
+                let mut jobs: Vec<tokio::task::JoinHandle<TaskResult>> = Vec::new();
+                for (role, task) in runnable {
+                    let agents = agents.clone();
+                    let config = config.clone();
+                    let workspace = workspace.clone();
+                    let ledger = ledger.clone();
+                    let inner = crate::taskgraph::Delegation {
+                        role: Some(role.name().to_owned()),
+                        task,
+                        depends_on: Vec::new(),
+                        team: false,
+                        lead: None,
+                    };
+                    // Tier 3: the member executes under the tier-1 dispatch
+                    // policy (same judge/tester tool-call caps). The trace
+                    // hook marks its records tier 3 via the role agent build.
+                    let task_id = task_id.to_owned();
+                    jobs.push(tokio::spawn(async move {
+                        run_single(&agents, &config, &workspace, &ledger, phase, &task_id, &inner, 3).await
+                    }));
+                }
+                let mut round_results: Vec<TaskResult> = Vec::new();
+                for job in jobs {
+                    let result = match job.await {
+                        Ok(result) => result,
+                        Err(join_error) => TaskResult {
+                            id: task_id.to_owned(),
+                            role: agents::Role::Orchestrator,
+                            passed: false,
+                            output: format!("member dispatch panicked: {join_error}"),
+                            tier: 3,
+                        },
+                    };
+                    round_results.push(result);
+                }
                 // Typed-decision triage (ADR 0027): one laya forward pass
-                // classifies the dispatch result instead of burning a lead
+                // classifies each dispatch result instead of burning a lead
                 // LLM turn on it. Instrumentation plus (ADR 0028) the
                 // enforce policy: a confident stop-or-harmful verdict ends
                 // the batch early with a triage failure row. A fallback or
                 // a disabled judge leaves the loop byte identical.
-                let consultation = record_triage(jev_triage, ledger, phase, &result, task_id);
-                if jev_triage.policy() == agents::TriagePolicy::Enforce
-                    && gate(jev_triage.policy(), &consultation) == RoundAction::Stop
-                {
-                    let _ = ledger.append_failure(&blackboard::Failure {
-                        at: now_string(),
-                        phase: format!("{phase:?}"),
-                        category: "triage".into(),
-                        root_cause: format!(
-                            "dispatch triage stop: {} task={task_id}",
-                            consultation_verdict(&consultation).map_or_else(
-                                || "no verdict".to_owned(),
-                                |v| format!("outcome={} action={} confidence={:.2}", v.outcome, v.action, v.confidence)
+                for result in &round_results {
+                    let consultation = record_triage(jev_triage, ledger, phase, result, task_id);
+                    if jev_triage.policy() == agents::TriagePolicy::Enforce
+                        && gate(jev_triage.policy(), &consultation) == RoundAction::Stop
+                    {
+                        let _ = ledger.append_failure(&blackboard::Failure {
+                            at: now_string(),
+                            phase: format!("{phase:?}"),
+                            category: "triage".into(),
+                            root_cause: format!(
+                                "dispatch triage stop: {} task={task_id}",
+                                consultation_verdict(&consultation).map_or_else(
+                                    || "no verdict".to_owned(),
+                                    |v| format!(
+                                        "outcome={} action={} confidence={:.2}",
+                                        v.outcome, v.action, v.confidence
+                                    )
+                                ),
                             ),
-                        ),
-                        suggested_action: "inspect the jev_triage observations".into(),
-                    });
-                    return finish(
-                        ledger,
-                        task_id,
-                        lead_name,
-                        false,
-                        "dispatch triage policy stopped the batch".into(),
-                        results,
-                    );
+                            suggested_action: "inspect the jev_triage observations".into(),
+                        });
+                        return finish(
+                            ledger,
+                            task_id,
+                            lead_name,
+                            false,
+                            "dispatch triage policy stopped the batch".into(),
+                            results,
+                        );
+                    }
                 }
-                transcript.push_str(&format!(
-                    "- [{}] {}: {}\n",
-                    if result.passed {
-                        "pass"
+                for result in round_results {
+                    transcript.push_str(&format!(
+                        "- [{}] {}: {}\n",
+                        if result.passed {
+                            "pass"
+                        } else {
+                            "fail"
+                        },
+                        result.role.name(),
+                        result.output.chars().take(600).collect::<String>()
+                    ));
+                    stalled = if result.passed {
+                        0
                     } else {
-                        "fail"
-                    },
-                    result.role.name(),
-                    result.output.chars().take(600).collect::<String>()
-                ));
+                        stalled + 1
+                    };
+                    results.push(result);
+                }
                 if transcript.chars().count() > config.notes_cap {
                     transcript = transcript.chars().skip(transcript.chars().count() - config.notes_cap).collect();
-                }
-                stalled = if result.passed {
-                    0
-                } else {
-                    stalled + 1
-                };
-                results.push(result);
-            },
-            None => {
-                stalled += 1;
-                if stalled >= stagnation_cap {
-                    tracing::warn!(
-                        lead = lead_name,
-                        "lead emitted no usable decision; stagnation breaker ends the batch"
-                    );
-                    return finish(
-                        ledger,
-                        task_id,
-                        lead_name,
-                        false,
-                        "lead stagnation breaker tripped".into(),
-                        results,
-                    );
                 }
             },
         }
@@ -319,7 +369,6 @@ fn record_triage(
     }
 }
 
-/// The verdict of a decided consultation, for failure-row text.
 fn consultation_verdict(
     consultation: &crate::jev_triage::TriageConsultation,
 ) -> Option<crate::jev_triage::TriageVerdict> {
@@ -330,11 +379,6 @@ fn consultation_verdict(
         crate::jev_triage::TriageConsultation::Fallback => None,
     }
 }
-
-/// Workspace paths named in the task's `Acceptance:` clause that do not
-/// exist yet. Recognizes `path/file.ext` tokens; tokens without a `/` or
-/// an extension are prose and ignored. Absent clause -> empty set.
-#[must_use]
 fn missing_acceptance_files(task: &str, workspace: &Workspace) -> Vec<String> {
     let Some(position) = task.find("Acceptance:") else {
         return Vec::new();
@@ -355,8 +399,6 @@ fn missing_acceptance_files(task: &str, workspace: &Workspace) -> Vec<String> {
     }
     missing
 }
-
-/// Ledger the batch verdict and fold it into one tier-1-visible result.
 fn finish(
     ledger: &Ledger,
     task_id: &str,
@@ -403,22 +445,26 @@ fn finish(
     }
 }
 
-/// One inner-loop decision.
-pub(crate) enum LeadDecision {
-    /// Dispatch one member role.
-    Delegate {
-        role: agents::Role,
-        task: String,
-    },
+/// One parsed lead round: either the batch ends, or the lead emitted a
+/// list of member dispatches (possibly empty when every line was refused
+/// or the answer carried no DECISION at all).
+#[derive(Debug)]
+pub(crate) enum LeadRound {
     /// The batch is complete (or unrecoverable). return to tier 1.
     Done,
+    /// Member dispatches in emission order. Empty when the lead's answer
+    /// held no usable dispatch: the caller counts one stagnation step.
+    Dispatches(Vec<(agents::Role, String)>),
 }
 
-/// Parse the lead's answer into one decision. Only the lead's own member
-/// roles pass: a cross-team dispatch, a lead-to-lead dispatch (leads are
-/// not specialist roles, so they never resolve here), or an empty task
-/// reads as unusable output. The stagnation counter handles repeats.
-pub(crate) fn parse_lead_decision(answer: &str, team: &agents::mas::leads::Team) -> Option<LeadDecision> {
+/// Parse every DECISION line in the lead's answer (ADR 0029). Only the
+/// lead's own member roles pass: a cross-team dispatch, a lead-to-lead
+/// dispatch (leads are not specialist roles, so they never resolve here),
+/// or an empty task is refused with a warning and skipped. A `done` verb
+/// wins over any delegate lines in the same answer. The stagnation
+/// counter handles repeated empty rounds.
+pub(crate) fn parse_lead_round(answer: &str, team: &agents::mas::leads::Team) -> LeadRound {
+    let mut dispatches: Vec<(agents::Role, String)> = Vec::new();
     for decision in parse_decisions(answer) {
         match decision {
             crate::loop_::DecisionVerb::Delegate {
@@ -428,10 +474,7 @@ pub(crate) fn parse_lead_decision(answer: &str, team: &agents::mas::leads::Team)
                 let resolved = role.as_deref().and_then(agents::Role::from_name);
                 match resolved {
                     Some(role) if team.permits(role) && !task.trim().is_empty() => {
-                        return Some(LeadDecision::Delegate {
-                            role,
-                            task,
-                        })
+                        dispatches.push((role, task));
                     },
                     other => {
                         tracing::warn!(
@@ -443,9 +486,9 @@ pub(crate) fn parse_lead_decision(answer: &str, team: &agents::mas::leads::Team)
                     },
                 }
             },
-            crate::loop_::DecisionVerb::Done => return Some(LeadDecision::Done),
+            crate::loop_::DecisionVerb::Done => return LeadRound::Done,
             _ => continue,
         }
     }
-    None
+    LeadRound::Dispatches(dispatches)
 }
