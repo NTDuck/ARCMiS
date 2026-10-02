@@ -23,3 +23,4 @@ pub use mas::leads::Team;
 pub use mas::registry::MasAgents;
 pub use mas::roles::Role;
 pub use util::config::Config;
+pub use util::config::TriagePolicy;

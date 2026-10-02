@@ -61,6 +61,11 @@ pub struct Run {
     pub temperature: f64,
     /// Provider name: `ollama` (default) or `netmind`.
     pub provider: String,
+    /// Per-request timeout in seconds on the model-call HTTP client. 0
+    /// (default) means no timeout, the pre-knob behavior. A timed-out
+    /// request counts as transient and routes through the existing
+    /// retry/backoff path (ADR 0028: bounded silent inference turns).
+    pub request_timeout_secs: u64,
 }
 impl Default for Run {
     fn default() -> Self {
@@ -73,6 +78,7 @@ impl Default for Run {
             think: true,
             temperature: 0.2,
             provider: "ollama".to_owned(),
+            request_timeout_secs: 0,
         }
     }
 }
@@ -139,8 +145,8 @@ pub struct MasConfig {
     pub jev_triage: JevTriageConfig,
 }
 
-/// Tier-2 team layout for hierarchical orchestration. Teams are fixed at
-/// build (registry, one lead prompt, one member allowlist each). the
+/// Tier-2 team layout for hierarchical orchestration. The build step fixes
+/// the teams (registry, one lead prompt, one member allowlist each). The
 /// runtime picks which lead serves a delegation. No team layout is
 /// hardcoded here: the config owns the split.
 #[derive(Debug, Clone, Deserialize, serde::Serialize)]
@@ -235,6 +241,20 @@ impl Default for JevJudgeConfig {
     }
 }
 
+/// What a triage verdict does (ADR 0028). `observe` keeps verdicts as
+/// ledger rows. `enforce` ends the round or lead batch early on a
+/// confident stop-or-harmful verdict. Default `observe`: zero behavior
+/// change unless configured.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize, serde::Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum TriagePolicy {
+    /// Ledger only. Behavior is unchanged.
+    #[default]
+    Observe,
+    /// A confident stop-or-harmful verdict ends the round or batch early.
+    Enforce,
+}
+
 /// Configuration for the laya-backed typed triage on the lead's member
 /// dispatches (ADR 0027). One `agent_trace_observability` predict call per
 /// dispatch result. The confidence threshold gates acceptance per the
@@ -253,6 +273,10 @@ pub struct JevTriageConfig {
     /// verdict. Below it the lead loop falls back to uninstrumented
     /// behavior (arXiv:2609.26550 §7).
     pub confidence_threshold: f64,
+    /// What a verdict does. `observe` (default) keeps it a ledger row.
+    /// `enforce` ends the round or lead batch early on a confident
+    /// stop-or-harmful verdict. See ADR 0028.
+    pub policy: TriagePolicy,
 }
 
 impl Default for JevTriageConfig {
@@ -261,6 +285,7 @@ impl Default for JevTriageConfig {
             enabled: false,
             checkpoint: String::new(),
             confidence_threshold: 0.9,
+            policy: TriagePolicy::default(),
         }
     }
 }
@@ -334,5 +359,52 @@ impl Config {
     pub fn load(path: &Path) -> anyhow::Result<Self> {
         let raw = read_to_string(path).with_context(|| format!("config load failed for {}", path.display()))?;
         serde_yaml::from_str(&raw).with_context(|| format!("config parse failed for {}", path.display()))
+    }
+}
+
+#[cfg(test)]
+mod policy_tests {
+    use super::JevTriageConfig;
+    use super::Run;
+    use super::TriagePolicy;
+
+    #[test]
+    fn defaults_are_observe_and_no_timeout() {
+        let config = JevTriageConfig::default();
+        assert_eq!(config.policy, TriagePolicy::Observe);
+        assert!(!config.enabled);
+        assert_eq!(Run::default().request_timeout_secs, 0);
+    }
+
+    #[test]
+    fn yml_parse_accepts_the_new_knobs() {
+        let run: Run = serde_yaml::from_str("model: m\nmax_turns: 14\nnum_ctx: 16384\nmax_output_tokens: 8192\nmax_retries: 1\nthink: true\ntemperature: 0.2\nprovider: ollama\nrequest_timeout_secs: 900\n").expect("run");
+        assert_eq!(run.request_timeout_secs, 900);
+        let jev: JevTriageConfig = serde_yaml::from_str("enabled: true\ncheckpoint: assets/models/laya-typed-decisions\nconfidence_threshold: 0.9\npolicy: enforce\n").expect("jev");
+        assert_eq!(jev.policy, TriagePolicy::Enforce);
+        assert_eq!(jev.confidence_threshold, 0.9);
+    }
+
+    #[test]
+    fn yml_without_the_knobs_keeps_defaults() {
+        let run: Run = serde_yaml::from_str("model: m\nmax_turns: 14\nnum_ctx: 16384\nmax_output_tokens: 8192\nmax_retries: 1\nthink: true\ntemperature: 0.2\nprovider: ollama\n").expect("run");
+        assert_eq!(run.request_timeout_secs, 0);
+        let jev: JevTriageConfig =
+            serde_yaml::from_str("enabled: true\ncheckpoint: x\nconfidence_threshold: 0.9\n").expect("jev");
+        assert_eq!(jev.policy, TriagePolicy::Observe);
+    }
+
+    #[test]
+    fn full_config_file_roundtrips() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let path = dir.path().join("config.yml");
+        std::fs::write(
+            &path,
+            "run:\n  model: m\n  max_turns: 14\n  num_ctx: 16384\n  max_output_tokens: 8192\n  max_retries: 1\n  think: true\n  temperature: 0.2\n  provider: ollama\n  request_timeout_secs: 300\noutput:\n  dir: /tmp/x\nsource:\n  language: go\n  root: src\n  target:\n    language: rust\n    test_command: cargo test\n",
+        )
+        .expect("write config");
+        let config = super::Config::load(&path).expect("load");
+        assert_eq!(config.run.request_timeout_secs, 300);
+        assert_eq!(config.mas.jev_triage.policy, TriagePolicy::Observe);
     }
 }
