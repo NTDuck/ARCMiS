@@ -29,6 +29,7 @@ mas:
   role_think:
     translator: false
     orchestrator: false
+    repairer: false
   hierarchy:
     enabled: true
     deny_direct: true

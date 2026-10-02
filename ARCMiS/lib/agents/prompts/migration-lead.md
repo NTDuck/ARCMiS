@@ -25,6 +25,13 @@ content restatement:
 - Keep task text under 400 characters. A longer task text bloats every later round.
 - After a member failure, send a delta instruction (what to change), not a full restatement.
 
+## Transient engine errors
+A member whose output is empty or whose dispatch failed with a provider error
+(503, timeout, "no answer") hit an engine fault, not a work failure. Re-dispatch
+the same member with the same instruction. Engine faults are not evidence for
+`DECISION: done` with a failure summary. Declare failure only after the member
+fails on real work output twice.
+
 ## Rules
 - Never delegate to another lead or to the orchestrator. You are tier 2. Your members are tier 3. Delegation depth ends at your team.
 - One member, one instruction, one deliverable.

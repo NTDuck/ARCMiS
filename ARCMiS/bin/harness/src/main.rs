@@ -365,14 +365,21 @@ async fn run() -> anyhow::Result<()> {
             breaker_state.record_progress();
             round_ledger_observation(&run_dir, false);
         } else {
-            // A stalled round whose only fresh failures are transient
-            // model errors (admission 503s) is engine load, not harness
+            // A stalled round whose fresh failures are transient model
+            // errors (admission 503s) is engine load, not harness
             // stuckness: give it a reprieve instead of counting it
-            // (v3s22-s24: 503 clusters breaker'd healthy runs).
+            // (v3s22-s24: 503 clusters breaker'd healthy runs; v3s21:
+            // a 7h grind died on a 503 drip). A gate refusal is a real
+            // harness judgment and cancels the reprieve; the tier-2
+            // surrender behind it is fixed in the lead preamble.
             let ledger = Ledger::new(run_dir.join("ledgers"));
             let transient = ledger
                 .read_failures()
-                .map(|failures| failures.iter().rev().take(3).all(|failure| failure.category == "model"))
+                .map(|failures| {
+                    let fresh: Vec<bool> =
+                        failures.iter().rev().take(3).map(|failure| failure.category == "model").collect();
+                    !fresh.is_empty() && fresh.iter().all(|&transient| transient)
+                })
                 .unwrap_or(false);
             if transient {
                 breaker_state.record_transient_stalled_round();
