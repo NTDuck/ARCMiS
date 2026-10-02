@@ -80,7 +80,11 @@ wait_close() {
     # Echoes "clean" when the run emitted its terminal done event,
     # "dead" when the process exited silently (needs an abort note).
     local tag="$1"
-    while pgrep -f "$tag" > /dev/null; do sleep 300; done
+    while pgrep -f "$tag" > /dev/null; do
+        # Watchdog liveness mark: the driver is alive while it waits.
+        touch "$ROOT/.artifacts/experiments/.sweep-heartbeat"
+        sleep 300
+    done
     if grep -q '"event":"done"' "$ROOT/.artifacts/experiments/$tag/events.jsonl" 2>/dev/null; then
         echo clean
     else
@@ -110,6 +114,8 @@ echo "== sweep: ${#ROUNDS[@]} rounds from $PAIRS (stagger ${STAGGER}s)"
 
 i="$START"
 while [ "$i" -lt "${#ROUNDS[@]}" ]; do
+    # Watchdog liveness mark: the driver is alive at this loop iteration.
+    touch "$ROOT/.artifacts/experiments/.sweep-heartbeat"
     slotA_spec="${ROUNDS[$i]}"
     slotB_spec=""
     [ "$((i+1))" -lt "${#ROUNDS[@]}" ] && slotB_spec="${ROUNDS[$((i+1))]}"
