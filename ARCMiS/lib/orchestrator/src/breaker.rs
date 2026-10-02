@@ -47,6 +47,14 @@ impl BreakerState {
         self.stalled_rounds += 1;
     }
 
+    /// Record a stalled round whose failures were transient model errors
+    /// (engine admission 503s). These measure engine load, not harness
+    /// stuckness, so they decay one stalled round instead of adding one
+    /// (v3s22-s24: 503 clusters breaker'd healthy runs at Contract).
+    pub fn record_transient_stalled_round(&mut self) {
+        self.stalled_rounds = self.stalled_rounds.saturating_sub(1);
+    }
+
     /// Record a round where at least one task completed.
     pub fn record_productive_round(&mut self) {
         self.stalled_rounds = 0;

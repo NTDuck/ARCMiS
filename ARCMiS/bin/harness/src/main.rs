@@ -5,6 +5,8 @@
 mod cli_sink;
 mod experiment;
 mod observability;
+mod round_guard;
+mod triage_cmd;
 
 use std::path::Path;
 use std::path::PathBuf;
@@ -26,6 +28,22 @@ use orchestrator::state_machine;
 
 #[tokio::main]
 async fn main() -> ExitCode {
+    // The triage subcommand is synchronous and read-only; it never touches
+    // the model daemon. Everything else is the MAS run driver.
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    if args.first().map(String::as_str) == Some("triage") {
+        tracing_subscriber::fmt()
+            .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+            .with_target(false)
+            .init();
+        return match triage_cmd::parse(&args[1..]).and_then(|invocation| triage_cmd::run(&invocation)) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(error) => {
+                tracing::error!(error = format!("{error:#}"), "triage failed");
+                ExitCode::FAILURE
+            },
+        };
+    }
     tracing_subscriber::fmt()
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .with_target(false)
@@ -237,6 +255,12 @@ async fn run() -> anyhow::Result<()> {
     if jev_triage.is_enabled() {
         cli_sink::emit("preflight", "jev triage judge loaded");
     }
+    // Round-level triage (ADR 0028): same checkpoint, round evidence. The
+    // policy knob defaults to observe: verdicts land in the ledger only.
+    let round_triage = orchestrator::RoundTriage::from_config(&config.mas.jev_triage);
+    if round_triage.is_enabled() && config.mas.jev_triage.policy == agents::TriagePolicy::Enforce {
+        cli_sink::emit("preflight", "round triage enforce policy active");
+    }
 
     // Initial state + task list.
     let state = State {
@@ -277,6 +301,7 @@ async fn run() -> anyhow::Result<()> {
     events.record("phase", serde_json::json!({"to": "Discovery"}))?;
 
     for _round in 0..config.mas.max_rounds {
+        let round_started = Instant::now();
         let progress_before = orchestrator::progress::snapshot(&run_dir)?;
         let mut productive_replans = 0usize;
         let outcome = orchestrator_loop.round().await?;
@@ -340,7 +365,26 @@ async fn run() -> anyhow::Result<()> {
             breaker_state.record_progress();
             round_ledger_observation(&run_dir, false);
         } else {
-            breaker_state.record_stalled_round();
+            // A stalled round whose only fresh failures are transient
+            // model errors (admission 503s) is engine load, not harness
+            // stuckness: give it a reprieve instead of counting it
+            // (v3s22-s24: 503 clusters breaker'd healthy runs).
+            let ledger = Ledger::new(run_dir.join("ledgers"));
+            let transient = ledger
+                .read_failures()
+                .map(|failures| {
+                    failures
+                        .iter()
+                        .rev()
+                        .take(3)
+                        .all(|failure| failure.category == "model")
+                })
+                .unwrap_or(false);
+            if transient {
+                breaker_state.record_transient_stalled_round();
+            } else {
+                breaker_state.record_stalled_round();
+            }
             round_ledger_observation(&run_dir, true);
         }
         let state = blackboard::state::read(&run_dir)?.expect("state present");
@@ -350,6 +394,37 @@ async fn run() -> anyhow::Result<()> {
                 stop_reason = Some(reason);
                 break;
             },
+        }
+
+        // Round triage (ADR 0028): consult the laya round judge on the
+        // round just closed. Under enforce, a confident stop-or-harmful
+        // verdict ends the run early with a ledger failure row. Under
+        // observe (default) the verdict lands in the ledger only.
+        if round_triage.is_enabled() {
+            let round_wall = round_started.elapsed().as_secs();
+            let action = round_guard::consult_round(
+                &round_triage,
+                &orchestrator_loop.ledger,
+                &run_dir,
+                &format!("{:?}", state.phase),
+                progress.done_tasks >= progress.total_tasks && progress.total_tasks > 0,
+                None,
+                round_wall,
+            );
+            if action == orchestrator::RoundAction::Stop {
+                let reason = "round triage policy stopped the run early".to_owned();
+                let _ = orchestrator_loop.ledger.append_failure(&blackboard::Failure {
+                    at: now_rfc3339(),
+                    phase: format!("{:?}", state.phase),
+                    category: "triage".into(),
+                    root_cause: reason.clone(),
+                    suggested_action: "inspect the jev_round_triage observations".into(),
+                });
+                cli_sink::emit("triage", &reason);
+                events.record("triage_stop", serde_json::json!({"reason": reason}))?;
+                stop_reason = Some(reason);
+                break;
+            }
         }
     }
 
