@@ -50,7 +50,7 @@ pub fn serialize_history(messages: &[Message], opts: &SerializeOptions) -> Strin
             },
             Message::User {
                 content,
-            } =>
+            } => {
                 for item in content {
                     match item {
                         UserContent::Text(text) => {
@@ -69,11 +69,12 @@ pub fn serialize_history(messages: &[Message], opts: &SerializeOptions) -> Strin
                             out.push_str(&format!("USER [other]: {other:?}\n"));
                         },
                     }
-                },
+                }
+            },
             Message::Assistant {
                 content,
                 ..
-            } =>
+            } => {
                 for item in content {
                     match item {
                         AssistantContent::Text(text) => {
@@ -109,7 +110,8 @@ pub fn serialize_history(messages: &[Message], opts: &SerializeOptions) -> Strin
                             out.push_str("ASSISTANT: [image]\n");
                         },
                     }
-                },
+                }
+            },
         }
     }
     out

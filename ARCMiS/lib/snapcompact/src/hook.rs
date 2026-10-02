@@ -74,9 +74,12 @@ impl SnapcompactHook {
             .as_deref()
             .filter(|_| is_tool_result_prompt(prompt))
             .map(rig::completion::Message::user);
-        let history_patch = [result.kept, vec![Message::User {
-            content: images,
-        }]]
+        let history_patch = [
+            result.kept,
+            vec![Message::User {
+                content: images,
+            }],
+        ]
         .concat()
         .into_iter()
         .chain(trailing)

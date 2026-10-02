@@ -206,17 +206,19 @@ async fn dispatch(
                 tier: 1,
             }
         },
-        TierRoute::Lead(lead_name) =>
+        TierRoute::Lead(lead_name) => {
             crate::lead::run_lead_batch(
                 agents, config, workspace, ledger, jev_triage, phase, task_id, &lead_name, delegation,
             )
-            .await,
-        TierRoute::Direct =>
+            .await
+        },
+        TierRoute::Direct => {
             if delegation.team {
                 run_collective(agents, config, workspace, ledger, run_dir, phase, task_id, delegation).await
             } else {
                 run_single(agents, config, workspace, ledger, phase, task_id, delegation, 1).await
-            },
+            }
+        },
     }
 }
 
@@ -269,7 +271,7 @@ fn route_tier1(
         return TierRoute::Direct;
     };
     match crate::hierarchy::lead_for(teams, role) {
-        Some(team) if lead_exists(&team.lead) =>
+        Some(team) if lead_exists(&team.lead) => {
             if config.hierarchy.deny_direct {
                 TierRoute::Refuse {
                     role,
@@ -277,7 +279,8 @@ fn route_tier1(
                 }
             } else {
                 TierRoute::Lead(team.lead.clone())
-            },
+            }
+        },
         _ => TierRoute::Direct,
     }
 }

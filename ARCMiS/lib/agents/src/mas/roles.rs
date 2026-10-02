@@ -87,8 +87,9 @@ impl Role {
             // The planner reads artifacts and writes plan.json through write.
             Role::Planner => &["read", "search", "find", "write"],
             // Movers touch the target tree.
-            Role::Translator | Role::Repairer =>
-                &["read", "write", "edit", "search", "find", "ast_grep", "ast_edit", "bash"],
+            Role::Translator | Role::Repairer => {
+                &["read", "write", "edit", "search", "find", "ast_grep", "ast_edit", "bash"]
+            },
             // The tester also runs the test command through bash.
             Role::Tester => &["read", "write", "edit", "search", "find", "ast_grep", "bash"],
             // The failure analyst reads logs and code only.

@@ -78,8 +78,9 @@ pub fn parse_verdict(text: &str, keyword: &str) -> Option<(bool, String)> {
         .find(|(_, character)| matches!(character, '|' | '—' | '–'))
         .map(|(index, character)| (index, character.len_utf8()));
     let (verdict, reason) = match split {
-        Some((index, dash_len)) =>
-            (&body[..index], body[index + dash_len..].trim_start_matches(['-', '—', '–', ' ']).to_owned()),
+        Some((index, dash_len)) => {
+            (&body[..index], body[index + dash_len..].trim_start_matches(['-', '—', '–', ' ']).to_owned())
+        },
         None => (body, String::new()),
     };
     match verdict.trim().to_ascii_lowercase().as_str() {
@@ -101,8 +102,9 @@ pub fn parse_repair(text: &str) -> Option<(&'static str, String)> {
         .find(|(_, character)| matches!(character, '|' | '—' | '–'))
         .map(|(index, character)| (index, character.len_utf8()));
     let (verdict, detail) = match split {
-        Some((index, dash_len)) =>
-            (&body[..index], body[index + dash_len..].trim_start_matches(['-', '—', '–', ' ']).to_owned()),
+        Some((index, dash_len)) => {
+            (&body[..index], body[index + dash_len..].trim_start_matches(['-', '—', '–', ' ']).to_owned())
+        },
         None => (body, String::new()),
     };
     let word = match verdict.trim().to_ascii_lowercase().as_str() {
