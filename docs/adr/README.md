@@ -31,6 +31,7 @@ Numbered, immutable Architecture Decision Records. Format and policy: [`.omp/rul
 | [0022](0022-hierarchical-dynamic-adaptive-orchestration.md) | Hierarchical dynamic-adaptive orchestration | accepted |
 | [0023](0023-laya-backed-jev-judge.md) | Laya-backed Jev judge on the guard Ask slot | accepted |
 | [0027](0027-laya-typed-triage-on-lead-dispatch.md) | Laya typed-decision triage on lead member dispatch | accepted |
+| [0028](0028-per-round-laya-triage-and-enforce-policy.md) | Per-round laya triage with an observe/enforce policy | accepted |
 
 ## References
 
