@@ -1,5 +1,5 @@
 run:
-  model: qwen3.8-27b
+  model: s9vb2kbnw3w6xq4gxrmg20s5jqhy7vrj-bonsai2-27b-t3-mtp-slim
   provider: netmind
   max_turns: 14
   num_ctx: 65536
@@ -16,7 +16,7 @@ source:
     language: rust
     test_command: sh -c '(cd target 2>/dev/null && cargo test) || cargo test'
 mas:
-  fanout: 3
+  fanout: 2
   max_rounds: 20
   orchestrator_turns: 20
   worker_turns: 40
