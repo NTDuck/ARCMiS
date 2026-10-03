@@ -1,0 +1,5 @@
+/* ARCMiS deck style contract (resdir.pptx tokens).
+   Titles: dark navy #1F497D, left-aligned (Slidev default). */
+.slidev-layout h1 {
+  color: #1F497D;
+}

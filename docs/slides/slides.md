@@ -2,10 +2,13 @@
 theme: default
 title: ARCMiS
 info: |
-  Code migration harness with hierarchical multi-agent orchestration.
+  Code-migration harness with hierarchical multi-agent orchestration.
   Live campaign numbers read at build time from .artifacts/experiments/.
+aspectRatio: 4/3
+canvasWidth: 980
 fonts:
-  sans: Calibri
+  sans: Calibri, Arial, sans-serif
+  serif: Calibri, Arial, serif
 drawings:
   persist: false
 transition: slide-left
@@ -17,8 +20,10 @@ transition: slide-left
 
 <div class="absolute bottom-12 left-12 text-sm text-gray-500">
   <p><strong>ARCMiS team</strong></p>
-  <p>Coverage sweep status: {{ "2026-10-02" }}</p>
+  <p>Coverage sweep status: 2026-10-04</p>
 </div>
+
+<!-- Title slide. Author block bottom-left per the resdir master. -->
 
 ---
 layout: default
@@ -37,9 +42,12 @@ layout: default
 
 ---
 layout: section
+title: Introduction and problem description
 ---
 
 # Introduction and problem description
+
+<!-- Section divider -->
 
 ---
 layout: default
@@ -52,10 +60,10 @@ layout: default
 - Hand migration is slow. Each project needs source reading, planning,
   translation, and test validation.
 - A local 27B model can drive this work. A single LLM call cannot.
-- ARCMiS answer: a harness of cooperating agents, a fixed problem set,
-  and toolchain-only scoring.
+- The ARCMiS answer: a harness of cooperating agents, a fixed problem
+  set, and toolchain-only scoring.
 
-<!-- Problem statement slide -->
+<!-- Problem statement -->
 
 ---
 layout: default
@@ -67,18 +75,21 @@ layout: default
 - Hierarchical multi-agent orchestration (ADR 0022, ADR 0026).
 - One candidate config per problem set, one set at a time, LoC
   ascending.
-- Every verdict comes from the toolchain: `cargo build` and
-  `cargo test` through `scripts/rescore.py`. No model self-grading.
+- Every verdict comes from the toolchain: `cargo build` and `cargo
+  test` through `scripts/rescore.py`. No model self-grading.
 - Campaign method: the Meta-Harness loop (arXiv:2603.28052) proposes,
   runs, and scores harness changes against a fixed problem set.
 
-<!-- Positioning slide -->
+<!-- Positioning -->
 
 ---
 layout: section
+title: Methodology
 ---
 
 # Methodology
+
+<!-- Section divider -->
 
 ---
 layout: default
@@ -92,33 +103,30 @@ flowchart TB
     ORCH["Orchestrator<br/>DECISION grammar, task graph, breakers"]
   end
   subgraph T2["Tier 2 - leads"]
-    L1["translation-lead"]
-    L2["validation-lead"]
+    L1["migration-lead"]
+    L2["discovery-lead"]
+    L3["integration-lead"]
   end
   subgraph T3["Tier 3 - specialists"]
-    S1["analyst"]
-    S2["architect"]
-    S3["translator"]
-    S4["validator"]
-    S5["tester"]
-    S6["repairer"]
+    S1["translator, validator, tester, repairer"]
+    S2["analyst, architect"]
+    S3["planner, failure-analyst, critic"]
   end
   ORCH --> L1
   ORCH --> L2
+  ORCH --> L3
   L1 --> S1
-  L1 --> S2
-  L1 --> S3
-  L2 --> S4
-  L2 --> S5
-  L2 --> S6
+  L2 --> S2
+  L3 --> S3
 ```
 
 - Tier 1 owns the round loop and the task graph.
-- Tier 2 leads dispatch one member per round and read the result back.
-- Config-owned team split: `mas.hierarchy` in
-  `ARCMiS/lib/orchestrator/src/hierarchy.rs`, lead loop in `lead.rs`.
+- Tier 2 leads dispatch members and read the result back.
+- Config-owned team split under `mas.hierarchy`:
+  `ARCMiS/lib/orchestrator/src/hierarchy.rs`, lead inner loop in
+  `lead.rs`. Team names from the live v3r1 run config.
 
-<!-- Hierarchy diagram slide -->
+<!-- MAS hierarchy diagram. Verified files: hierarchy.rs, lead.rs. -->
 
 ---
 layout: default
@@ -129,25 +137,32 @@ layout: default
 ```mermaid
 flowchart LR
   P["Proposer<br/>reads raw campaign history"] --> C["Candidate config<br/>one delta per round"]
-  C --> S["scripts/sweep.sh<br/>2 staggered GPU slots"]
+  C --> S["scripts/sweep.sh<br/>SLOTS staggered GPU slots"]
   S --> R["Harness run<br/>one problem set"]
   R --> SC["scripts/rescore.py<br/>cargo build + cargo test"]
   SC --> L["ROUNDS.yaml ledger"]
   L --> P
 ```
 
-- Two staggered GPU slots plus a CPU proposer and scorer pipeline.
-- Pairs: one crust rust-variant plus one non-crust set.
+- `scripts/sweep.sh` runs waves of `SLOTS` (default 2) staggered GPU
+  slots, plus a CPU proposer and scorer pipeline. One candidate per
+  set.
+- Pairs: one crust rust-variant plus one non-crust set. Per-problem
+  deltas live in `scripts/overrides/`.
 - Coverage rule: untouched projects only. A set counts once across
   retries.
+- Verdict from `scripts/rescore.py`: toolchain-only scoring.
 
-<!-- Sweep pipeline slide -->
+<!-- Sweep pipeline diagram. -->
 
 ---
 layout: section
+title: Inspirations
 ---
 
 # Inspirations
+
+<!-- Section divider -->
 
 ---
 layout: default
@@ -155,23 +170,26 @@ layout: default
 
 # Orchestration patterns: the 2-axis taxonomy
 
-**Source:** "LLM-Based Multi-Agent Orchestration: A Survey of Frameworks,
-Communication Protocols, and Emerging Patterns" (the Q2 survey).
+**Source:** "LLM-Based Multi-Agent Orchestration: A Survey of
+Frameworks, Communication Protocols, and Emerging Patterns" (the Q2
+survey).
 
 **Axes:** centralized / decentralized / hierarchy x static /
 dynamic-adaptive.
 
 **ARCMiS position: hierarchy x dynamic-adaptive.**
 
-- Hierarchy: tier-2 leads over tier-3 specialists, config-owned
-  (`hierarchy.rs`, `lead.rs`), ADR 0022 and ADR 0026.
+- Hierarchy: tier-2 leads over tier-3 specialists. Verified in
+  `ARCMiS/lib/orchestrator/src/hierarchy.rs` (tier-2 team resolution,
+  config-owned under `mas.hierarchy`) and `lead.rs` (lead inner
+  loop). Recorded in ADR 0022 and ADR 0026.
 - Dynamic: the task graph re-scores after each delegation, the router
   picks roles on intermediate state, and the orchestrator can spawn a
-  failure-analyst to repairer sub-chain mid-task.
+  failure-analyst sub-chain mid-task.
 - Static agents: fixed registry, fixed preambles, fixed tool
   allowlists. Selection is dynamic, not the agents.
 
-<!-- Taxonomy mapping slide -->
+<!-- Taxonomy mapping slide. Files verified before writing. -->
 
 ---
 layout: default
@@ -184,18 +202,17 @@ layout: default
 
 - A multi-agent workflow for language-agnostic translation and
   validation of large repositories.
-- Four specialized agents: analyzer, planner, translator, validator.
-- ARCMiS borrows: the `tool_projects` dataset (114 problems in four
-  families: crust, oxidizer, skel, alphatrans) and the four-stage
+- ARCMiS borrows: the `tool_projects` dataset and the four-stage
   pipeline discipline (ADR 0018, ADR 0022).
 
 **Claude Modernization Plugin:**
 
-- Discovery, brief, and execution flow with evidence-gated phase exits.
+- Discovery, brief, and execution flow with evidence-gated phase
+  exits.
 - ARCMiS borrows: the phase gate idea. A phase exit needs evidence,
   not a model claim.
 
-<!-- Modernization workflow slide -->
+<!-- Modernization workflow slide. -->
 
 ---
 layout: default
@@ -203,8 +220,8 @@ layout: default
 
 # System-one models: jev and laya
 
-**1. LLM-as-a-judge.** A full model decode classifies an outcome. Cost:
-one model turn per judgment, on the same busy GPU.
+**1. LLM-as-a-judge.** A full model decode classifies an outcome.
+Cost: one model turn per judgment, on the same busy GPU.
 
 **2. Jev-as-a-judge.** A local specialist checkpoint does the same
 judgment. In ARCMiS:
@@ -214,22 +231,26 @@ judgment. In ARCMiS:
 
 **3. Typed decisions (laya, arXiv:2609.26550).** One forward pass
 answers `choice`, `score`, and `noul` questions. No token decoding.
-0 output tokens. See `.omp/skills/laya`.
+See `.omp/skills/laya`.
 
 **Bottleneck use - honest state:** the harness wires per-dispatch
-triage with a min-confidence cascade (`TriageVerdict`, five
+triage with a min-confidence cascade (`TriageVerdict` from five
 `agent_trace_observability` questions). The round policy defaults to
 `observe`: verdicts get recorded, but no round stops on them.
 Enforcement (`policy: enforce`) exists in `round_triage/policy.rs`
 and is not the campaign default.
 
-<!-- Judge slide with honest wiring state -->
+<!-- Judge slide with honest wiring state. Verified: jev_triage.rs,
+     round_triage/policy.rs, TriagePolicy default = Observe. -->
 
 ---
 layout: section
+title: Benchmarks
 ---
 
 # Benchmarks
+
+<!-- Section divider -->
 
 ---
 layout: default
@@ -237,20 +258,24 @@ layout: default
 
 # Dataset and progress
 
-**Dataset:** ReCodeAgent `tool_projects` - 114 problems in the campaign
-brief (counted directories: 119. Four families: crust 100, oxidizer 7,
-skel 8, alphatrans 4).
+**Dataset:** ReCodeAgent `tool_projects` - the campaign brief says 114
+problems. Counted directories: **119** (alphatrans 4, crust 100,
+oxidizer 7, skel 8). Delta: 5 uncounted problems. Numbers below use
+the brief's 114.
 
-**Progress (live from `.artifacts/experiments/ROUNDS.yaml`,
-2026-10-02):**
+**Progress** (live from `.artifacts/experiments/ROUNDS.yaml` and
+`SUMMARY.md`, read 2026-10-04):
 
-- 39 ledger rounds this campaign. 17 solved, 13 not cleared,
-  7 aborted, 2 in flight (v3s21 commons-csv, v3s25 bhshell).
-- 12 unique problems cleared: leftpad plus 11 coverage sets (amp,
-  ulidgen, gonameparts, avalanche, colorsys, morton, libqueue,
-  murmurhash, geofence, gfc, 2dpartint).
+- 44 ledger rounds: 19 SOLVED, 15 CLEARED, 15 NOT CLEARED, 10
+  ABORTED.
+- Engine: q27 v0.14.1 Bonsai-2 T3-MTP-slim through the netmind
+  provider path. Ninfer is retired.
+- **13 of 114 problems cleared** (leftpad, amp, ulidgen,
+  gonameparts, avalanche, colorsys, morton, libqueue, murmurhash,
+  geofence, gfc, 2dpartint, bhshell). A problem counts once across
+  retries.
 
-<!-- Progress slide -->
+<!-- Progress slide. Live numbers read at build time. -->
 
 ---
 layout: default
@@ -258,24 +283,26 @@ layout: default
 
 # Rate, estimate, and the ReCodeAgent record
 
-**Estimated time to complete** (from the current rate):
+**Estimated time to complete** (from the current rate; estimate, not
+a commitment):
 
-- Campaign v3 started 2026-09-30, about 2.8 days elapsed.
-- Rate: about 4.3 cleared problems per day.
-- Remaining: about 24 days at this rate. This is an estimate, not a
-  commitment. Engine stalls and 503 bursts moved the rate before.
+- Campaign v3 started 2026-09-30. About 4.4 days elapsed to
+  2026-10-04.
+- Rate: 13 cleared / 4.4 days = about 2.95 per day.
+- Remaining: (114 - 13) / 2.95 = about 34 days.
 
 **Published ReCodeAgent record (different protocol):**
 
 | Technique | Result | Protocol |
 |---|---|---|
-| ReCodeAgent | 99.4% compile, 86.5% test pass | Claude 4.5 Sonnet, 118 projects, developer tests verified by the ReCodeAgent authors |
-| ARCMiS v3 | 12 of 114 problems cleared | local Qwen3.8-27B, toolchain-only scoring, one set at a time |
+| ReCodeAgent | 99.4% compile, 86.5% test pass | Claude 4.5 Sonnet, 118 projects, their developer-test suites |
+| ARCMiS v3 | 13 of 114 problems cleared | Local qwen3.8-27B-class 27B engine, toolchain-only scoring, one set at a time |
 
-The two rows are directional context, not a like-for-like comparison.
-The model class, the budget, and the pass protocol differ.
+The two rows are directional context, not a like-for-like
+comparison. The model class, the budget, and the pass protocol
+differ.
 
-<!-- Comparison slide with protocol label -->
+<!-- Comparison slide with protocol label. -->
 
 ---
 layout: default
@@ -283,17 +310,18 @@ layout: default
 
 # References
 
-- ReCodeAgent: A Multi-agent Workflow for Language-Agnostic Translation
-  and Validation of Large-Scale Repositories. arXiv:2604.07341, ASE 2026.
+- ReCodeAgent: A Multi-agent Workflow for Language-Agnostic
+  Translation and Validation of Large-Scale Repositories.
+  arXiv:2604.07341, ASE 2026.
 - LLM-Based Multi-Agent Orchestration: A Survey of Frameworks,
   Communication Protocols, and Emerging Patterns. (the Q2 survey)
 - Meta-Harness. arXiv:2603.28052.
 - Typed decisions. arXiv:2609.26550. laya-rs crate, `.omp/skills/laya`.
-- ARCMiS ADRs 0018, 0021, 0022, 0023, 0026, 0027 in `docs/adr/`.
+- ARCMiS ADRs 0018, 0022, 0023, 0026, 0027, 0028 in `docs/adr/`.
 - Dataset: `assets/ReCodeAgent/data/tool_projects`.
 - Ledger: `.artifacts/experiments/ROUNDS.yaml`, `SUMMARY.md`.
 
-<!-- Reference list slide -->
+<!-- Reference list slide. -->
 
 ---
 layout: end
@@ -301,4 +329,4 @@ layout: end
 
 # Thank you
 
-<div class="text-sm text-gray-500">ARCMiS - automated Rust migration</div>
+<!-- Closing slide. -->
