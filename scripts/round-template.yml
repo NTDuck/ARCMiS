@@ -16,7 +16,10 @@ source:
     language: rust
     test_command: sh -c '(cd target 2>/dev/null && cargo test) || cargo test'
 mas:
-  fanout: 2
+  # WHY: host-RAM kill zone — engine hit 12.28G RSS and oomd culled the
+  # desktop + ghostty sessions (reboot 2026-10-04 09:06). Fanout 1
+  # halves peak KV-spill lanes from 8 to 4 so the box survives.
+  fanout: 1
   max_rounds: 20
   orchestrator_turns: 20
   worker_turns: 40
