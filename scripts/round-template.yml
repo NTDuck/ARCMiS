@@ -22,7 +22,10 @@ mas:
   worker_turns: 40
   judge_turns: 40
   role_output_tokens:
-    translator: 16384
+    # WHY: 16384-cap translator gens took 12-24 min each under 4-way
+    # concurrency (13/21 slow gens pinned exactly at cap on s0). 8192
+    # halves worst-case gen time; retry re-prompts with context kept.
+    translator: 8192
     architect: 16384
     repairer: 16384
     orchestrator: 16384
