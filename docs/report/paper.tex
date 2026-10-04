@@ -59,7 +59,8 @@ LLM summarizer. Scoring is toolchain-only: the target build and test
 commands must pass in the produced workspace, and agent self-reports
 never gate. We report the state of an ongoing coverage-sweep campaign
 over the 118-project ReCodeAgent corpus: as of 2026-10-04 the ledger
-records 44 scored rounds, and 13 of the campaign's 114-problem brief is
+holds 47 round entries, 45 scored and 2 in flight, and 13 of the
+campaign's 114-problem brief is
 cleared (toolchain-verified compile and pass, each problem counted once
 across retries). The cleared rate implies roughly $(114-13)/13 \times 8
 \approx 62$ more campaign days at the current rate; we state it as an
@@ -104,7 +105,7 @@ This paper makes four contributions:
   the orchestration domain; the guard hook stays with the delegation
   contract (Sections~\ref{sec:method} and~\ref{sec:infra}).
 \item A benchmark record for the coverage-sweep campaign, updated
-  2026-10-04: 44 scored rounds in the per-round ledger over the
+  2026-10-04: 47 round entries in the per-round ledger over the
   ReCodeAgent \texttt{tool\_projects} corpus, 13 of the campaign brief's
   114 problems cleared with toolchain-verified workspaces (each problem
   counted once across retries), and honest per-round verdicts including
@@ -545,11 +546,10 @@ followed.
 \paragraph{Model and hardware.}
 All reported runs use a 27B reasoning model served locally on one
 RTX~3090 through the \texttt{netmind} provider path. The current engine
-is \texttt{q27 v0.14.1} (checkpoint \texttt{Bonsai-2 T3-MTP-slim},
-8-slot paged-KV serving, speculative MTP decoding), which replaced the
-retired \texttt{ninfer}/\texttt{qwen3.8-27b} endpoint; it serves about
-six parallel instances at workable tokens per second, which is what
-makes the parallel-dispatch harness of ADR 0029 profitable. The
+is the local \texttt{ninfer} server serving \texttt{qwen3.8-27b}.
+A two-day excursion to the q27 engine (v0.14.1) was reverted on
+2026-10-04: its partial results are invalidated, and the campaign
+continues on ninfer. The
 per-call configuration is
 \texttt{num\_ctx} 65536 with guard read gating,
 \texttt{max\_out\allowbreak{}put\_to\allowbreak{}kens} 8192 with
@@ -616,7 +616,7 @@ contract and the per-iteration hypotheses.
 \label{sec:sweep}
 
 The current execution mode is a parallel coverage sweep over the
-dataset (the campaign brief's ``q27 parallel arm''). The outer-loop
+dataset. The outer-loop
 driver \texttt{scripts/sweep.sh} reads a pair file of problem paths,
 sizes each wave with a \texttt{SLOTS} knob (GPU inference slots,
 staggered), and launches one immutable experiment directory per round.
@@ -625,8 +625,27 @@ problem may retry, and the scoreboard counts the problem once, cleared
 only when a round passes. The in-harness parallelism (ADR 0029) is
 separate: the \texttt{mas.fanout} dial bounds concurrent dispatches
 inside a run, while \texttt{SLOTS} bounds concurrent runs. Wave 1 of
-the current arm carries 18 rounds of paired problem slots under this
-protocol.
+the current arm (\texttt{PAIRS-ninfer-w1.txt}) carries 18 problems,
+launched over two GPU slots with staggered starts.
+
+\paragraph{Round naming.}
+Rounds carry a global counter in the ledger tags
+(\texttt{autoopt-v0.3.sweep.s\{N\}}). Sweep rounds continue the
+historical \texttt{s0..s30} series of the ninfer era. A wave that
+reuses a slot number collides with a historical row; the ledger keeps
+both, and the later row takes an \texttt{.r2} suffix with a distinct
+\texttt{candidate\_id}. So one problem can span several rounds
+(retries), and no round is silently dropped. Since commit
+\texttt{e62c2f6} the driver numbers all new launches from a global
+counter (next launch = \texttt{s33}), so tag collisions occur only on
+the pre-fix rows.
+
+\paragraph{Wave 1 in flight.}
+Two wave-1 rounds are in flight at build time
+(\texttt{s0.r2} remimu, \texttt{s1.r2} heapq, launched 2026-10-04
+08:17Z and 08:22Z) on a manual spawn of \texttt{ninfer-serve} 0.6.1;
+the corresponding systemd unit is reinstated in nixconf pending
+activation. Neither round is scored yet.
 
 \subsection{Optimization methodology}
 \label{sec:optmethod}
@@ -717,7 +736,8 @@ trade (c12--c13).}
 
 The live record is the coverage-sweep campaign state as of 2026-10-04,
 read from the per-round ledger (\texttt{ROUNDS.yaml}) and the experiment
-tree. The ledger holds 44 scored rounds under the v3 protocol. The
+tree. The ledger holds 47 round entries, of which 45 are scored and 2
+are in flight. The
 problem set and evaluator never changed; every iteration changed the
 harness. Every data path in this section reads from the per-run
 artifacts. Table~\ref{tab:verdicts} gives the live scoreboard, and
@@ -731,9 +751,9 @@ Measure & Value & Source \\
 \midrule
 Dataset (counted on disk) & 119 problems & \texttt{tool\_projects} subdirectories \\
 Dataset (campaign brief) & 114 problems & campaign brief \\
-Scored rounds in ledger & 44 & \texttt{ROUNDS.yaml} \\
+Scored rounds in ledger & 45 & \texttt{ROUNDS.yaml} (47 entries, 2 in flight) \\
 Unique problems cleared & 13 & SOLVED/CLEARED verdicts, counted once \\
-In flight (wave 1, parallel arm) & 18 rounds & \texttt{PAIRS-q27-w1.txt} \\
+In flight (wave 1, ninfer) & 2 rounds & \texttt{PAIRS-ninfer-w1.txt} \\
 \bottomrule
 \end{tabular}
 \caption{Live campaign scoreboard at build time (2026-10-04). A problem
@@ -744,8 +764,10 @@ replicates).}
 
 The 13 cleared problems are: leftpad, amp, ulidgen, gonameparts,
 avalanche, colorsys, morton, libqueue, murmurhash, geofence, gfc,
-2dpartint, and bhshell. The verdict mix over the 44 rounds is 19
-SOLVED/CLEARED, 15 NOT CLEARED, and 10 ABORTED; a problem may take
+2dpartint, and bhshell. The verdict mix over the 45 scored rounds is
+19 SOLVED/CLEARED, 16 NOT CLEARED, and 10 ABORTED; two further entries
+(IN FLIGHT, s0.r2 remimu and s1.r2 heapq) carry no verdict yet. A
+problem may take
 several rounds before one passes, so the round count exceeds the
 problem count.
 
@@ -769,9 +791,12 @@ about 1.6 problems per day. The dataset holds 114 problems per the
 campaign brief (119 counted on disk), so the remaining work at the
 current rate is about $(114-13)/1.6 \approx 62$ days. This is an
 \emph{estimate from the current rate}, not a prediction: the LoC walk
-ascends into larger problems, the parallel arm (Section~\ref{sec:sweep})
-raises throughput, and engine-side transient failures dominate the
-ABORTED class, so the rate will move in both directions.
+ascends into larger problems, the
+parallel arm (Section~\ref{sec:sweep}) raises throughput, and
+engine-side transient failures dominate the
+ABORTED class, so the rate will move in both directions. The two-day
+engine excursion (Section~\ref{sec:setup}) produced no clearance, so it
+adds elapsed time without changing the cleared count.
 
 \subsection{Champion and lineage (earlier search campaign)}
 
@@ -864,7 +889,7 @@ defect the campaign later fixed, not a capability wall.
 The binding constraints the campaign named are three. First, the
 model's round-budget burn rate: ceiling burns plus slow artifact turns;
 no ceiling policy, timeout raise, or context raise moved it. Second,
-engine-side transients: the ABORTED class (10 of 44 rounds) is dominated
+engine-side transients: the ABORTED class (10 of 45 scored rounds) is dominated
 by engine 503 admission/queue-timeout deaths and one endpoint
 migration; the harness now carries admission backoff and a
 transient-stalled-round reprieve. Third, set selection: the LoC walk
@@ -1007,8 +1032,9 @@ a tiered orchestrator with evidence-gated phases, a deterministic guard
 on every tool call with deny-on-uncertain arbitration, character-capped
 shared state, toolchain-only scoring, and a stagnation breaker that turns
 silent loops into artifacts. The live campaign state is deliberately
-honest: 13 of the brief's 114 problems cleared across 44 scored rounds
-(each problem counted once across retries), with an estimated 62
+honest: 13 of the brief's 114 problems cleared across 45 scored rounds
+(plus 2 rounds in flight; each problem counted once across retries),
+with an estimated 62
 campaign days remaining at the current rate --- an estimate from the
 current rate, not a prediction --- and the parallel-dispatch arm
 (ADR 0029) now running wave 1 to raise that rate. The durable findings
