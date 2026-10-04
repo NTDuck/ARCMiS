@@ -16,6 +16,9 @@ transition: slide-left
 
 # ARCMiS
 
+<!-- Engine: qwen3.8-27B on the local ninfer engine. The q27 excursion
+     of 2026-10-02/03 was reverted; its results are invalidated. -->
+
 ## Automated Rust migration for legacy C, Java, and Go codebases
 
 <div class="absolute bottom-12 left-12 text-sm text-gray-500">
@@ -152,6 +155,10 @@ flowchart LR
 - Coverage rule: untouched projects only. A set counts once across
   retries.
 - Verdict from `scripts/rescore.py`: toolchain-only scoring.
+- Round naming (commit e62c2f6): one problem can span several rounds.
+  Rounds carry a global `autoopt-v0.3.s{N}` counter. A retry keeps its
+  own ledger row, so the ledger records every attempt, not one row per
+  problem.
 
 <!-- Sweep pipeline diagram. -->
 
@@ -266,10 +273,14 @@ the brief's 114.
 **Progress** (live from `.artifacts/experiments/ROUNDS.yaml` and
 `SUMMARY.md`, read 2026-10-04):
 
-- 44 ledger rounds: 19 SOLVED, 15 CLEARED, 15 NOT CLEARED, 10
-  ABORTED.
-- Engine: q27 v0.14.1 Bonsai-2 T3-MTP-slim through the netmind
-  provider path. Ninfer is retired.
+- 47 ledger rounds: 19 SOLVED, 16 NOT CLEARED, 10 ABORTED, 2 in
+  flight. A problem can span several rounds; retries keep their own
+  rows.
+- Engine: **qwen3.8-27B on the local ninfer engine**. The q27
+  excursion (2026-10-02 to 03) produced zero clears and was reverted;
+  its results are invalidated.
+- Live: wave 1 of the coverage sweep, 18 problems, 2 staggered GPU
+  slots (remimu, heapq in flight).
 - **13 of 114 problems cleared** (leftpad, amp, ulidgen,
   gonameparts, avalanche, colorsys, morton, libqueue, murmurhash,
   geofence, gfc, 2dpartint, bhshell). A problem counts once across
@@ -286,17 +297,17 @@ layout: default
 **Estimated time to complete** (from the current rate; estimate, not
 a commitment):
 
-- Campaign v3 started 2026-09-30. About 4.4 days elapsed to
+- The campaign opened 2026-09-26. About 8 days elapsed to
   2026-10-04.
-- Rate: 13 cleared / 4.4 days = about 2.95 per day.
-- Remaining: (114 - 13) / 2.95 = about 34 days.
+- Rate: 13 cleared / 8 days = about 1.6 per day.
+- Remaining: (114 - 13) / 1.6 = about 62 days.
 
 **Published ReCodeAgent record (different protocol):**
 
 | Technique | Result | Protocol |
 |---|---|---|
 | ReCodeAgent | 99.4% compile, 86.5% test pass | Claude 4.5 Sonnet, 118 projects, their developer-test suites |
-| ARCMiS v3 | 13 of 114 problems cleared | Local qwen3.8-27B-class 27B engine, toolchain-only scoring, one set at a time |
+| ARCMiS v3 | 13 of 114 problems cleared | qwen3.8-27B on the local ninfer engine, toolchain-only scoring, one set at a time |
 
 The two rows are directional context, not a like-for-like
 comparison. The model class, the budget, and the pass protocol
