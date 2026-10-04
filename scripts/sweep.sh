@@ -38,13 +38,12 @@ if ! [[ "$SLOTS" =~ ^[0-9]+$ ]] || [ "$SLOTS" -le 0 ]; then
 fi
 
 HARNESS="${HARNESS:-$ROOT/target/release/harness}"
-STAGGER="${STAGGER:-120}"
+STAGGER="${STAGGER:-900}"
 TEMPLATE="$ROOT/scripts/round-template.yml"
-# Inference engine URL. Knob default: q27-server v0.14.1 (Bonsai-2
-# T3-MTP-slim pack, 8-slot paged-KV) landed on :8081 on 2026-10-03; the
-# ninfer engine it replaced (8081 -> 8082 on 2026-10-02) is retired. The
-# model id served there is the pack store-hash string in /v1/models.
-ENGINE_URL="${ENGINE_URL:-http://localhost:8081/v1}"
+# Inference engine URL. Knob default: the ninfer engine moved :8081 ->
+# :8082 on 2026-10-02 (both live rounds died in that outage), so the next
+# engine relocation is an env var away, not a driver edit.
+ENGINE_URL="${ENGINE_URL:-http://localhost:8082/v1}"
 
 round_tag() { printf 'autoopt-v0.3.%s' "$1"; }
 

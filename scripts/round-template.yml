@@ -1,7 +1,5 @@
 run:
-  # provider selects the OpenAI-compatible wire path only; the serving
-  # engine is q27 (NETMIND_BASE_URL -> ENGINE_URL http://localhost:8081/v1).
-  model: s9vb2kbnw3w6xq4gxrmg20s5jqhy7vrj-bonsai2-27b-t3-mtp-slim
+  model: qwen3.8-27b
   provider: netmind
   max_turns: 14
   num_ctx: 65536
@@ -18,20 +16,13 @@ source:
     language: rust
     test_command: sh -c '(cd target 2>/dev/null && cargo test) || cargo test'
 mas:
-  # WHY: q27-era evidence — bigint s26 hit the 20-round ceiling exactly
-  # (rounds: 20, completed: false, still in Discovery) and commons-csv
-  # rounds burned 8 max-turn deaths each. Ceilings, not capability,
-  # bound those rounds.
-  fanout: 1
-  max_rounds: 30
+  fanout: 3
+  max_rounds: 20
   orchestrator_turns: 20
-  worker_turns: 60
+  worker_turns: 40
   judge_turns: 40
   role_output_tokens:
-    # WHY: 16384-cap translator gens took 12-24 min each under 4-way
-    # concurrency (13/21 slow gens pinned exactly at cap on s0). 8192
-    # halves worst-case gen time; retry re-prompts with context kept.
-    translator: 8192
+    translator: 16384
     architect: 16384
     repairer: 16384
     orchestrator: 16384
