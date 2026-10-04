@@ -48,8 +48,10 @@ ENGINE_URL="${ENGINE_URL:-http://localhost:8082/v1}"
 round_tag() { printf 'autoopt-v0.3.%s' "$1"; }
 
 launch_round() {
-    # $1 = problem spec "set_path|lang|tagname", $2 = round index
-    local spec="$1" idx="$2"
+    # $1 = problem spec "set_path|lang|tagname"
+    local spec="$1" idx
+    idx=$ROUND_N
+    ROUND_N=$(( ROUND_N + 1 ))
     local root="${spec%%|*}" rest="${spec#*|}"
     local lang="${rest%%|*}" name="${rest#*|}"
     local exp="$ROOT/.artifacts/experiments/$(date -u +%Y%m%dT%H%M%SZ)v3s${idx}-${name}-sweep"
@@ -134,13 +136,19 @@ score_round() {
 }
 
 mapfile -t ROUNDS < <(grep -v '^#' "$PAIRS" | grep -v '^$')
+# Global round counter: continue the ledger's s{N} numbering instead of
+# restarting per wave, so a new v3s0 dir never shadows the historical
+# v3s0 rows (one problem = many rounds; retries keep climbing).
+START_S=$(ls -d "$ROOT"/.artifacts/experiments/*v3s* 2>/dev/null \
+    | sed 's|.*/||' | grep -oE 'v3s[0-9]+' | grep -oE '[0-9]+' | sort -n | tail -1)
+ROUND_N=$(( ${START_S:--1} + 1 ))
 echo "== sweep: ${#ROUNDS[@]} rounds from $PAIRS (slots ${SLOTS}, stagger ${STAGGER}s)"
 
 past_dirs=()
 launch_wave_member() {
     # Launch ROUNDS[$1]; record its experiment dir tag in past_dirs.
     local tag
-    tag=$(launch_round "${ROUNDS[$1]}" "$1")
+    tag=$(launch_round "${ROUNDS[$1]}")
     past_dirs[$1]="$tag"
     echo "== launched slot $(($1 + 1)): $tag ($(date -u +%H:%M))"
 }

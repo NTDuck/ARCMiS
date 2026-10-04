@@ -118,7 +118,11 @@ def find_round_dirs(root: Path) -> dict:
             skipped.append(exp_dir.name)
             continue
         if tag in rounds:
-            skipped.append(exp_dir.name)
+            # Tag collision: keep BOTH rows. The later dir (sorted order
+            # = later timestamp) gets an .r{K} suffix so no round's
+            # history is silently dropped from the ledger.
+            dup = sum(1 for t in rounds if t.split(".r")[0] == tag) + 1
+            rounds[f"{tag}.r{dup}"] = exp_dir
             continue
         rounds[tag] = exp_dir
     return rounds, skipped
@@ -126,8 +130,10 @@ def find_round_dirs(root: Path) -> dict:
 
 def round_tag_order(tag: str):
     protocol = int(tag[1])
-    number = int(re.search(r"[rs](\d+)", tag).group(1))
-    return (protocol, number)
+    base = re.search(r"[rs](\d+)", tag).group(1)
+    # Suffixed duplicate tags (.r2, .r3) sort right after their base tag.
+    dup = int(tag.split(".r")[1]) if ".r" in tag else 0
+    return (protocol, int(base), dup)
 
 
 def read_json(path: Path):
@@ -403,7 +409,10 @@ def build_entry(tag: str, exp_dir: Path, rounds: dict) -> dict:
         metrics["max_turns_deaths"] = "unknown"
         metrics["output_cap_deaths"] = "unknown"
     return {
-        "round": autoopt_name(tag),
+        # Duplicate-suffix tags (.r2, .r3) map to the base round name;
+        # the suffix only disambiguates the ledger row (same s{N} name,
+        # distinct rows by candidate_id/timestamp).
+        "round": autoopt_name(tag.split(".r")[0]),
         "legacy_tag": tag,
         "protocol": f"v{tag[1]}",
         "candidate_id": exp_dir.name,
