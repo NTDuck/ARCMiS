@@ -1,4 +1,6 @@
 run:
+  # provider selects the OpenAI-compatible wire path only; the serving
+  # engine is q27 (NETMIND_BASE_URL -> ENGINE_URL http://localhost:8081/v1).
   model: s9vb2kbnw3w6xq4gxrmg20s5jqhy7vrj-bonsai2-27b-t3-mtp-slim
   provider: netmind
   max_turns: 14
@@ -16,13 +18,14 @@ source:
     language: rust
     test_command: sh -c '(cd target 2>/dev/null && cargo test) || cargo test'
 mas:
-  # WHY: host-RAM kill zone — engine hit 12.28G RSS and oomd culled the
-  # desktop + ghostty sessions (reboot 2026-10-04 09:06). Fanout 1
-  # halves peak KV-spill lanes from 8 to 4 so the box survives.
+  # WHY: q27-era evidence — bigint s26 hit the 20-round ceiling exactly
+  # (rounds: 20, completed: false, still in Discovery) and commons-csv
+  # rounds burned 8 max-turn deaths each. Ceilings, not capability,
+  # bound those rounds.
   fanout: 1
-  max_rounds: 20
+  max_rounds: 30
   orchestrator_turns: 20
-  worker_turns: 40
+  worker_turns: 60
   judge_turns: 40
   role_output_tokens:
     # WHY: 16384-cap translator gens took 12-24 min each under 4-way
