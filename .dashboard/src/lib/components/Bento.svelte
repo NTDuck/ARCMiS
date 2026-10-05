@@ -10,11 +10,16 @@
 	let {
 		status,
 		actionState,
+		onAction,
 		actionsRef = $bindable(null)
 	}: {
 		status: StatusPayload | null;
 		actionState: { inFlight: string | null; result: { name: string; ok: boolean; detail: string } | null };
-		actionsRef: { run: (name: string, dir?: string) => Promise<void> } | null;
+		onAction: (name: string, dir?: string, confirm?: boolean) => Promise<void>;
+		actionsRef: {
+			run: (name: string, dir?: string, confirm?: boolean) => Promise<void>;
+			arm: (id: string) => void;
+		} | null;
 	} = $props();
 </script>
 
@@ -24,7 +29,7 @@
 	<InFlightCell status={status} />
 	<RecentCloses status={status} />
 	<EngineCell status={status} />
-	<ActionsCell {status} {actionState} bind:actionsRef />
+	<ActionsCell {status} {actionState} {onAction} bind:actionsRef />
 </section>
 
 <style>

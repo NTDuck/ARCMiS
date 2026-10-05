@@ -36,6 +36,7 @@ export interface EngineState {
 	ownedBy: string | null;
 	match: boolean;
 	vmrssKb: number | null;
+	gpuName: string | null;
 	psi: { cpu: number | null; mem: number | null; io: number | null };
 	gpu: { util: number | null; memUsed: number | null; memTotal: number | null };
 	errors: string[];

@@ -1,15 +1,20 @@
 <script lang="ts">
 	import type { StatusPayload, ActionResult } from '$lib/types.js';
-	import { POLL_MS } from '$lib/config.js';
 
 	let {
 		status,
 		actionState,
+		onAction,
 		actionsRef = $bindable(null)
 	}: {
 		status: StatusPayload | null;
 		actionState: { inFlight: string | null; result: { name: string; ok: boolean; detail: string } | null };
-		actionsRef: { run: (name: string, dir?: string) => Promise<void> } | null;
+		// The layout's runAction: performs the POST and updates actionState.
+		onAction: (name: string, dir?: string, confirm?: boolean) => Promise<void>;
+		actionsRef: {
+			run: (name: string, dir?: string, confirm?: boolean) => Promise<void>;
+			arm: (id: string) => void;
+		} | null;
 	} = $props();
 
 	interface ActionDef {
@@ -32,30 +37,77 @@
 	let armTimer: ReturnType<typeof setTimeout> | null = null;
 	let rescorePrompting = $state(false);
 	let rescoreDir = $state('');
+	// Orphans listed by the first (list) phase of purge-orphans; each row purges individually.
+	let orphans = $state<string[]>([]);
+	let armedOrphan = $state<string | null>(null);
+	let orphanArmTimer: ReturnType<typeof setTimeout> | null = null;
 
-	// Expose run() so the command palette and layout can trigger actions.
+	// Expose run()/arm() so the command palette can trigger or arm actions.
 	actionsRef = {
-		run: async (name: string, dir?: string) => {
-			await act(name, dir);
+		run: async (name: string, dir?: string, confirm?: boolean) => {
+			await act(name, dir, confirm);
+		},
+		arm: (id: string) => {
+			if (id === 'stop' || id === 'purge-orphans') {
+				arm(id);
+			}
 		}
 	};
 
-	async function act(id: string, dir?: string) {
+	async function act(id: string, dir?: string, confirm?: boolean) {
 		if (actionState.inFlight) return;
 		disarm();
-		await actionsRef?.run(id, dir);
+		await onAction(id, dir, confirm);
+	}
+
+	async function purgeListPhase() {
+		if (actionState.inFlight) return;
+		disarm();
+		await onAction('purge-orphans');
+		// List phase: split the returned detail into per-row purge targets.
+		const result = actionState.result;
+		orphans =
+			result && result.ok && result.detail !== 'no orphan rounds'
+				? result.detail.split('\n').filter(Boolean)
+				: [];
+	}
+
+	async function purgeOrphan(dir: string) {
+		if (actionState.inFlight) return;
+		if (armedOrphan !== dir) {
+			armedOrphan = dir;
+			if (orphanArmTimer) clearTimeout(orphanArmTimer);
+			orphanArmTimer = setTimeout(disarmOrphan, 5000);
+			return;
+		}
+		disarmOrphan();
+		await act('purge-orphans', dir, true);
+		orphans = orphans.filter((d) => d !== dir);
+		// Refresh the orphan list so the remaining rows stay honest.
+		await purgeListPhase();
+	}
+
+	function arm(id: string) {
+		if (actionState.inFlight) return;
+		armed = id;
+		if (armTimer) clearTimeout(armTimer);
+		armTimer = setTimeout(disarm, 5000);
 	}
 
 	function click(def: ActionDef) {
 		if (actionState.inFlight) return;
 		if (def.destructive && armed !== def.id) {
-			armed = def.id;
-			if (armTimer) clearTimeout(armTimer);
-			armTimer = setTimeout(disarm, 5000);
+			arm(def.id);
 			return;
 		}
 		disarm();
-		act(def.id);
+		if (def.id === 'purge-orphans') {
+			orphans = [];
+			disarmOrphan();
+			purgeListPhase();
+		} else {
+			act(def.id);
+		}
 	}
 
 	function disarm() {
@@ -63,6 +115,14 @@
 		if (armTimer) {
 			clearTimeout(armTimer);
 			armTimer = null;
+		}
+	}
+
+	function disarmOrphan() {
+		armedOrphan = null;
+		if (orphanArmTimer) {
+			clearTimeout(orphanArmTimer);
+			orphanArmTimer = null;
 		}
 	}
 
@@ -96,6 +156,26 @@
 			</button>
 		{/each}
 	</div>
+
+	{#if orphans.length > 0}
+		<div class="orphans">
+			<p class="micro">ORPHAN ROUNDS — PURGE INDIVIDUALLY (ARM → CONFIRM)</p>
+			{#each orphans as dir (dir)}
+				<div class="orphan-row">
+					<span class="orphan-dir">{dir}</span>
+					<button
+						type="button"
+						class="orphan-btn"
+						class:danger={armedOrphan === dir}
+						disabled={actionState.inFlight !== null}
+						onclick={() => purgeOrphan(dir)}
+					>
+						{armedOrphan === dir ? 'Confirm purge?' : 'Purge'}
+					</button>
+				</div>
+			{/each}
+		</div>
+	{/if}
 
 	{#if rescorePrompting}
 		<form class="rescore-row" onsubmit={(e) => { e.preventDefault(); rescoreSubmit(); }}>
@@ -205,6 +285,37 @@
 		button:active:not(:disabled) {
 			transform: none;
 		}
+	}
+
+	.orphans {
+		margin-top: var(--space-sm);
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2xs);
+	}
+
+	.orphan-row {
+		display: flex;
+		align-items: center;
+		gap: var(--space-xs);
+		min-width: 0;
+	}
+
+	.orphan-dir {
+		flex: 1;
+		min-width: 0;
+		font-family: var(--font-mono);
+		font-size: var(--text-2xs);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		color: var(--color-ink-2);
+	}
+
+	.orphan-btn {
+		height: 32px;
+		padding: 0 var(--space-xs);
+		flex-shrink: 0;
 	}
 
 	.rescore-row {

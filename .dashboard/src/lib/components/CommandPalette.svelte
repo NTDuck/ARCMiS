@@ -7,6 +7,8 @@
 		hint: string;
 		kind: 'action' | 'cell';
 		dir?: string;
+		// Exact aria-label of the target cell for jump items.
+		target?: string;
 	}
 
 	let { onClose, onRun }: { onClose: () => void; onRun: (name: string, dir?: string) => void } =
@@ -19,12 +21,12 @@
 		{ id: 'rescore', label: 'Rescore dir', hint: 'action', kind: 'action' },
 		{ id: 'ledger-sync', label: 'Ledger sync', hint: 'action', kind: 'action' },
 		{ id: 'purge-orphans', label: 'Purge orphans', hint: 'action', kind: 'action' },
-		{ id: 'cell-scoreboard', label: 'Go to scoreboard', hint: 'cell', kind: 'cell' },
-		{ id: 'cell-driver', label: 'Go to driver · watchdog', hint: 'cell', kind: 'cell' },
-		{ id: 'cell-inflight', label: 'Go to in-flight slots', hint: 'cell', kind: 'cell' },
-		{ id: 'cell-closes', label: 'Go to recent closes', hint: 'cell', kind: 'cell' },
-		{ id: 'cell-engine', label: 'Go to engine', hint: 'cell', kind: 'cell' },
-		{ id: 'cell-actions', label: 'Go to actions', hint: 'cell', kind: 'cell' }
+		{ id: 'cell-scoreboard', label: 'Go to scoreboard', hint: 'cell', kind: 'cell', target: 'Scoreboard' },
+		{ id: 'cell-driver', label: 'Go to driver · watchdog', hint: 'cell', kind: 'cell', target: 'Driver and watchdog' },
+		{ id: 'cell-inflight', label: 'Go to in-flight slots', hint: 'cell', kind: 'cell', target: 'In-flight rounds' },
+		{ id: 'cell-closes', label: 'Go to recent closes', hint: 'cell', kind: 'cell', target: 'Recent closes' },
+		{ id: 'cell-engine', label: 'Go to engine', hint: 'cell', kind: 'cell', target: 'Engine' },
+		{ id: 'cell-actions', label: 'Go to actions', hint: 'cell', kind: 'cell', target: 'Actions' }
 	];
 
 	let query = $state('');
@@ -80,8 +82,8 @@
 	function pick(item: Item) {
 		if (item.kind === 'action') {
 			onRun(item.id, item.dir);
-		} else {
-			const cell = document.querySelector(`[aria-label*="${item.label.replace('Go to ', '')}"]`);
+		} else if (item.target) {
+			const cell = document.querySelector(`[aria-label="${item.target}"]`);
 			cell?.scrollIntoView({ block: 'start' });
 			onClose();
 		}

@@ -19,7 +19,7 @@
 	const sb = $derived(status?.scoreboard);
 </script>
 
-<article class="span-cell cell" aria-live="polite" aria-label="Scoreboard">
+<article class="cell" aria-live="polite" aria-label="Scoreboard">
 	<h2>Scoreboard</h2>
 	{#if sb}
 		<p class="big" class:tick>

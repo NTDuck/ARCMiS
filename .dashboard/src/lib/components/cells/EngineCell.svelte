@@ -26,6 +26,15 @@
 	{/if}
 	<dl>
 		<div>
+			<dt>GPU · {eng?.gpuName ?? 'NAME UNAVAILABLE'}</dt>
+			<dd>
+				{eng?.gpu.util !== null && eng?.gpu.util !== undefined ? `${eng.gpu.util}%` : '—'} ·
+				{eng?.gpu.memUsed !== null && eng?.gpu.memUsed !== undefined && eng?.gpu.memTotal
+					? `${eng.gpu.memUsed} / ${eng.gpu.memTotal} MiB`
+					: '—'}
+			</dd>
+		</div>
+		<div>
 			<dt>VMRSS</dt>
 			<dd>{kbToGb(eng?.vmrssKb ?? null)}</dd>
 		</div>
@@ -40,18 +49,6 @@
 		<div>
 			<dt>PSI IO</dt>
 			<dd>{eng?.psi.io !== null && eng?.psi.io !== undefined ? `${eng.psi.io.toFixed(1)}%` : '—'}</dd>
-		</div>
-		<div>
-			<dt>GPU UTIL</dt>
-			<dd>{eng?.gpu.util !== null && eng?.gpu.util !== undefined ? `${eng.gpu.util}%` : '—'}</dd>
-		</div>
-		<div>
-			<dt>GPU VRAM</dt>
-			<dd>
-				{eng?.gpu.memUsed !== null && eng?.gpu.memUsed !== undefined && eng?.gpu.memTotal
-					? `${eng.gpu.memUsed} / ${eng.gpu.memTotal} MiB`
-					: '—'}
-			</dd>
 		</div>
 	</dl>
 </article>

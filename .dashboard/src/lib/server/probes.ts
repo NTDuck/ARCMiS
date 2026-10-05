@@ -195,6 +195,8 @@ export async function recentCloses(): Promise<LedgerRow[] | { error: string }> {
 			const id = typeof r.candidate_id === 'string' ? r.candidate_id : '';
 			if (!/^\d{8}T\d{6}Z/.test(id)) continue;
 			const m = id.match(/^(\d{8})T(\d{6})Z/);
+			// Rows sort by candidate_id launch timestamp: the ledger has no close-time
+			// field, and under near-serial slot launch this approximates close order.
 			const closeTime = m
 				? Date.parse(
 						`${m[1].slice(0, 4)}-${m[1].slice(4, 6)}-${m[1].slice(6, 8)}T${m[2].slice(0, 2)}:${m[2].slice(2, 4)}:${m[2].slice(4, 6)}Z`
@@ -204,12 +206,24 @@ export async function recentCloses(): Promise<LedgerRow[] | { error: string }> {
 				'metrics' in r && r.metrics && typeof r.metrics === 'object'
 					? (r.metrics as Record<string, unknown>)
 					: {};
+			const verdict = 'verdict' in r && typeof r.verdict === 'string' ? r.verdict : '—';
+			// A closes panel must not show open rounds (gate 46 family): drop IN FLIGHT rows.
+			if (verdict === 'IN FLIGHT') continue;
+			// Unknown metrics render as '—', never the word "unknown".
+			const testsPassed = metrics.tests_passed;
+			const testsFailed = metrics.tests_failed;
+			const tests =
+				typeof testsPassed === 'number' && typeof testsFailed === 'number'
+					? `${testsPassed}/${testsFailed}`
+					: '—';
+			const wallSeconds = metrics.wall_seconds;
+			const wallS = typeof wallSeconds === 'number' ? String(wallSeconds) : '—';
 			rows.push({
 				roundTag: 'round' in r && typeof r.round === 'string' ? r.round : '—',
 				problem: id.replace(/^\d{8}T\d{6}Zv3s?\d*-/, '').replace(/-sweep$/, ''),
-				verdict: 'verdict' in r && typeof r.verdict === 'string' ? r.verdict : '—',
-				tests: `${metrics.tests_passed ?? '—'}/${metrics.tests_failed ?? '—'}`,
-				wallS: String(metrics.wall_seconds ?? '—'),
+				verdict,
+				tests,
+				wallS,
 				closeTime
 			});
 		}
@@ -227,6 +241,7 @@ export async function engine(): Promise<EngineState> {
 		ownedBy: null,
 		match: false,
 		vmrssKb: null,
+		gpuName: null,
 		psi: { cpu: null, mem: null, io: null },
 		gpu: { util: null, memUsed: null, memTotal: null },
 		errors
@@ -266,20 +281,57 @@ export async function engine(): Promise<EngineState> {
 	}
 	state.psi = psi;
 
-	// GPU
-	const gpu = await run('nvidia-smi', [
-		'--query-gpu=utilization.gpu,memory.used,memory.total',
-		'--format=csv,noheader,nounits'
-	]);
-	if (gpu.ok) {
-		const parts = gpu.out.trim().split(',').map((s) => parseInt(s.trim(), 10));
-		if (parts.length >= 3 && parts.every((n) => !Number.isNaN(n))) {
-			state.gpu = { util: parts[0], memUsed: parts[1], memTotal: parts[2] };
-		}
+	// GPU: the unit pins CUDA_VISIBLE_DEVICES to a UUID; read it and match the row.
+	// Fallback: pick the row with the largest memory.total (the datacenter card).
+	const [uuid, uuidErr] = await unitCudaUuid();
+	if (uuidErr) errors.push(uuidErr);
+	const gpuRows = await listGpus();
+	if (gpuRows.length > 0) {
+		const byUuid = uuid ? gpuRows.find((g) => g.uuid === uuid) : undefined;
+		const selected =
+			byUuid ?? gpuRows.reduce((a, b) => ((b.memTotal ?? 0) > (a.memTotal ?? 0) ? b : a));
+		state.gpuName = selected.name;
+		state.gpu = { util: selected.util, memUsed: selected.memUsed, memTotal: selected.memTotal };
 	} else {
-		errors.push('nvidia-smi failed');
+		errors.push('nvidia-smi failed or returned no rows');
 	}
 	return state;
+}
+
+interface GpuRow {
+	uuid: string | null;
+	name: string | null;
+	util: number | null;
+	memUsed: number | null;
+	memTotal: number | null;
+}
+
+async function unitCudaUuid(): Promise<[string | null, string | null]> {
+	const r = await run('systemctl', ['show', 'ninfer-serve', '-p', 'Environment', '--value']);
+	const m = r.out.match(/CUDA_VISIBLE_DEVICES=(\S+)/);
+	if (!r.ok || !m) return [null, r.ok ? null : 'cuda uuid: unit env unreadable'];
+	return [m[1], null];
+}
+
+async function listGpus(): Promise<GpuRow[]> {
+	const r = await run(
+		'nvidia-smi',
+		[
+			'--query-gpu=name,uuid,utilization.gpu,memory.used,memory.total',
+			'--format=csv,noheader,nounits'
+		],
+		3000
+	);
+	if (!r.ok) return [];
+	return r.out
+		.trimEnd()
+		.split('\n')
+		.filter(Boolean)
+		.map((line) => {
+			const [name, uuid, util, memUsed, memTotal] = line.split(',').map((s) => s.trim());
+			const n = (v: string) => (Number.isNaN(parseInt(v, 10)) ? null : parseInt(v, 10));
+			return { name, uuid, util: n(util), memUsed: n(memUsed), memTotal: n(memTotal) };
+		});
 }
 
 async function mainPid(): Promise<{ value: number | null; error: string | null }> {

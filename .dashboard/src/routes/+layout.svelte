@@ -20,7 +20,10 @@
 	let status = $state<StatusPayload | null>(null);
 	let statusError = $state<string | null>(null);
 	let paletteOpen = $state(false);
-	let actionsRef: { run: (name: string, dir?: string) => Promise<void> } | null = $state(null);
+	let actionsRef: {
+		run: (name: string, dir?: string, confirm?: boolean) => Promise<void>;
+		arm: (id: string) => void;
+	} | null = $state(null);
 	let actionState = $state<{
 		inFlight: string | null;
 		result: { name: string; ok: boolean; detail: string } | null;
@@ -50,14 +53,20 @@
 		}
 	}
 
-	async function runAction(name: string, dir?: string) {
+	async function runAction(name: string, dir?: string, confirm?: boolean) {
 		if (actionState.inFlight) return;
 		actionState = { inFlight: name, result: actionState.result };
 		try {
+			// Conditional literal, not property mutation: rollup treeshake drops
+			// property assignments on locals even when the object is later read.
+			const payload: Record<string, unknown> = dir
+				? // confirm rides only alongside a dir (purge-specific deletes).
+					{ dir, confirm: confirm === true }
+				: {};
 			const res = await fetch(`/api/actions/${name}`, {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify(dir ? { dir, confirm: true } : {})
+				body: JSON.stringify(payload)
 			});
 			const data = (await res.json()) as { ok: boolean; detail: string };
 			actionState = { inFlight: null, result: { name, ok: data.ok, detail: data.detail } };
@@ -76,7 +85,7 @@
 		{#if statusError}
 			<p class="status-error" role="alert">status probe failed — {statusError} · retrying every 10s</p>
 		{/if}
-		<Bento {status} {actionState} bind:actionsRef />
+		<Bento {status} {actionState} onAction={runAction} bind:actionsRef />
 		<JournalTail {status} />
 	</main>
 	<Footer />
@@ -87,9 +96,15 @@
 {#if paletteOpen}
 	<CommandPalette
 		onClose={() => (paletteOpen = false)}
-		onRun={(name, dir) => {
+		onRun={(name) => {
 			paletteOpen = false;
-			runAction(name, dir);
+			// Destructive palette items never run directly: arm the button so the
+			// two-step confirm happens in the actions cell, same as a click.
+			if (name === 'stop' || name === 'purge-orphans') {
+				actionsRef?.arm(name);
+			} else {
+				runAction(name);
+			}
 		}}
 	/>
 {/if}
