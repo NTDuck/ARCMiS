@@ -1,0 +1,61 @@
+/* Hallmark · macrostructure: Bento Grid · F1 knobs: tiles=6, spans=irregular, border=hairline-all · genre: modern-minimal · theme: Cobalt · enrichment: none · nav: N13 inline cmdk · footer: Ft2 inline · pre-emit critique: P5_H5_E4_S5_R4_V4 · contrast: pass (40-41) · honest: pass (46) · chrome: pass (47) · tokens: pass (48) · responsive: pass (49,50-57) */
+
+:root {
+	/* Palette — Cobalt, hue anchor 250-258 */
+	--color-paper: oklch(98.5% 0.004 250);
+	--color-ink: oklch(24% 0.02 258);
+	--color-ink-2: oklch(34% 0.018 257);
+	--color-muted: oklch(45% 0.015 257);
+	--color-accent: oklch(58% 0.2 256);
+	--color-accent-ink: oklch(97% 0.01 256);
+	--color-graphite: oklch(22% 0.016 260);
+	--color-graphite-2: oklch(20% 0.016 260);
+	--color-rule: oklch(91% 0.005 250);
+	--color-rule-2: oklch(85% 0.008 250);
+	--color-error: oklch(55% 0.19 25);
+	--color-ok: oklch(58% 0.13 150);
+	--color-warn: oklch(70% 0.13 80);
+	--color-focus: var(--color-accent);
+
+	/* Fonts */
+	--font-display: 'Space Grotesk', system-ui, sans-serif;
+	--font-body: 'Inter', system-ui, sans-serif;
+	--font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+	/* Spacing — 4pt multiples */
+	--space-3xs: 2px;
+	--space-2xs: 4px;
+	--space-xs: 8px;
+	--space-sm: 12px;
+	--space-md: 16px;
+	--space-lg: 24px;
+	--space-xl: 32px;
+	--space-2xl: 48px;
+	--space-3xl: 64px;
+	--space-4xl: 96px;
+	--space-5xl: 128px;
+
+	/* Text scale */
+	--text-2xs: 0.6875rem;
+	--text-xs: 0.75rem;
+	--text-sm: 0.8125rem;
+	--text-base: 0.9375rem;
+	--text-lg: 1.0625rem;
+	--text-xl: 1.25rem;
+	--text-2xl: 1.625rem;
+	--text-3xl: 2.125rem;
+	--text-4xl: 2.75rem;
+
+	/* Radii */
+	--radius-btn: 6px;
+	--radius-panel: 10px;
+
+	/* Easings */
+	--ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+	--ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+html,
+body {
+	overflow-x: clip;
+}
