@@ -3,3 +3,40 @@
 .slidev-layout h1 {
   color: #1F497D;
 }
+
+/* HTML/CSS bar charts used across the deck.
+   Color helpers keep inline styles to one declaration (no semicolons).
+   Width stays inline per bar. */
+.bar {
+  height: 22px;
+  min-width: 4px;
+  display: inline-block;
+  border-radius: 2px;
+}
+.bar-navy { background: #1F497D; }
+.bar-blue { background: #4F81BD; }
+.bar-green { background: #9BBB59; }
+.bar-orange { background: #F79646; }
+.bar-purple { background: #8064A2; }
+.bar-red { background: #C0504D; }
+.bar-gray { background: #999999; }
+
+/* Title-slide logo bars and wall-clock median markers. */
+.logo-bar { height: 14px; background: #4F81BD; }
+.median-line { border-left: 3px dashed #1F497D; }
+.median-label { color: #1F497D; }
+
+/* 114-dot progress grid. */
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  display: inline-block;
+}
+.dot-ok {
+  background: #9BBB59;
+}
+.dot-todo {
+  background: #e5e7eb;
+  border: 1px solid #d1d5db;
+}

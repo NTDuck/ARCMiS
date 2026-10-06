@@ -1,10 +1,10 @@
 <template>
   <footer
-    v-if="show"
     class="absolute bottom-2 left-6 right-6 text-xs text-gray-400 flex justify-between"
   >
-    <span>ARCMiS</span>
-    <span>{{ section }}</span>
+    <span v-if="show">{{ section }}</span>
+    <span v-else></span>
+    <span></span>
     <span>{{ $nav.currentSlideNo }} / {{ $nav.total }}</span>
   </footer>
 </template>
@@ -15,8 +15,9 @@ import { useNav } from '@slidev/client'
 
 const nav = useNav()
 
-// Footer on every content slide: skip title (cover), dividers
-// (section), and the closing slide (end).
+// Page number on EVERY slide (user requirement). The section name shows
+// only on content slides. Cover, section dividers, and the closing slide
+// keep the number but hide the section text.
 const show = computed(() => !['cover', 'section', 'end'].includes(nav.currentLayout.value))
 
 // Section name: title of the most recent section divider at or before
