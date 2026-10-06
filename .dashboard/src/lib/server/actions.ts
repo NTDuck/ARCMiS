@@ -21,15 +21,15 @@ const DRIVER_RELAUNCH_ARGS = [
 	`--unit=${DRIVER_UNIT}`,
 	'-p',
 	'WorkingDirectory=/home/ayin/projs/ARCMiS',
-	'--setenv=SLOTS=3',
+	'--setenv=SLOTS=2',
 	'--setenv=STAGGER=240',
 	'--setenv=ENGINE_URL=http://localhost:8081/v1',
 	'--setenv=HYPOTHESIS=dashboard relaunch',
 	'--',
 	'bash',
-	'scripts/sweep.sh',
+	`${REPO}/scripts/sweep.sh`,
 	'.artifacts/experiments/PAIRS-ninfer-w2.txt',
-	'0'
+	'3'
 ];
 
 export type ActionName =
