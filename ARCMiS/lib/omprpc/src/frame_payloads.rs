@@ -33,10 +33,13 @@ pub struct SubagentLifecycleFrame {
 /// Full progress snapshot for one subagent.
 #[derive(Debug, Clone, Deserialize)]
 pub struct ReadyFrame {
+    #[serde(rename = "protocolVersion")]
     pub protocol_version: u32,
     #[serde(rename = "supportedProtocolVersions")]
     pub supported_protocol_versions: Vec<u32>,
+    #[serde(rename = "maxFrameBytes")]
     pub max_frame_bytes: u64,
+    #[serde(rename = "maxReassembledFrameBytes")]
     pub max_reassembled_frame_bytes: u64,
 }
 

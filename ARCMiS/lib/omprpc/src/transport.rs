@@ -71,6 +71,15 @@ impl Transport {
         std::mem::replace(&mut self.events, orphan)
     }
 
+    /// Read one frame with a deadline. Used before the mirror loop starts.
+    pub async fn read_event_before(&mut self, deadline: tokio::time::Instant) -> anyhow::Result<ServerFrame> {
+        let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+        tokio::time::timeout(remaining, self.events.recv())
+            .await
+            .context("timed out waiting for the next frame")?
+            .context("event stream ended")
+    }
+
     /// Readiness gate: first `ready` frame with its advertised limits.
     pub async fn ready(&mut self) -> anyhow::Result<crate::frame::ReadyFrame> {
         while let Some(frame) = self.events.recv().await {

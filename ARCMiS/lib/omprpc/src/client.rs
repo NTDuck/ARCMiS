@@ -33,10 +33,22 @@ impl Client {
             frame_rx,
             next_id: 1,
         };
-        let negotiated = client
-            .command("negotiate_protocol", Some(serde_json::json!({ "protocolVersion": 2 })), RESPONSE_TIMEOUT)
+        let request_id = client
+            .request(serde_json::json!({
+                "type": "negotiate_protocol",
+                "protocolVersion": 2,
+            }))
             .await
             .context("protocol negotiation")?;
+        let deadline = tokio::time::Instant::now() + RESPONSE_TIMEOUT;
+        let negotiated = loop {
+            let frame = client.transport.read_event_before(deadline).await?;
+            if let ServerFrame::Response(response) = frame {
+                if response.id.as_deref() == Some(request_id.as_str()) {
+                    break response;
+                }
+            }
+        };
         anyhow::ensure!(negotiated.success, "protocol negotiation failed");
         tracing::debug!(advertised = ready.max_frame_bytes, "negotiated protocol v2");
         Ok(client)
