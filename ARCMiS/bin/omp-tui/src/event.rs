@@ -143,7 +143,7 @@ fn apply_tool_end(store: &mut Store, event: &serde_json::Map<String, serde_json:
 
 fn apply_subagent_lifecycle(store: &mut Store, frame: &omprpc::frame::SubagentLifecycleFrame) -> bool {
     let payload = &frame.payload;
-    let Some(slot) = store.worker_slot_for(&payload.id) else {
+    let Some(slot) = store.worker_slot_for(&payload.agent) else {
         return false;
     };
     let status = payload.status.as_str();

@@ -46,9 +46,8 @@ impl App {
         let mut keys = EventStream::new();
         let mut ticker = tokio::time::interval(Duration::from_millis(120));
         if !config.seed_prompt.is_empty() {
-            let prompt = config.seed_prompt.clone();
             store.busy = true;
-            client.prompt(&prompt, None).await?;
+            client.request(serde_json::json!({ "type": "prompt", "message": config.seed_prompt })).await?;
         }
         loop {
             tokio::select! {
@@ -58,8 +57,9 @@ impl App {
                         terminal.draw(|frame| draw(frame, store))?;
                         anyhow::bail!("omp child exited");
                     };
-                    client.feed_frame(frame.clone());
-                    if apply_frame(store, &frame) {
+                    let redraw = apply_frame(store, &frame);
+                    client.feed_frame(frame);
+                    if redraw {
                         terminal.draw(|frame| draw(frame, store))?;
                     }
                 }
@@ -73,14 +73,20 @@ impl App {
                         }
                         InputAction::Abort => {
                             store.orchestrator.push_line("[host] abort requested".to_string());
-                            client.command("abort", None, Duration::from_secs(10)).await?;
+                            client
+                                .request(serde_json::json!({ "type": "abort" }))
+                                .await?;
                             store.busy = false;
                         }
                         InputAction::Quit => break,
                         InputAction::Submit { message, streaming } => {
-                            let behavior = if streaming { Some("steer") } else { None };
                             store.busy = true;
-                            client.prompt(&message, behavior).await?;
+                            let mut params =
+                                serde_json::json!({ "type": "prompt", "message": message });
+                            if streaming {
+                                params["streamingBehavior"] = serde_json::json!("steer");
+                            }
+                            client.request(params).await?;
                         }
                     }
                     terminal.draw(|frame| draw(frame, store))?;

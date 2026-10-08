@@ -31,8 +31,14 @@ async fn run(config: RunConfig) -> anyhow::Result<()> {
         working_dir: config.working_dir.clone(),
         approval_mode: config.approval_mode.clone(),
     };
-    let client = Client::connect(spawn).await?;
+    let mut client = Client::connect(spawn).await?;
     let store = Store::new(config.pane_titles.clone());
+    client
+        .request(serde_json::json!({
+            "type": "set_subagent_subscription",
+            "level": "events",
+        }))
+        .await?;
     crossterm::terminal::enable_raw_mode()?;
     let mut stdout = std::io::stdout();
     crossterm::execute!(stdout, crossterm::terminal::EnterAlternateScreen)?;
