@@ -9,15 +9,22 @@
 	import '$lib/../app.css';
 	import Header from '$lib/components/Header.svelte';
 	import Bento from '$lib/components/Bento.svelte';
+	import LiveRounds from '$lib/components/cells/LiveRounds.svelte';
+	import RoundDetailCell from '$lib/components/cells/RoundDetailCell.svelte';
+	import CampaignCell from '$lib/components/cells/CampaignCell.svelte';
+	import FleetCell from '$lib/components/cells/FleetCell.svelte';
+	import HistoryCell from '$lib/components/cells/HistoryCell.svelte';
 	import JournalTail from '$lib/components/JournalTail.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import CommandPalette from '$lib/components/CommandPalette.svelte';
 	import { POLL_MS } from '$lib/config.js';
-	import type { StatusPayload } from '$lib/types.js';
+	import type { StatusPayload, CampaignState, FleetState } from '$lib/types.js';
 
 	let { children } = $props();
 
 	let status = $state<StatusPayload | null>(null);
+	let campaign = $state<CampaignState | null>(null);
+	let fleet = $state<FleetState | null>(null);
 	let statusError = $state<string | null>(null);
 	let paletteOpen = $state(false);
 	let actionsRef: {
@@ -38,10 +45,28 @@
 		} catch (e) {
 			statusError = (e as Error).message;
 		}
+		// Campaign state: same cadence, cheap file reads; failure keeps the
+		// last payload on screen rather than blanking the panel.
+		try {
+			const res = await fetch('/api/campaign', { cache: 'no-store' });
+			if (res.ok) campaign = await res.json();
+		} catch {
+			// keep previous campaign payload
+		}
+	}
+
+	async function refreshFleet() {
+		try {
+			const res = await fetch('/api/fleet', { cache: 'no-store' });
+			if (res.ok) fleet = await res.json();
+		} catch {
+			// keep previous fleet payload; button can be pressed again
+		}
 	}
 
 	$effect(() => {
 		poll();
+		refreshFleet();
 		const id = setInterval(poll, POLL_MS);
 		return () => clearInterval(id);
 	});
@@ -86,6 +111,11 @@
 			<p class="status-error" role="alert">status probe failed — {statusError} · retrying every 10s</p>
 		{/if}
 		<Bento {status} {actionState} onAction={runAction} bind:actionsRef />
+		<LiveRounds {campaign} />
+		<RoundDetailCell {campaign} />
+		<CampaignCell {campaign} />
+		<FleetCell {fleet} onRefresh={refreshFleet} />
+		<HistoryCell {campaign} />
 		<JournalTail {status} />
 	</main>
 	<Footer />

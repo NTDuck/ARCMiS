@@ -15,3 +15,8 @@ run = "cargo fmt --all"
 
 [tasks.lint-clippy]
 run = "cargo clippy --fix --workspace --all-targets --allow-dirty"
+
+# Serve the ops dashboard (.dashboard SvelteKit app) via vite dev.
+[tasks.dashboard]
+dir = ".dashboard"
+run = "npm run dev"

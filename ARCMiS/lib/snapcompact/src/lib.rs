@@ -28,6 +28,6 @@ pub use serialize::SerializeOptions;
 /// The font is public domain (X11 fixed, Markus Kuhn's ISO10646 build).
 #[must_use]
 pub fn load_font() -> BdfFont {
-    const FONT_BYTES: &[u8] = include_bytes!("../assets/8x13.bdf");
+    const FONT_BYTES: &[u8] = std::include_bytes!("../assets/8x13.bdf");
     BdfFont::parse(FONT_BYTES).expect("bundled 8x13.bdf must parse")
 }

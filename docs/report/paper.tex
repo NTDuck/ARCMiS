@@ -1,5 +1,5 @@
 \documentclass[11pt]{article}
-\usepackage[margin=1in]{geometry}
+\usepackage[margin=1in,headheight=22pt]{geometry}
 \usepackage{lmodern}
 \usepackage{amsmath}
 \usepackage{graphicx}
@@ -41,9 +41,15 @@ University of Engineering and Technology, Vietnam National University, Hanoi\\
 
 \begin{abstract}
 We present ARCMiS (Agentic Repository-level Code Migration for SLMs), a
-harness that migrates whole source codebases from one programming language
-to another with small language models (SLMs, 27B parameters) served
-locally on one consumer GPU. The harness is a hierarchical multi-agent
+harness that migrates whole source codebases from one programming
+language to another with small language models (SLMs, 27B parameters)
+served locally on one consumer GPU. The harness is target-language
+agnostic: each problem config names a source language, a target
+language, and a build-plus-test command, so any legacy source can
+target any language whose toolchain is expressible as such a command.
+The current campaign instantiates this surface on C, Java, Go, and
+Python sources with Rust targets, chosen for toolchain-scoring
+determinism. The harness is a hierarchical multi-agent
 system: a tier-1 orchestrator runs a ten-phase, evidence-gated state
 machine and delegates over a task graph; a static three-tier tree puts
 config-owned team leads (tier 2) over the specialist roles (tier 3), and
@@ -55,15 +61,15 @@ continuation, per-role output budgets) live in a separate middleware
 crate on the model-call path. All state lives on a
 character-capped shared blackboard; snapcompact absorbs context overflow
 by rendering discarded history to PNG bitmap frames instead of calling an
-LLM summarizer. Scoring is toolchain-only: the target build and test
+LLM summarizer. Scoring is toolchain-only: the configured build and test
 commands must pass in the produced workspace, and agent self-reports
 never gate. We report the state of an ongoing coverage-sweep campaign
-over the 118-project ReCodeAgent corpus: as of 2026-10-04 the ledger
-holds 47 round entries, 45 scored and 2 in flight, and 13 of the
+over the 118-project ReCodeAgent corpus: as of 2026-10-06 the ledger
+holds 55 round entries, 54 scored and 1 in flight, and 13 of the
 campaign's 114-problem brief is
 cleared (toolchain-verified compile and pass, each problem counted once
-across retries). The cleared rate implies roughly $(114-13)/13 \times 8
-\approx 62$ more campaign days at the current rate; we state it as an
+across retries). The cleared rate implies roughly $(114-13)/13 \times 10
+\approx 78$ more campaign days at the current rate; we state it as an
 estimate from the current rate, not a prediction. We also record the
 binding constraints the campaign found: output-ceiling burn rate, the
 Discovery context wall, engine-side transient failures, and set
@@ -74,8 +80,9 @@ do at repository scale, and no more.
 \section{Introduction}
 \label{sec:intro}
 
-Repository-level code migration---translating an entire codebase from one
-language to another while it keeps its behavior---is one of the hardest
+Repository-level code migration, translating an entire codebase from
+one language to another while it keeps its behavior, is one of the
+hardest
 open tasks for coding agents. It needs three things at once: reading and
 understanding code that does not fit in one context window, planning a
 dependency-respecting translation order, and producing code that passes
@@ -86,10 +93,19 @@ cost nothing per token, and keep proprietary source on the machine.
 
 ARCMiS targets exactly this regime. It migrates source codebases with a
 27B model served locally on a single RTX~3090 (through the netmind
-provider path against the local inference engine). The design
+provider path against the local inference engine). The harness is
+target-language agnostic: every problem config carries a source
+language, a target language, and the test command that scores the
+result, so the same orchestration, phase machine, and scoring rule apply
+to any legacy source and any target expressible as a build-plus-test
+command (Section~\ref{sec:targetlang}). The current campaign chose Rust
+as its first target family for the coverage sweep; the dataset
+families span C, Java, Go, and Python sources, and no non-Rust run has
+been scored yet. The design
 constraint that shapes the whole system is \emph{honesty of scoring}: an
 agent's claim of success counts for nothing. A run succeeds only when the
-target toolchain compiles the produced workspace and its test command
+configured target toolchain compiles the produced workspace and its test
+command
 exits zero. LLM-graded proxy scores, when recorded at all, never gate.
 
 This paper makes four contributions:
@@ -105,7 +121,7 @@ This paper makes four contributions:
   the orchestration domain; the guard hook stays with the delegation
   contract (Sections~\ref{sec:method} and~\ref{sec:infra}).
 \item A benchmark record for the coverage-sweep campaign, updated
-  2026-10-04: 47 round entries in the per-round ledger over the
+  2026-10-06: 55 round entries in the per-round ledger over the
   ReCodeAgent \texttt{tool\_projects} corpus, 13 of the campaign brief's
   114 problems cleared with toolchain-verified workspaces (each problem
   counted once across retries), and honest per-round verdicts including
@@ -135,7 +151,8 @@ members (tier 3). The guard hook inspects every tool call from every
 tier; denied Ask-class calls may arbitrate through the Jev judge (deny
 on uncertain). The middleware crate holds the role-agnostic hooks
 (trace, continuation, per-role output budgets); snapcompact attaches to
-every role's call path. The target toolchain returns exit codes to the
+every role's call path. The configured target toolchain returns exit
+codes to the
 evaluator.}
 \label{fig:arch}
 \end{figure}
@@ -191,7 +208,7 @@ spirit, since its two verified sets are the smallest C and Go sets.
 SWE-bench~\cite{jimenez2024swebench} anchored evaluation in executable
 tests instead of model judgments, and we follow the same principle with
 toolchain-only scoring: an agent pass counts only when the repository's
-own tests pass. Meta-Harness~\cite{metaharness2026} optimizes an executable harness
+own tests pass. Meta-Harness~\cite{metaharness2026} evolves an executable harness
 through an agentic outer loop where the proposer reads raw execution
 traces from the filesystem; the campaign behind our benchmark
 record follows that contract, with immutable per-run directories and
@@ -239,16 +256,44 @@ numbers as context, not a comparison.
 \section{The ARCMiS Methodology}
 \label{sec:method}
 
-This section describes the method as it ran in the campaign: the role
-taxonomy and its tiers, the evidence-gated phase machine, the decision
-protocol with tiered delegation, the blackboard, the guard, the budgets,
-and the scoring rule.
+This section assumes no prior knowledge of the system. It defines the
+vocabulary first, then the role taxonomy and its tiers, the
+evidence-gated phase machine, the decision protocol with tiered
+delegation, the blackboard, the guard, the budgets, the scoring rule,
+and the per-problem language configuration that makes the harness
+target-language agnostic.
+
+\paragraph{Vocabulary.}
+An \emph{orchestrator} is the single controlling agent of a run. It owns
+the plan and the task list, and it never writes product code. A
+\emph{specialist} is a role that does one kind of work (for example,
+read the codebase, translate one batch, validate one batch, or repair
+one diagnosed failure). A \emph{lead} is an intermediate agent that owns
+a small team of specialists and runs an inner loop over them. A
+\emph{delegation} is one unit of work handed from a controlling agent to
+a lead or a specialist; the delegator writes a task text, and the
+delegate works with its own tool access until it returns a result. A
+\emph{round} is one turn of the orchestrator: it reads merged state from
+the shared blackboard, emits one or more delegation decisions, and the
+harness executes them before the next round. A \emph{phase} is one stage
+of the migration pipeline, such as Discovery (read and map the source)
+or Migration (translate every batch). A \emph{phase-exit evidence gate}
+is a deterministic check that a phase's written exit condition holds
+before the run may move forward; a gate rejection sends the orchestrator
+back to work, and agent claims alone never pass a gate. A
+\emph{stagnation breaker} is a deterministic stop rule: after a fixed
+number of consecutive rounds with no completed task, the run ends with a
+diagnosable artifact instead of looping. A \emph{ledger} is an
+append-only record; the campaign keeps per-run ledgers of decisions and
+failures inside each run directory, plus a per-round ledger
+(\texttt{ROUNDS.yaml}) with one row per round and its verdict.
 
 \subsection{Overview}
 
-A run is one migration attempt against one problem set: a source codebase
-in language $L_s$ and a target language $L_t$, with a test command defined
-in the config. The harness (a Rust binary built on rig~0.42) spawns a MAS
+A run is one migration attempt against one problem: a source codebase
+in language $L_s$ and a target language $L_t$, with a test command
+defined
+in the config (Section~\ref{sec:targetlang}). The harness (a Rust binary built on rig~0.42) spawns a MAS
 whose members share one blackboard directory. Control is a static
 three-tier tree: the orchestrator at tier 1 owns the plan and never
 writes product code; team leads at tier 2 own one batch or phase slice
@@ -465,10 +510,10 @@ Per-role output-token and think overrides are config knobs introduced
 during the campaign (Section~\ref{sec:results}).
 
 \subsection{Scoring}
+\label{sec:scoring}
 
-A run succeeds only when the evaluator reruns the target toolchain
-(\texttt{cargo build} + \texttt{cargo test} for Rust targets,
-\texttt{pytest} for Python, or a JavaScript syntax check) in the produced
+A run succeeds only when the evaluator reruns the target toolchain (the
+build and test commands from the problem config) in the produced
 workspace and every test passes. Agent self-reports are recorded but
 never trusted. This rule exists because self-report traps are real:
 an agent can write a passing per-problem record over an empty
@@ -476,7 +521,55 @@ workspace, and a status string carries no signal while an exit code
 does. The scorer re-runs the
 toolchain itself, and traces and score paths count tool-call activity, so
 a healthy tool-only turn (empty text, real tool calls) is never misread
-as a failure.
+as a failure. Each scored round lands in one of five verdict classes:
+\textsf{SOLVED} or \textsf{CLEARED} (the workspace compiles and its
+suite passes), \textsf{VERIFIED-WORKSPACE} (the run stopped before
+\textsf{done}, but the produced workspace scores green), \textsf{NOT
+CLEARED} (the run closed without a green workspace), and
+\textsf{ABORTED} (the run died before a close, typically on an
+engine-side transient). The coverage scoreboard counts only
+\textsf{SOLVED} and \textsf{CLEARED}.
+
+\subsection{Target-language configuration}
+\label{sec:targetlang}
+
+The harness is target-language agnostic by construction. Each problem
+config (rendered per round from \texttt{scripts/round-template.yml})
+carries three language-facing keys: \texttt{source.language} names the
+legacy language the translator reads, \texttt{target.language} names the
+language it writes, and \texttt{target.test\_command} is the shell
+command whose exit code and test counts score the run. The pipeline
+(phases, roles, gates, breakers) never names a language; the agents read
+the target language from the run metadata, and the run metadata also
+carries the configured test command; the evaluator runs
+whatever command the config carries. In principle any legacy source
+language can target any language whose toolchain is expressible as a
+build-plus-test command.
+
+The current campaign instantiates this surface with Rust as the target
+for every scored round: \texttt{target.language: rust} and a
+\texttt{cargo test} command, chosen for toolchain-scoring determinism
+(build and test exit codes, machine-parsable pass counts). The dataset
+spans four source languages, C, Java, Go, and Python
+(Table~\ref{tab:problems}), but no non-Rust run has been scored; the
+generality claim rests on the configuration surface, not on scored
+non-Rust runs. The scorer implementation
+(\texttt{scripts/rescore.py}) now carries a language table: per-language
+build commands (cargo, go, maven) with language-native test-count
+parsers for cargo, pytest-style, go, and maven output, plus project-root
+detection for all five targets (Rust, Go, Java, Python, JavaScript). The
+scorer infers the target language from the detected manifest when the
+config omits it, and the manifest and run metadata now carry the
+configured \texttt{test\_command}. The validator and translator prompt
+stubs list per-language stub markers, and the bench scorer fails loud
+with an \emph{unsupported} status for unknown target languages. The
+remaining Rust-only piece is the sweep template's target default
+(\texttt{target.language: rust} in \texttt{scripts/round-template.yml},
+with no target placeholder in the sweep driver); that is a config-layer
+item queued for the next campaign boundary. No non-Rust round has been
+scored, so generality rests on the config surface plus the now
+language-neutral scorer, pending a scored non-Rust round;
+Section~\ref{sec:limitations} records this.
 
 \section{Supporting Infrastructure}
 \label{sec:infra}
@@ -539,17 +632,15 @@ can roll back a bad write without touching the source tree.
 \label{sec:setup}
 
 This section fixes the configuration that produced every number in
-Section~\ref{sec:results}: the model and hardware, the eight problem
-sets, the budgets, and the per-run protocol that the optimization loop
-followed.
+Section~\ref{sec:results}: the model and hardware, the four dataset
+families, the budgets, the per-run protocol that the harness evolution loop
+followed, and the coverage-sweep mechanics.
 
 \paragraph{Model and hardware.}
 All reported runs use a 27B reasoning model served locally on one
 RTX~3090 through the \texttt{netmind} provider path. The current engine
 is the local \texttt{ninfer} server serving \texttt{qwen3.8-27b}.
-A two-day excursion to the q27 engine (v0.14.1) was reverted on
-2026-10-04: its partial results are invalidated, and the campaign
-continues on ninfer. The
+The
 per-call configuration is
 \texttt{num\_ctx} 65536 with guard read gating,
 \texttt{max\_out\allowbreak{}put\_to\allowbreak{}kens} 8192 with
@@ -560,14 +651,18 @@ Section~\ref{sec:results} only where the campaign refuted them.
 
 \paragraph{Problem sets.}
 The dataset is the ReCodeAgent \texttt{tool\_projects} directory,
-organized in four families: \texttt{alphatrans} (4 problems),
-\texttt{crust} (100), \texttt{oxidizer} (7), and \texttt{skel} (8) ---
+organized in four source-language families: \texttt{alphatrans}
+(Java, 4 problems),
+\texttt{crust} (C, 100), \texttt{oxidizer} (Go, 7), and \texttt{skel}
+(Python, 8), for
 119 problem directories on disk in total. The campaign brief states 114
 problems; the small gap comes from brief-time family bookkeeping, and we
 report both numbers. The coverage sweep walks the families in
 LoC-ascending order, one problem at a time, and counts a problem
 \emph{cleared} when one scored round produces a workspace whose
-toolchain compile and test commands both exit zero. A problem cleared
+configured toolchain compile and test commands both exit zero. In this
+campaign every family targets Rust
+(Section~\ref{sec:targetlang}). A problem cleared
 once stays cleared; retries of a not-yet-cleared problem do not change
 the count (Table~\ref{tab:verdicts}).
 
@@ -575,18 +670,21 @@ the count (Table~\ref{tab:verdicts}).
 \centering
 \begin{tabular}{llrl}
 \toprule
-Family & Pair & Problems & Role in the sweep \\
+Family & Source language & Problems & Role in the sweep \\
 \midrule
-crust & C$\to$Rust & 100 & main coverage walk \\
-oxidizer & Go$\to$Rust & 7 & coverage walk (paired slots) \\
-skel & Python$\to$JavaScript & 8 & coverage walk (source only, no bundled tests) \\
-alphatrans & Java$\to$Python & 4 & coverage walk (largest sources) \\
+crust & C & 100 & main coverage walk \\
+oxidizer & Go & 7 & coverage walk (paired slots) \\
+skel & Python & 8 & coverage walk (source only, no bundled tests) \\
+alphatrans & Java & 4 & coverage walk (largest sources) \\
 \bottomrule
 \end{tabular}
 \caption{The ReCodeAgent \texttt{tool\_projects} dataset families, as
-counted on disk. The sweep walks problems in LoC-ascending order; each
-problem's test command comes from its per-set config (\texttt{cargo
-  test} for Rust targets, \texttt{pytest} for Python). The campaign
+counted on disk, with the source language of each family. The sweep
+walks problems in LoC-ascending order. In this campaign every family
+targets Rust (the per-problem config fixes \texttt{target.language:
+  rust} and a \texttt{cargo test} command,
+Section~\ref{sec:targetlang}); the harness config surface supports other
+targets, and no non-Rust round has been scored. The campaign
 brief states 114 problems against 119 directories counted on disk; both
 numbers are reported.}
 \label{tab:problems}
@@ -607,7 +705,7 @@ result), the produced \texttt{workspace/}, captured streams, and a
 \texttt{result/} aggregate with a staged failure taxonomy
 (\texttt{setup}, \texttt{analyze}, \texttt{plan}, \texttt{translate},
 \texttt{verify}, \texttt{evaluate}). Scoring is toolchain-only
-(Section~\ref{sec:method}). The optimization loop over these runs kept
+(Section~\ref{sec:method}). The harness evolution loop over these runs kept
 the problem set and evaluator fixed; every change
 was harness-side. Section~\ref{sec:optmethod} states the loop's
 contract and the per-iteration hypotheses.
@@ -629,28 +727,30 @@ the current arm (\texttt{PAIRS-ninfer-w1.txt}) carries 18 problems,
 launched over two GPU slots with staggered starts.
 
 \paragraph{Round naming.}
-Rounds carry a global counter in the ledger tags
-(\texttt{autoopt-v0.3.sweep.s\{N\}}). Sweep rounds continue the
-historical \texttt{s0..s30} series of the ninfer era. A wave that
+Rounds carry a global counter in their ledger tags. A wave that
 reuses a slot number collides with a historical row; the ledger keeps
 both, and the later row takes an \texttt{.r2} suffix with a distinct
 \texttt{candidate\_id}. So one problem can span several rounds
 (retries), and no round is silently dropped. Since commit
 \texttt{e62c2f6} the driver numbers all new launches from a global
-counter (next launch = \texttt{s33}), so tag collisions occur only on
+counter, so tag collisions occur only on
 the pre-fix rows.
 
-\paragraph{Wave 1 in flight.}
-Two wave-1 rounds are in flight at build time
-(\texttt{s0.r2} remimu, \texttt{s1.r2} heapq, launched 2026-10-04
-08:17Z and 08:22Z) on a manual spawn of \texttt{ninfer-serve} 0.6.1;
-the corresponding systemd unit is reinstated in nixconf pending
-activation. Neither round is scored yet.
+\paragraph{Wave state at build time.}
+The sweep runs in waves of paired GPU slots. Wave 1 (18 problems) and
+wave 2 (17 problems) closed on 2026-10-04 and 2026-10-05: one
+\textsf{NOT CLEARED} close in wave 1 (heapq) and three in wave 2 (fft,
+bst, remimu). Wave 3 carries 17 problems: rbt closed \textsf{NOT
+CLEARED} on 2026-10-06, and skp remains in flight at build time, so no
+verdict from that round appears in the results. Both closed waves
+recorded repeated engine-side admission-503 deaths and in-place
+launcher restarts inside one experiment directory, which matters for
+wall-clock accounting (Section~\ref{sec:honestwalls}).
 
-\subsection{Optimization methodology}
+\subsection{Harness evolution methodology}
 \label{sec:optmethod}
 
-The campaign follows a Meta-Harness-style optimization loop
+The campaign follows a Meta-Harness-style harness evolution loop
 \cite{metaharness2026}: an agentic outer loop whose proposer reads the
 full experiment history from the filesystem and proposes the next
 harness change. The loop runs under five contract rules, each enforced
@@ -734,10 +834,10 @@ trade (c12--c13).}
 \section{Results}
 \label{sec:results}
 
-The live record is the coverage-sweep campaign state as of 2026-10-04,
+The live record is the coverage-sweep campaign state as of 2026-10-06,
 read from the per-round ledger (\texttt{ROUNDS.yaml}) and the experiment
-tree. The ledger holds 47 round entries, of which 45 are scored and 2
-are in flight. The
+tree. The ledger holds 55 round entries, of which 54 are scored and 1 is
+in flight (skp, wave 3). The
 problem set and evaluator never changed; every iteration changed the
 harness. Every data path in this section reads from the per-run
 artifacts. Table~\ref{tab:verdicts} gives the live scoreboard, and
@@ -751,12 +851,12 @@ Measure & Value & Source \\
 \midrule
 Dataset (counted on disk) & 119 problems & \texttt{tool\_projects} subdirectories \\
 Dataset (campaign brief) & 114 problems & campaign brief \\
-Scored rounds in ledger & 45 & \texttt{ROUNDS.yaml} (47 entries, 2 in flight) \\
-Unique problems cleared & 13 & SOLVED/CLEARED verdicts, counted once \\
-In flight (wave 1, ninfer) & 2 rounds & \texttt{PAIRS-ninfer-w1.txt} \\
+Rounds in ledger & 55 & \texttt{ROUNDS.yaml} (54 scored, 1 in flight) \\
+\cellcolor{arcgreen}Unique problems cleared & \cellcolor{arcgreen}13 & SOLVED/CLEARED verdicts, counted once \\
+In flight & 1 round (skp, wave 3) & not counted as a verdict \\
 \bottomrule
 \end{tabular}
-\caption{Live campaign scoreboard at build time (2026-10-04). A problem
+\caption{Live campaign scoreboard at build time (2026-10-06). A problem
 counts once even when several rounds cleared it (retries and
 replicates).}
 \label{tab:verdicts}
@@ -764,17 +864,17 @@ replicates).}
 
 The 13 cleared problems are: leftpad, amp, ulidgen, gonameparts,
 avalanche, colorsys, morton, libqueue, murmurhash, geofence, gfc,
-2dpartint, and bhshell. The verdict mix over the 45 scored rounds is
-19 SOLVED/CLEARED, 16 NOT CLEARED, and 10 ABORTED; two further entries
-(IN FLIGHT, s0.r2 remimu and s1.r2 heapq) carry no verdict yet. A
-problem may take
+2dpartint, and bhshell. The verdict mix over the 54 scored rounds is
+19 SOLVED, 21 NOT CLEARED, and 14 ABORTED; one further entry
+(IN FLIGHT, wave-3 skp) carries no verdict yet and is excluded from
+every count. A problem may take
 several rounds before one passes, so the round count exceeds the
 problem count.
 
 \begin{figure}[ht]
 \centering
 \includegraphics[width=0.94\textwidth]{figures/fig3-per-set.pdf}
-\caption{Cleared problems per dataset family at the 2026-10-04
+\caption{Cleared problems per dataset family at the 2026-10-06
 scoreboard (13 of the brief's 114). The figure preserves the earlier
 four-day search campaign's per-set test peaks (nandc 17, checkdigit 48
 and 36); the sweep-phase cleared problems are counted once per problem,
@@ -785,18 +885,49 @@ across retries, from the per-round ledger.}
 \subsection{Campaign rate and estimated time to complete}
 \label{sec:rate}
 
-The campaign opened on 2026-09-26 and has run through 2026-10-04: 8
+The campaign opened on 2026-09-26 and has run through 2026-10-06: 10
 campaign days. With 13 unique problems cleared, the observed rate is
-about 1.6 problems per day. The dataset holds 114 problems per the
+1.3 problems per day. The dataset holds 114 problems per the
 campaign brief (119 counted on disk), so the remaining work at the
-current rate is about $(114-13)/1.6 \approx 62$ days. This is an
+current rate is about $(114-13)/1.3 \approx 78$ days. This is an
 \emph{estimate from the current rate}, not a prediction: the LoC walk
 ascends into larger problems, the
 parallel arm (Section~\ref{sec:sweep}) raises throughput, and
 engine-side transient failures dominate the
-ABORTED class, so the rate will move in both directions. The two-day
-engine excursion (Section~\ref{sec:setup}) produced no clearance, so it
-adds elapsed time without changing the cleared count.
+ABORTED class, so the rate will move in both directions. For scale, the
+serial-era solved rounds (one problem at a time) took a median of
+145 minutes of wall clock (15 solved rounds, ninfer era); the
+wave-closed failed rounds run longer and carry restart overhead
+(Section~\ref{sec:honestwalls}).
+
+\subsection{Honest wall-clock accounting for failed rounds}
+\label{sec:honestwalls}
+
+The ledger \texttt{wall\_seconds} value covers only the final harness
+segment of a round, because the launcher restarts the harness in place
+after an engine-side admission failure. For the three wave-2 closes the
+full-window walls are materially larger than the ledger values, and we
+report both (Table~\ref{tab:honestwalls}). The rescore covers the final
+segment only; the accounting note is part of the round record, not a
+correction to it.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{@{}llrr@{}}
+\toprule
+Round & Verdict & Ledger wall (s) & Full-window wall (s) \\
+\midrule
+fft (wave 2) & \cellcolor{arcred}NOT CLEARED & 76 & 2131 \\
+bst (wave 2) & \cellcolor{arcred}NOT CLEARED & 1277 & 7962 \\
+remimu (wave 2) & \cellcolor{arcred}NOT CLEARED & 50354 & 53084 \\
+\bottomrule
+\end{tabular}
+\caption{Failed-round walls: the ledger value (final harness segment,
+in-place restart accounting) against the full window from the first
+trace to the close event. The ledger value is what the rescore covered;
+the full-window value is what the campaign actually spent.}
+\label{tab:honestwalls}
+\end{table}
 
 \subsection{Champion and lineage (earlier search campaign)}
 
@@ -820,7 +951,7 @@ checkdigit candidates) and one nandc lineage carrying five generations.
 \centering
 \includegraphics[width=0.9\textwidth]{figures/fig4-frontier.pdf}
 \caption{Champion lineage by toolchain-verified tests passed, one point
-per accepted hypothesis in the optimization loop. The nandc lineage
+per accepted hypothesis in the harness evolution loop. The nandc lineage
 runs from the first verified migration (2 tests at Hardening, after the
 c1 output-cap fix) to its 17-test generation (c3, after the context
 raise). The checkdigit lineage peaks at 48 tests (c10b, after the
@@ -852,7 +983,8 @@ stalled before Contract.
 
 Before the sweep phase opened, one smoke run validated the three-tier
 hierarchy (Section~\ref{sec:method}) end to end on the GildedRose
-C$\to$Rust set, with the campaign champion as its parent. The run
+set (a C source migrated to Rust), with the campaign champion as its
+parent. The run
 reached \textsf{Migration} in 13 rounds with 5 of 8 tasks done and a
 green toolchain: the produced workspace's \texttt{cargo build} and
 \texttt{cargo test} exit zero, and the \texttt{text\_test} binary
@@ -868,6 +1000,49 @@ designed: 7 tier-2 handoffs under the three leads, 19 lead turns, and
 hierarchy mechanics, not a completed migration, and it does not change
 the campaign verdicts.
 
+\subsection{Campaign observations}
+\label{sec:observations}
+
+The wave-2 and wave-3 closes left a census of operational pathologies.
+We record them as observations with evidence pointers; the root causes
+are hypotheses under harness review, not confirmed defects.
+
+\paragraph{Admission-503 census.}
+Engine-side HTTP 503 admission and queue timeouts recur under
+concurrent GPU-slot launches. A launcher retry re-enters the same
+experiment directory in place, so one ledger round can span several
+harness runs (two for fft, three for bst, three for remimu). The in-run
+census for the wave-3 rbt close records 9 admission-503 deaths, 1
+MaxTurns death at 40 turns, 2 output-cap (Length) deaths, and 1 gate
+refusal. The harness carries admission backoff (max retries 4) and a
+transient-stalled-round reprieve; the census is evidence that engine
+capacity, not harness logic, dominated the failed closes.
+
+\paragraph{MaxTurns grind pathology.}
+Long grind rounds die at the worker turn ceiling. The remimu close is
+the clearest case: 39.3M input tokens over the run, 30.4\% of output
+burned as think blocks on think-enabled roles, 41 of 46 lead rounds
+carrying a single dispatch, and 30 MaxTurns deaths across the wave-2
+closes. The pattern suggests that a lead round which dispatches only one
+member spends its round budget on sequencing rather than work, and that
+think-enabled roles pay a large think share of the output budget. Both
+mechanisms are measurable in the traces; both are candidates for the
+next harness cycle, and neither is confirmed as the binding cause.
+
+\paragraph{Gate and launcher semantics.}
+Three observations name harness seams. First, delegations twice named a
+\texttt{fleet-analyst} role that the dispatch grammar does not define;
+the deny-direct gate did not block the unknown role, and the role lacked
+a think override, so its output burned on think with empty text. The
+dispatch-grammar reading is a question for an ADR-level review, not a
+confirmed defect. Second, one gate rejected a \texttt{done} claim with
+``no completed delegation'' and then accepted an identical claim with no
+new delegations in between; the gate is not idempotent across identical
+claims. Third, the sweep launcher treats exit code 0 as success, and a
+stagnation-breaker exit is also 0, so a completed-but-failed run looks
+successful to the retry loop. Each observation points at code whose fix
+is mechanical; none is yet fixed, and none changes the verdicts.
+
 \subsection{Capability boundaries}
 
 The verdicts split the corpus into regimes, and the boundary tracks
@@ -878,8 +1053,8 @@ a synthesized test suite (the \texttt{skel} family ships source only).
 The alphatrans sets (Java, 8.6k--36k LOC) remain the hard regime:
 commons-csv, the largest source ever attempted (about 11M tokens of
 source), never cleared on coverage, but it reached \textsf{Planning}
-with a translated crate that compiles and passes its 5 collected tests
---- the deepest Java run on record, which showed per-module dispatch
+with a translated crate that compiles and passes its 5 collected tests,
+the deepest Java run on record, which showed per-module dispatch
 keeps translator inputs inside the context window and the residual
 constraint is wall time. The earlier campaign's c14 rotation evidence
 (leftpad and commons-cli stalled under the then-tuned defaults) is
@@ -889,7 +1064,7 @@ defect the campaign later fixed, not a capability wall.
 The binding constraints the campaign named are three. First, the
 model's round-budget burn rate: ceiling burns plus slow artifact turns;
 no ceiling policy, timeout raise, or context raise moved it. Second,
-engine-side transients: the ABORTED class (10 of 45 scored rounds) is dominated
+engine-side transients: the ABORTED class (14 of 54 scored rounds) is dominated
 by engine 503 admission/queue-timeout deaths and one endpoint
 migration; the harness now carries admission backoff and a
 transient-stalled-round reprieve. Third, set selection: the LoC walk
@@ -931,13 +1106,19 @@ Skel & 93.2\% TPR (its benchmark) & reproduced with the same LLM \\
 Oxidizer & 67.2\% TPR (its benchmark) & reproduced with the same LLM \\
 AlphaTrans & 188/1{,}181 tests passed & reproduced with the same LLM \\
 SWE-agent & 78.3\% TPR (Crust subset) & reproduced with the same LLM \\
+\midrule
+\multicolumn{3}{@{}l@{}}{Target language: ReCodeAgent scores mixed targets}\\
+\multicolumn{3}{@{}l@{}}{(Rust, Python, JavaScript per pair); every scored}\\
+\multicolumn{3}{@{}l@{}}{ARCMiS round targets Rust (Section~\ref{sec:targetlang}).}\\
 \bottomrule
 \end{tabular}
 \caption{Published ReCodeAgent-record numbers
 \cite{recodeagent2026}. These are the paper's own protocol: its
-projects, its validated developer suites, its frontier model. ARCMiS
+projects, its validated developer suites, its frontier model, and its
+mixed target languages. ARCMiS
 never ran Skel, Oxidizer, AlphaTrans, or SWE-agent on shared instances
-under its protocol, so this table is context, not a comparison, and no
+under its protocol, and every scored ARCMiS round targets Rust, so this
+table is context, not a comparison, and no
 cross-paper statistical comparison with any ARCMiS number is valid.}
 \label{tab:published}
 \end{table}
@@ -996,14 +1177,26 @@ translator-only override dominates an all-roles override, and why the
 all-roles policy was refuted as a global default.
 
 \paragraph{Limitations.}
-Three limits bound every claim in this paper. First, coverage, not
+\label{sec:limitations}
+Four limits bound every claim in this paper. First, coverage, not
 depth: the sweep counts a problem cleared when one round's workspace
 passes the toolchain; it does not yet measure translation quality
 against the source behavior, so the 13-cleared scoreboard is a
-coverage rate, not a correctness rate. Second, the alphatrans (Java)
-regime: no Java set has cleared, so generality across corpus types is
+coverage rate, not a correctness rate. Second, target-language
+generality: the design is target-language agnostic
+(Section~\ref{sec:targetlang}), but every scored round targets Rust. The language-generality audit has closed, and its confirmed items are
+fixed in the working tree: the scorer now has a language table, project
+markers, and target-language inference; the validator hint is
+language-neutral; the run contract carries \texttt{test\_command}; the
+prompt stub markers are per-language; the bench scorer fails loud on
+unknown languages. The sweep template's Rust default remains and is
+queued for the next campaign boundary. No non-Rust round has scored
+green yet, so the
+generality claim rests on the configuration surface, not on results.
+Third, the alphatrans (Java) regime: no Java set has cleared, so
+generality across corpus types is
 open, and any new harness idea must first clear Discovery on a Java
-alphatrans set before it can claim otherwise. Third, one model, one
+alphatrans set before it can claim otherwise. Fourth, one model, one
 quantization, and one GPU dominate the data; the ceiling-policy finding
 in particular must be re-derived per model, not assumed to transfer.
 Toolchain-only scoring can still pass a workspace whose tests are
@@ -1032,16 +1225,22 @@ a tiered orchestrator with evidence-gated phases, a deterministic guard
 on every tool call with deny-on-uncertain arbitration, character-capped
 shared state, toolchain-only scoring, and a stagnation breaker that turns
 silent loops into artifacts. The live campaign state is deliberately
-honest: 13 of the brief's 114 problems cleared across 45 scored rounds
-(plus 2 rounds in flight; each problem counted once across retries),
-with an estimated 62
-campaign days remaining at the current rate --- an estimate from the
-current rate, not a prediction --- and the parallel-dispatch arm
-(ADR 0029) now running wave 1 to raise that rate. The durable findings
+honest: 13 of the brief's 114 problems cleared across 54 scored rounds
+(plus 1 round in flight; each problem counted once across retries),
+with an estimated 78
+campaign days remaining at the current rate, an estimate from the
+current rate and not a prediction, and the parallel-dispatch arm
+(ADR 0029) running three closed waves to raise that rate. The durable findings
 are harness findings: the binding constraint is the model's burn rate,
 not any single timeout or context size; throughput, not per-turn
 survival, is the metric for output policy; and the next harness idea
 must clear a Java alphatrans set before it may claim generality. The
+harness itself is target-language agnostic by configuration
+(Section~\ref{sec:targetlang}); the scored record so far is a
+Rust-target record. The scorer now implements non-Rust scoring paths
+(the language table), but they remain unscored in the campaign record
+until a non-Rust round launches, and the sweep template still pins Rust
+as its config default. The
 infrastructure (the immutable experiment contract, the lineage in the
 manifests, the failure taxonomy) is what makes every next hypothesis
 cheap to test and every claimed success impossible to fake.

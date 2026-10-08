@@ -1,8 +1,10 @@
 //! `edit` applies one hashline patch to one or more files inside the sandbox
 //! root through `oxi_hashline::Patcher`.
 
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::sync::Mutex;
 
 use rig::tool::Tool;
 use rig::tool::ToolContext;
@@ -24,7 +26,7 @@ pub struct Edit {
     /// snapshot store.
     pub patcher: Arc<oxi_hashline::Patcher>,
     /// No-op loop guard: (path, payload-hash) -> consecutive count.
-    noop_counts: Arc<std::sync::Mutex<std::collections::HashMap<u64, usize>>>,
+    noop_counts: Arc<Mutex<HashMap<u64, usize>>>,
 }
 
 impl Edit {
@@ -37,7 +39,7 @@ impl Edit {
         Arc::new(Self {
             root,
             patcher,
-            noop_counts: Arc::new(std::sync::Mutex::new(std::collections::HashMap::new())),
+            noop_counts: Arc::new(Mutex::new(HashMap::new())),
         })
     }
 }

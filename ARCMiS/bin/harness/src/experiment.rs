@@ -67,6 +67,7 @@ mod tests {
             problem_set: "test".into(),
             source_language: "c".into(),
             target_language: "rust".into(),
+            test_command: None,
             git_revision: String::new(),
             parents: Vec::new(),
             hypothesis: String::new(),

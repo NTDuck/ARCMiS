@@ -38,6 +38,9 @@ pub struct Manifest {
     pub source_language: String,
     /// Target language of the migration.
     pub target_language: String,
+    /// Test command from the config's target section, when configured.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub test_command: Option<String>,
     /// Git revision of the harness at run start (empty when unavailable).
     pub git_revision: String,
     /// Parent candidate ids for meta-harness lineage.

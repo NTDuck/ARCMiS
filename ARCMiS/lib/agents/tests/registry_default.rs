@@ -81,7 +81,7 @@ fn role_think_override_wins_over_run_default() {
     // a missing role must fall back to it.
     let run = Run::default();
     assert!(run.think, "run default is think-on");
-    let mut role_think = std::collections::BTreeMap::new();
+    let mut role_think = BTreeMap::new();
     role_think.insert("translator".to_owned(), false);
     // Override applies where present...
     assert_eq!(role_think.get("translator").copied(), Some(false));

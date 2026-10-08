@@ -31,7 +31,7 @@ pub fn render_frames(
     frame_height: u32,
 ) -> Vec<ImageBuffer<Rgba<u8>, Vec<u8>>> {
     let rows_per_frame = ((frame_height - 2 * MARGIN_Y) / GLYPH_PITCH_Y).max(1) as usize;
-    let lines: Vec<&str> = text.lines().collect();
+    let lines = text.lines().collect::<Vec<_>>();
     let lines = if lines.is_empty() {
         vec![""]
     } else {
@@ -53,13 +53,13 @@ pub fn render_frames(
 fn render_one(lines: &[&str], font: &BdfFont, frame_width: u32, frame_height: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
     let mut frame = ImageBuffer::from_pixel(frame_width, frame_height, Rgba([255, 255, 255, 255]));
     for (row, line) in lines.iter().enumerate() {
-        let y = MARGIN_Y + (row as u32) * GLYPH_PITCH_Y;
+        let pixel_y = MARGIN_Y + (row as u32) * GLYPH_PITCH_Y;
         for (column, ch) in line.chars().enumerate() {
-            let x = MARGIN_X + (column as u32) * GLYPH_PITCH_X;
-            if x + GLYPH_PITCH_X > frame_width {
+            let pixel_x = MARGIN_X + (column as u32) * GLYPH_PITCH_X;
+            if pixel_x + GLYPH_PITCH_X > frame_width {
                 break;
             }
-            draw_glyph(&mut frame, font, ch, x, y);
+            draw_glyph(&mut frame, font, ch, pixel_x, pixel_y);
         }
     }
     frame

@@ -147,7 +147,7 @@ fn truncate(text: &str, total: usize, head_ratio: f32) -> String {
     }
     let head = ((total as f32) * head_ratio) as usize;
     let tail = total.saturating_sub(head).max(8);
-    let chars: Vec<char> = text.chars().collect();
+    let chars = text.chars().collect::<Vec<char>>();
     let head_text: String = chars[..head].iter().collect();
     let tail_text: String = chars[chars.len() - tail..].iter().collect();
     format!("{} ...[elided]... {}", one_line(&head_text), one_line(&tail_text))

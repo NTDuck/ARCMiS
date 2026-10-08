@@ -2,7 +2,7 @@
 //! from `topological_batches`; `strongly_connected_components` mirrors
 //! DepWareTrans's cycle handling.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
 use anyhow::Context as _;
@@ -174,7 +174,7 @@ impl Graph {
         // Build the subgraph over modules: collapse every edge to its
         // module-level endpoints.
         let module_ids: Vec<String> = modules.iter().map(|node| node.id.clone()).collect();
-        let module_set: std::collections::BTreeSet<&String> = module_ids.iter().collect();
+        let module_set = module_ids.iter().collect::<BTreeSet<_>>();
         let mut module_adjacency: BTreeMap<String, BTreeMap<String, GraphEdgeKind>> = BTreeMap::new();
         for id in &module_ids {
             module_adjacency.entry(id.clone()).or_default();
@@ -248,7 +248,7 @@ struct GraphFile {
 /// unemitted predecessors. A cycle emits its members in one terminal batch
 /// so the caller still gets a total order.
 fn kahn_layers(all: &[String], adjacency: &BTreeMap<String, BTreeMap<String, GraphEdgeKind>>) -> Vec<Vec<String>> {
-    let mut emitted: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
+    let mut emitted = BTreeSet::new();
     let mut layers = Vec::new();
     while emitted.len() < all.len() {
         let layer: Vec<String> = all

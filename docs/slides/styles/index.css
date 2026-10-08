@@ -4,8 +4,76 @@
   color: #1F497D;
 }
 
+/* Inline citations: small gray text at the slide bottom, resdir style. */
+p.cite {
+  position: absolute;
+  bottom: 2.2rem;
+  left: 2rem;
+  right: 2rem;
+  font-size: 0.72rem;
+  line-height: 1.05rem;
+  color: #8a8f98;
+}
+
+/* Numbered-branch layout: big numerals for lists, resdir style. */
+.toc-num {
+  font-size: 2.6rem;
+  font-weight: 700;
+  color: #4F81BD;
+  line-height: 1;
+  min-width: 2.4rem;
+}
+.branch-num {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #4F81BD;
+  line-height: 1;
+  min-width: 3rem;
+}
+
+/* Taxonomy cells. */
+.cell {
+  border: 1px solid #d7dde5;
+  padding: 0.5rem 0.75rem;
+}
+.cell.hi {
+  background: #4F81BD;
+  color: #ffffff;
+  font-weight: 700;
+  border-color: #1F497D;
+}
+
+/* Quote block: left accent bar, larger text. */
+.slidev-layout blockquote {
+  border-left: 4px solid #4F81BD;
+  padding-left: 1rem;
+  font-size: 1.45rem;
+  line-height: 1.9rem;
+  color: #333;
+  quotes: none;
+  margin: 1rem 0;
+}
+
+/* Tall diagrams: scale to fit the slide body. */
+.h-diagram {
+  transform: scale(0.5);
+  transform-origin: top center;
+  height: 300px;
+  overflow: visible;
+}
+
+/* Closing slide: the end layout paints a dark ground. resdir keeps the
+   white ground and navy heading everywhere. The layout must stay
+   transparent: an opaque layout background paints over the global
+   footer, which lives in an earlier sibling of the slideshow. */
+.slidev-layout.end-light {
+  background: transparent !important;
+}
+.slidev-layout.end-light h1 {
+  color: #1F497D !important;
+}
+
 /* HTML/CSS bar charts used across the deck.
-   Color helpers keep inline styles to one declaration (no semicolons).
    Width stays inline per bar. */
 .bar {
   height: 22px;
@@ -28,8 +96,8 @@
 
 /* 114-dot progress grid. */
 .dot {
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
   border-radius: 2px;
   display: inline-block;
 }

@@ -2,43 +2,48 @@
 theme: default
 title: ARCMiS
 info: |
-  Code-migration harness with hierarchical multi-agent orchestration.
-  Live campaign numbers read at build time from .artifacts/experiments/.
+  Agentic repository-level code migration for small language models.
+  Live campaign numbers counted at build time from the round ledger.
 aspectRatio: 4/3
 canvasWidth: 980
 fonts:
   sans: Calibri, Arial, sans-serif
   serif: Calibri, Arial, serif
+mermaid:
+  theme: base
+  themeVariables:
+    fontSize: 17px
+    fontFamily: Calibri, Arial, sans-serif
+    primaryColor: "#e8eef7"
+    primaryTextColor: "#1a1a1a"
+    primaryBorderColor: "#1F497D"
+    lineColor: "#1F497D"
+    clusterBkg: "#f4f7fb"
+    clusterBorder: "#9BBB59"
 drawings:
   persist: false
 transition: slide-left
 ---
 
-# ARCMiS
-
-<div class="mt-2 flex items-center gap-4">
-  <div class="flex flex-col gap-1">
-    <div class="logo-bar" style="width:88px"></div>
-    <div class="logo-bar" style="width:62px"></div>
-    <div class="logo-bar" style="width:36px"></div>
+<div class="mt-24 flex items-center gap-6">
+  <div class="flex flex-col gap-1.5">
+    <div class="logo-bar" style="width:96px"></div>
+    <div class="logo-bar" style="width:66px"></div>
+    <div class="logo-bar" style="width:38px"></div>
   </div>
-  <h1 class="!text-6xl !mt-0">ARCMiS</h1>
+  <h1 class="!text-7xl !mt-0">ARCMiS</h1>
 </div>
 
-<p class="text-2xl mt-6" style="color:#1F497D">Agentic Repository-Level Code Migration for Small Language Models</p>
+<p class="text-2xl mt-8 text-gray-800">Agentic Repository-Level Code Migration<br/>for Small Language Models</p>
 
-<p class="text-lg mt-2 text-gray-700">A hierarchical multi-agent harness that migrates legacy code between languages and proves every result with the toolchain. Coverage target now: C to Rust.</p>
-
-<div class="absolute bottom-14 left-12 text-sm text-gray-600">
-  <p><strong>ARCMiS team</strong></p>
-  <p>University of Engineering and Technology, Vietnam National University, Hanoi</p>
-  <p>hanhdd@vnu.edu.vn · 23021534@vnu.edu.vn</p>
-  <p>Repo: ARCMiS · docs/adr · docs/report · 2026-10-06</p>
+<div class="absolute bottom-16 left-12 text-base text-gray-700 leading-6">
+  <p>Duc-Hanh Dang &nbsp;·&nbsp; Tu-Duc Nguyen</p>
+  <p>University of Engineering and Technology, VNU Hanoi</p>
+  <p>hanhdd@vnu.edu.vn &nbsp;·&nbsp; 23021534@vnu.edu.vn</p>
+  <p class="mt-1 text-gray-500">2026-10-06</p>
 </div>
 
-<!-- Title slide: monogram mark, full name, pitch, author block
-     bottom-left per the resdir master. Authors and affiliation from
-     docs/report/paper.tex. -->
+<!-- Title. Authors and affiliation from docs/report/paper.tex. -->
 
 ---
 layout: default
@@ -46,13 +51,15 @@ layout: default
 
 # Contents
 
-1. Introduction: what problem does ARCMiS solve?
-2. Methodology: agents, rounds, gates, scoring, and the sweep
-3. Inspirations: prior work this design builds on
-4. Benchmarks: live campaign numbers
-5. References
+<div class="mt-8 space-y-6">
+  <div class="flex items-baseline gap-6"><span class="toc-num">1</span><span class="text-2xl">Introduction</span></div>
+  <div class="flex items-baseline gap-6"><span class="toc-num">2</span><span class="text-2xl">Methodology</span></div>
+  <div class="flex items-baseline gap-6"><span class="toc-num">3</span><span class="text-2xl">Inspirations</span></div>
+  <div class="flex items-baseline gap-6"><span class="toc-num">4</span><span class="text-2xl">Benchmarks</span></div>
+  <div class="flex items-baseline gap-6"><span class="toc-num">5</span><span class="text-2xl">References</span></div>
+</div>
 
-<!-- Section list of the deck -->
+<!-- Section list. -->
 
 ---
 layout: section
@@ -61,197 +68,141 @@ title: Introduction
 
 # Introduction
 
-<!-- Section divider -->
+<!-- Divider. -->
 
 ---
 layout: default
 ---
 
-# What is code migration?
+# Code migration
 
-- Migration moves working code from one language to another.
-- The new code must do the same job and pass the same tests.
-- Many codebases still run on legacy C, Java, Go, and Python.
-- Hand migration is slow. Each module needs the same steps: read,
-  plan, translate, test.
-- ARCMiS runs these steps with agents. The source and target languages
-  are config, not code. The coverage sweep in this campaign runs C and
-  Go sources to Rust targets.
+> Migration moves a working codebase to a new language. The new code must do the same job and pass the same tests.
 
-<div class="grid grid-cols-2 gap-4 mt-4 text-sm">
+- Many systems still run on legacy C, Java, and Go.
+- Hand migration is slow. Every module repeats the same steps: read, plan, translate, test.
+- The steps are regular. Regular work is where automation helps.
+
+<p class="cite">Seacord, R. C., Plakosh, D., & Lewis, G. A. (2003). <i>Modernizing legacy systems: Software technologies, engineering processes, and business practices.</i> Addison-Wesley.</p>
+
+<!-- Intro: the problem, quote-led. Citation from the reference deck. -->
+
+---
+layout: default
+---
+
+# Why automate with LLM agents
+
+1. **Scale.** A repository has hundreds of modules. One developer cannot iterate that fast.
+2. **Context.** No single prompt holds a whole repository. Agents split the work and share state.
+3. **Proof.** A model claim is not evidence. An agent can run the target toolchain and report counts.
+
+<p class="cite">Zhu, Y., Liu, L., Yu, J., & Zhang, D. (2026). LLM-based multi-agent orchestration: A survey of frameworks, communication protocols, and emerging patterns. <i>Future Internet, 18</i>(6), 326.</p>
+
+<!-- Automation rationale, numbered-branch layout. -->
+
+---
+layout: default
+---
+
+# ARCMiS
+
+**A**gentic **R**epository-level **C**ode **Mi**gration for **S**mall language models.
+
+- A harness that migrates a whole source codebase to a target language.
+- Hierarchical multi-agent orchestration over small models: 27B parameters, one local GPU.
+- Every result is scored by the target toolchain, never by a model claim.
+- Languages are config. This campaign targets C to Rust.
+
+<p class="cite">Dang, D.-H., & Nguyen, T.-D. (2026). ARCMiS: Agentic repository-level code migration for small language models. Project report, VNU Hanoi.</p>
+
+<!-- What ARCMiS is. -->
+
+---
+layout: default
+---
+
+# One module, three translations
+
+<div class="grid grid-cols-3 gap-4 text-xs leading-5 mt-2">
+
+<div>
+
+**C (real source)**
 
 ```c
-/* C: raw pointer, raw length */
-void scale(float* buf, int n, float k) {
-    for (int i = 0; i < n; i++)
-        buf[i] *= k;
+int chtrie_walk(chtrie *tr, int from,
+    int sym, int creat)
+{
+  struct chtrie_edge *p;
+  unsigned long h;
+  h = (unsigned long)from*tr->alphsz
+      + sym;
+  h %= tr->ecap;
+  for (p = tr->etab[h]; p; p = p->next)
+    if (p->from == from
+        && p->sym == sym)
+      return p->to;
+  ...
 }
 ```
+
+</div>
+<div>
+
+**c2rust-style mechanical output (illustrative)**
 
 ```rust
-// Rust: slice, bounds checked
-fn scale(buf: &mut [f32], k: f32) {
-    for x in buf.iter_mut() {
-        *x *= k;
-    }
+pub unsafe extern "C" fn chtrie_walk(
+  tr: *mut chtrie, from: c_int,
+  sym: c_int, creat: c_int)
+  -> c_int {
+  let mut p: *mut chtrie_edge;
+  let mut h: c_ulong;
+  h = (from as c_ulong)
+    .wrapping_mul((*tr).alphsz
+      as c_ulong)
+    .wrapping_add(sym as c_ulong);
+  h %= (*tr).ecap;
+  p = *(*tr).etab.offset(h as isize);
+  ...
 }
 ```
 
 </div>
+<div>
 
-<p class="text-xs text-gray-500 mt-2">Worked example, C to Rust (the campaign's demonstration case, not the project's scope). The pointer becomes a slice. Rust checks every access at compile time.</p>
+**ARCMiS output (real, verified)**
 
-<!-- Migration problem with a tiny C to Rust example -->
-
----
-layout: default
----
-
-# Why automate migration?
-
-- Large codebases have hundreds of small modules.
-- Each module needs the same steps: read, plan, translate, test.
-- A single LLM call cannot hold a whole repository.
-- An agent can call tools: read files, write files, run builds.
-- ARCMiS coordinates many agents to cover one module set after another.
-
-| Step | Done by | Checked by |
-|---|---|---|
-| Read and map the source | agents | source map on disk |
-| Plan the port | agents | plan file on disk |
-| Translate to the target language | agents | target build command |
-| Prove | agents | target test command |
-
-<!-- Automation rationale. -->
-
----
-layout: default
----
-
-# Any source language, any target
-
-```mermaid
-flowchart LR
-  subgraph SRC["sources"]
-    A["C"]
-    B["Java"]
-    Cc["Go"]
-    D["Python"]
-    E["..."]
-  end
-  H["ARCMiS harness<br/>config-driven:<br/>source.language<br/>target.language<br/>test_command"]
-  subgraph TGT["targets"]
-    F["Rust"]
-    G["Go"]
-    I["Python"]
-    J["JavaScript"]
-  end
-  A --> H
-  B --> H
-  Cc --> H
-  D --> H
-  E --> H
-  H --> F
-  H -.-> G
-  H -.-> I
-  H -.-> J
-  subgraph LEGEND["LEGEND"]
-    K["solid = config + pipeline ready"]
-    L["dashed = curated config exists"]
-    M["box color = sweep lane (blue)"]
-  end
-  classDef demo fill:#4F81BD,color:#fff
-  class H,F demo
+```rust
+pub fn chtrie_walk(
+  tr: &mut ChTrie, from: usize,
+  sym: usize, creat: bool)
+  -> Result<usize, ChTrieError> {
+  let h = ((from as u64)
+    * (tr.alphsz as u64)
+    + sym as u64)
+    % tr.ecap as u64;
+  let mut p = tr.etab[h as usize]
+    .as_deref();
+  while let Some(e) = p {
+    if e.from == from
+        && e.sym == sym {
+      return Ok(e.to);
+    }
+    p = e.next.as_deref();
+  }
+  ...
+}
 ```
 
-- The config carries `source.language`, `target.language`, and
-  `test_command` per problem (`lib/agents/src/util/config.rs`).
-- Curated configs cover C, Go, and Java sources. 20 targets use Rust,
-  plus Python and JavaScript targets in `assets/configs/`.
-- Coverage sweep in this campaign: C and Go sources to Rust targets,
-  toolchain-scored.
-
-<!-- Language generality: config surface vs campaign instantiation. -->
-
----
-layout: default
----
-
-# Why multi-agent?
-
-One agent alone fails in known ways:
-
-- It forgets the plan when the context fills up.
-- It claims success without running the toolchain.
-- One long task burns the whole time budget.
-- A dead end (bad port idea) has no second opinion.
-
-The ARCMiS answers:
-
-<div class="grid grid-cols-3 gap-4 text-sm mt-2">
-<div class="p-2 border rounded" style="border-color:#4F81BD">
-
-**Division of labor**
-Each role has one job and its own context.
-
-</div>
-<div class="p-2 border rounded" style="border-color:#4F81BD">
-
-**Delegation**
-The orchestrator dispatches. Leads check the work.
-
-</div>
-<div class="p-2 border rounded" style="border-color:#4F81BD">
-
-**Evidence gates**
-A claim counts only with a file or a green test behind it.
-
 </div>
 </div>
 
-<!-- Single agent failure modes and the multi-agent answers. -->
+<p class="text-sm text-gray-600 mt-3">C: <code>tool_projects/crust/chtrie/src/chtrie.c</code>, function <code>chtrie_walk</code>. Rust: real ARCMiS workspace, round s33, cargo test 10 passed / 0 failed. The mechanical form keeps raw pointers and unsafe. The ARCMiS form keeps the algorithm and hands the compiler the checks.</p>
 
----
-layout: default
----
-
-# The agent cast
-
-| Role | Tier | Tools | Output |
-|---|---|---|---|
-| orchestrator | 1 | none: DECISION grammar only | dispatches, phase exits |
-| discovery-lead | 2 | dispatch, read | source map, brief |
-| migration-lead | 2 | dispatch, read | translated batches |
-| integration-lead | 2 | dispatch, read | merged tree, test runs |
-| analyst, architect | 3 | read, find, write | maps, briefs |
-| translator, repairer | 3 | read, write, edit | target-language source |
-| validator, tester | 3 | read, target build/test | pass or fail reports |
-| planner, failure-analyst, critic | 3 | read, write | plans, triage notes |
-
-- Tier 1 decides. Tier 2 leads one work area each. Tier 3 runs the tools.
-- Config-owned team split: `ARCMiS/lib/orchestrator/src/hierarchy.rs`.
-
-<!-- Role table: role, tier, tools, output. -->
-
----
-layout: default
----
-
-# Words this deck uses
-
-| Word | Meaning |
-|---|---|
-| round | one decision cycle: dispatch, results, next decision |
-| phase | one migration stage: Discovery to Migration |
-| gate | an evidence check before a phase exit |
-| breaker | a stop rule for runs without progress |
-| delegation | one dispatch of a task to a lead or specialist |
-| candidate | one harness config under test |
-| problem set | one project to migrate (one directory) |
-| ledger | one row per round in `ROUNDS.yaml` |
-| verdict | the scored outcome of one round |
-
-<!-- Glossary for zero-knowledge readers. -->
+<!-- Sources: C from the vendored dataset. c2rust column is labeled
+     illustrative. Rust column is a real scored workspace from
+     .artifacts/experiments/20261006T055729Zv3s33-chtrie-sweep. -->
 
 ---
 layout: section
@@ -260,251 +211,185 @@ title: Methodology
 
 # Methodology
 
-<!-- Section divider -->
+<!-- Divider. -->
 
 ---
 layout: default
 ---
 
-# The MAS hierarchy
+# The methodology in four parts
+
+<div class="mt-6 space-y-7">
+  <div class="flex items-baseline gap-7">
+    <span class="branch-num">1</span>
+    <span class="text-xl"><strong>Hierarchy.</strong> A tier-1 orchestrator, tier-2 leads, tier-3 specialists.</span>
+  </div>
+  <div class="flex items-baseline gap-7">
+    <span class="branch-num">2</span>
+    <span class="text-xl"><strong>Rounds.</strong> A ten-phase state machine with evidence gates.</span>
+  </div>
+  <div class="flex items-baseline gap-7">
+    <span class="branch-num">3</span>
+    <span class="text-xl"><strong>State.</strong> A shared blackboard, a guard on every tool call, hard budgets.</span>
+  </div>
+  <div class="flex items-baseline gap-7">
+    <span class="branch-num">4</span>
+    <span class="text-xl"><strong>Proof.</strong> Toolchain-only scoring over a coverage sweep.</span>
+  </div>
+</div>
+
+<!-- Overview, numbered-branch layout like the reference deck. -->
+
+---
+layout: default
+---
+
+# The agent hierarchy
+
+<div class="text-sm h-diagram">
 
 ```mermaid
 flowchart TB
-  subgraph T1["TIER 1 - decides"]
-    ORCH["ORCH"]
-  end
-  subgraph T2["TIER 2 - leads"]
-    L1["migration-lead"]
-    L2["discovery-lead"]
-    L3["integration-lead"]
-  end
-  subgraph T3["TIER 3 - workers"]
-    S1["translator · validator · tester · repairer"]
-    S2["analyst · architect"]
-    S3["planner · failure-analyst · critic"]
-  end
-  ORCH -->|"dispatch"| L1
-  ORCH -->|"dispatch"| L2
-  ORCH -->|"dispatch"| L3
-  L1 -->|"reports"| ORCH
-  L2 -->|"reports"| ORCH
-  L3 -->|"reports"| ORCH
-  L1 -.->|"dispatch"| S1
-  L2 -.->|"dispatch"| S2
-  L3 -.->|"dispatch"| S3
-  subgraph LEGEND["LEGEND"]
-    L1x["tier band = one level"]
-    L2x["solid = tier 1-2 traffic"]
-    L3x["dashed = lead to worker"]
-  end
+  ORCH["tier 1 · orchestrator<br/>decides, never writes code"]
+  L1["discovery-lead"] --- L2["migration-lead"] --- L3["integration-lead"]
+  ORCH --> L1
+  ORCH --> L2
+  ORCH --> L3
+  L1 -.-> S1["analyst · architect"]
+  L2 -.-> S2["translator · validator · tester · repairer"]
+  L3 -.-> S3["planner · failure-analyst · critic"]
+  classDef top fill:#1F497D,color:#fff
+  class ORCH top
 ```
 
-- Tier 1 owns the round loop and the task graph.
-- Tier 2 splits work and checks acceptance.
-- Tier 3 never talks to tier 1 directly.
+</div>
 
-<!-- MAS hierarchy with tier bands and labeled arrows. -->
+- Tier 2 leads resolve from config (`mas.hierarchy`), not code.
+- A tier-1 delegation naming a specialist is refused (`deny_direct`).
+
+<p class="cite">ADR 0022, ADR 0026. Code: <code>lib/orchestrator/src/hierarchy.rs</code>, <code>lead.rs</code>.</p>
+
+<!-- Hierarchy. Verified in hierarchy.rs and lead.rs. -->
 
 ---
 layout: default
 ---
 
-# Life of a round: the state machine
+# The ten-phase state machine
 
 ```mermaid
 flowchart LR
-  D["Discovery"] --> G1{"map + brief<br/>on disk?"}
-  G1 -->|yes| C["Contract"]
-  G1 -.->|no: redelegate| D
-  C --> G2{"plan<br/>current?"}
-  G2 -->|yes| P["Planning"]
-  G2 -.->|no: replan| D
-  P --> G3{"batches<br/>defined?"}
-  G3 -->|yes| PI["Pilot"]
-  PI --> G4{"batch<br/>passes?"}
-  G4 -->|yes| I["Integration"]
-  G4 -.->|no: repair| P
-  I --> G5{"full suite<br/>green?"}
-  G5 -->|yes| M["Migration"]
-  M -.->|regression rule| D
-  subgraph LEGEND["LEGEND"]
-    A["box = phase"]
-    B{"diamond = evidence gate"}
-    Cc["solid = forward flow"]
-    Dd["dashed = back edge"]
-  end
+  P["Preflight"] --> D["Discovery"] --> C["Contract"] --> PL["Planning"] --> PI["Pilot"] --> M["Migration"] --> I["Integration"] --> H["Hardening"] --> F["Final<br/>Validation"] --> X["Done"]
+  PI -.->|"regress"| D
+  M -.->|"regress"| D
+  F -.->|"regress"| I
+  classDef done fill:#9BBB59,color:#fff
+  class X done
 ```
 
-- Each diamond asks for evidence on disk, not for a claim.
+- A phase exit needs evidence on disk. A claim alone never passes a gate.
+- Contract needs `brief.md` with a validator pass. FinalValidation needs the toolchain at exit zero.
+- Regressions are legal and recorded.
 
-<!-- Round lifecycle state machine with gates and back edges. -->
+<p class="cite">Phase table: project report, §methodology (verified against <code>docs/report/paper.tex</code>).</p>
 
----
-layout: default
----
-
-# What each phase must prove
-
-| Phase | Exit evidence (the gate checks it) |
-|---|---|
-| Discovery | `source-map.md` + `brief.md`, every module cited |
-| Contract | target architecture + plan, current on disk |
-| Planning | translation batches, each with an acceptance check |
-| Pilot | first batch translated, `cargo build` green |
-| Integration | full tree merged, `cargo test` 0 failed |
-| Migration | final validation, workspace scored by the toolchain |
-
-- A phase exit without the file is refused by the gate.
-- Failed gates send the round back, not forward.
-
-<!-- Phase exit evidence table. Command names are the campaign
-     instantiation (Rust targets). Gates check the same artifact
-     classes for any target. -->
+<!-- Phase machine. Phase list verified in paper.tex lines 341-350. -->
 
 ---
 layout: default
 ---
 
-# How a round works, step by step
+# The blackboard
 
-1. The orchestrator reads the plan and the task graph.
-2. It writes one short task with the DECISION grammar.
-3. It dispatches the task to a lead.
-4. The lead splits the task and dispatches specialists.
-5. Specialists run tools and write artifacts.
-6. The lead checks the acceptance clause and reports.
-7. The gate checks phase evidence. Pass: next phase. Fail: back edge.
-8. The ledger records the round: verdict, counters, artifacts.
+One shared workspace per run. The state stays small by design:
 
-- One round = steps 1 to 8. A run = many rounds through 6 phases.
-- Rounds continue until a gate exits the last phase or a breaker stops the run.
-
-<!-- Numbered walkthrough, references the state machine. -->
-
----
-layout: default
----
-
-# Safety rails: gates and breakers
-
-A run can waste hours. These rules stop it:
-
-| Rail | Trigger | Action |
+| File | Cap | Holds |
 |---|---|---|
-| evidence gate | exit claim without files | refuse the exit |
-| stagnation breaker | 3 rounds, no completed task | close the run |
-| round cap | 20 rounds | close the run |
-| MaxTurns limit | member exceeds its turn budget | member dies, lead retries |
-| output cap | answer over 8192 tokens | retry with a tighter task |
-| engine 503 | engine overloaded | backoff, then retry |
+| `plan.md` | 4000 chars | the current plan |
+| `notes.md` | 8000 chars | cross-agent notes |
+| `state.json` | counter-capped | phase, counters |
+| `tasks.json` | task list | task-graph mirror |
+| `decisions.jsonl` | append | every decision |
 
-- Every trip lands in the ledger row for that round.
+- The model never sees the whole history. Snapcompact renders old turns to PNG frames and keeps a short recent window (12k token threshold, 4k recent).
+- Character caps stop one agent from filling the shared state for all others.
 
-<!-- Breakers and gates. -->
+<p class="cite">Code: <code>lib/blackboard</code>, <code>lib/snapcompact</code>. Budgets: project report, §blackboard.</p>
+
+<!-- Blackboard caps verified in lib/blackboard/src/plan.rs (4000),
+     notes.rs (8000), and snapcompact/src/compact.rs (PNG frames). -->
 
 ---
 layout: default
 ---
 
-# How scoring works
+# The guard
 
-`scripts/rescore.py` runs after every round. No model self-grading.
+Every tool call from every tier passes one deterministic gateway:
 
-1. Run the target build command on the produced workspace.
-2. Run the target test command on the same workspace.
-3. Count: tests passed, tests failed. Write `result/per_problem.json`.
+- **Allowlist.** A role may call only its tools.
+- **Path policy.** `source/` stays read-only. Reads are scoped against the context window.
+- **Deny patterns.** Shell escape calls are refused with feedback, and repeats feed the breaker.
+- **Ask arbitration.** A denied `ask` call may go to the jev judge. Every other denial is final. Without a judge, the `ask` slot stays deny-by-default.
+
+<p class="cite">ADR 0023. Code: <code>lib/orchestrator/src/guard.rs</code>, <code>guard_hook.rs</code>, <code>jev_judge.rs</code>.</p>
+
+<!-- Guard semantics verified in guard_hook.rs header and jev_judge.rs. -->
+
+---
+layout: default
+---
+
+# Budgets and breakers
+
+Campaign defaults (`scripts/round-template.yml`):
+
+| Budget | Value | | Breaker | Trigger |
+|---|---|---|---|---|
+| max rounds | 20 | | stagnation | 3 rounds, no completed task |
+| orchestrator turns | 20 | | round cap | 20 rounds, run closes |
+| worker turns | 40 | | output cap | 8192 tokens per answer |
+| judge turns | 40 | | per-role override | 16384 (translator, architect, repairer, orchestrator) |
+| fanout | 3 | | engine faults | backoff, then retry |
+
+- A budget stops one member. A breaker stops the run and writes the ledger row.
+- In this campaign the breaker was the graceful exit, not a failure.
+
+<p class="cite">Source: <code>scripts/round-template.yml</code>; stagnation rule in project report, §budgets.</p>
+
+<!-- All values read from scripts/round-template.yml. -->
+
+---
+layout: default
+---
+
+# Scoring: only the toolchain decides
+
+`scripts/rescore.py` runs after every round:
+
+<div class="grid grid-cols-2 gap-6 mt-4">
+<div>
+
+1. Run the target build command.
+2. Run the target test command.
+3. Write `result/per_problem.json` with counts.
 
 | Verdict | Meaning |
 |---|---|
-| SOLVED | build green, tests pass, round complete |
-| NOT CLEARED | run closed without a verified workspace |
-| ABORTED | engine or launcher failure, no verdict earned |
-| IN FLIGHT | round still running |
+| SOLVED | build green, tests pass |
+| NOT CLEARED | closed without a verified workspace |
+| ABORTED | engine failure, no verdict earned |
+| IN FLIGHT | still running |
 
-- Only the toolchain decides. A model claim is never a verdict.
-- Campaign instantiation: the commands are `cargo build` and
-  `cargo test`. The scoring path is demonstrated on Rust targets in
-  this campaign.
+</div>
+<div class="flex items-center">
+<p class="text-xl">A model claim is never a verdict.<br/><br/>A problem counts as cleared when one round leaves a workspace the toolchain accepts. Retries count the problem once.</p>
+</div>
+</div>
 
-<!-- Scoring pipeline and verdict classes. -->
+<p class="cite">Code: <code>scripts/rescore.py</code>. This campaign scores Rust targets with cargo.</p>
 
----
-layout: default
----
-
-# Scoring generality: one scorer, many toolchains
-
-```mermaid
-flowchart LR
-  M["config:<br/>target.language + test_command"] --> DT{"detect project<br/>markers"}
-  DT -->|rust| CG["cargo build<br/>+ cargo test"]
-  DT -->|go| GO["go build<br/>+ go test"]
-  DT -->|java| JV["mvn compile<br/>+ test cmd"]
-  DT -->|python| PY["pytest"]
-  DT -->|javascript| JS["node --check"]
-  CG --> V["verdict:<br/>SOLVED / NOT CLEARED /<br/>ABORTED / IN FLIGHT"]
-  GO --> V
-  JV --> V
-  PY --> V
-  JS --> V
-  subgraph LEGEND["LEGEND"]
-    G1["box = toolchain stage"]
-    G2{"diamond = language detection"}
-    G3["blue = this campaign's path"]
-  end
-  classDef demo fill:#4F81BD,color:#fff
-  class CG demo
-```
-
-- The scorer reads project markers, then runs the matching toolchain.
-  Rust, Go, Java, Python, and JavaScript paths are implemented.
-- Every sweep round in this campaign ran Rust targets, including the
-  python-source and java-source problems. The scoring table above
-  counts them all as Rust-target rounds.
-- The sweep template still pins Rust targets. Non-Rust rounds have
-  not been scored yet.
-
-<!-- Scoring generality with honest campaign limitation. -->
-
----
-layout: default
----
-
-# What the ledger records
-
-Every round writes one row to `ROUNDS.yaml`:
-
-| Field group | Fields |
-|---|---|
-| identity | round id, protocol, candidate id |
-| intent | hypothesis, defect class targeted |
-| cost | wall seconds, stalled rounds |
-| deaths | max-turns deaths, output-cap deaths |
-| result | compile, tests passed, tests failed |
-| lineage | parents, delta vs parent, regression flags |
-| outcome | verdict, artifact paths |
-
-- The ledger is the campaign memory. Every retry keeps its own row.
-
-<!-- Ledger fields. -->
-
----
-layout: default
----
-
-# Reading the results
-
-- A problem clears when one round scores a verified workspace.
-- A problem counts once across retries.
-- NOT CLEARED may retry with a fix or a fresh config.
-- ABORTED means no verdict. The retry starts from the same state.
-- The scoreboard counts problems, not rounds.
-
-<p class="text-sm mt-2">Example: run s31 spent <strong>14.7 h</strong> on remimu, finished 12 of 13
-tasks, hit the round cap, and scored NOT CLEARED. The ledger row keeps
-the full counter set, so the retry starts from a known state.</p>
-
-<!-- Verdict interpretation and retry policy. -->
+<!-- Verdict classes from the ledger schema. -->
 
 ---
 layout: default
@@ -514,56 +399,23 @@ layout: default
 
 ```mermaid
 flowchart LR
-  P["proposer<br/>reads history"] -->|"1 delta"| CC["candidate<br/>config"]
-  CC --> DR["sweep driver<br/>2 staggered slots"]
-  DR -->|"GPU"| HR["harness run<br/>one problem set"]
-  HR --> SC["rescore<br/>build + test"]
-  SC --> LG["ledger<br/>row"]
-  LG -->|"next candidate"| P
-  subgraph LEGEND["LEGEND"]
-    G1x["blue = GPU lane"]
-    G2x["gray = CPU lane"]
-    G3x["loop = one candidate per set"]
-  end
+  P["proposer<br/>reads history"] --> PA["pairs file<br/>one line per round"]
+  PA --> DR["driver<br/>SLOTS staggered GPU waves"]
+  DR --> H["harness run<br/>one problem set"]
+  H --> R["rescore<br/>CPU"]
+  R --> L["ledger row"]
+  L --> P
   classDef gpu fill:#4F81BD,color:#fff
-  classDef cpu fill:#eeeeee
-  class DR,HR gpu
-  class P,CC,SC,LG cpu
+  class DR,H gpu
 ```
 
-- GPU lane: one set at a time, LoC ascending, two staggered slots.
-- CPU lane: proposer and scorer run while the GPU works.
-- Coverage rule: untouched projects only. Pairs mix one crust set with
-  one non-crust set.
-- Campaign instantiation: Rust targets with the cargo toolchain.
+- GPU lane: one set at a time, LoC ascending, SLOTS concurrent rounds staggered apart.
+- CPU lane: proposer and scorer run while the GPU grinds.
+- One candidate, one config delta, one problem set. The ledger keeps cause and effect.
 
-<!-- Sweep pipeline with GPU and CPU lanes and the loop. -->
+<p class="cite">Code: <code>scripts/sweep.sh</code>, <code>scripts/rounds_ledger.py</code>.</p>
 
----
-layout: default
----
-
-# The harness evolution loop
-
-The harness itself changes between candidates:
-
-```mermaid
-flowchart LR
-  A["read raw<br/>campaign history"] --> B["propose one<br/>config delta"]
-  B --> C["run + score<br/>candidate"]
-  C --> D["write ledger<br/>row"]
-  D --> A
-  subgraph LEGEND["LEGEND"]
-    E["fixed: problem set"]
-    F["fixed: scorer"]
-    G["mutable: harness config"]
-  end
-```
-
-- The problem set and the scorer stay fixed.
-- One candidate changes one thing, so the ledger shows cause and effect.
-
-<!-- Harness evolution loop, neutral wording. -->
+<!-- Sweep design verified in scripts/sweep.sh header. -->
 
 ---
 layout: section
@@ -572,77 +424,78 @@ title: Inspirations
 
 # Inspirations
 
-<!-- Section divider -->
+<!-- Divider. -->
 
 ---
 layout: default
 ---
 
-# Orchestration patterns: the two axes
+# Orchestration patterns: two axes
 
-Source: the LLM multi-agent orchestration survey (the "Q2 survey").
+<div class="grid grid-cols-3 gap-3 text-base mt-4 text-center">
+  <div></div><div class="font-bold text-gray-500">static agents</div><div class="font-bold text-gray-500">dynamic-adaptive</div>
+  <div class="font-bold text-gray-500 text-right">centralized</div><div class="cell">one boss, fixed roles</div><div class="cell">one boss, routing at runtime</div>
+  <div class="font-bold text-gray-500 text-right">hierarchy</div><div class="cell">fixed tree of teams</div><div class="cell hi">ARCMiS sits here</div>
+</div>
 
-| | static agents | dynamic-adaptive |
-|---|---|---|
-| **centralized** | one boss, fixed roles | one boss, routing at runtime |
-| **decentralized** | peer teams, fixed links | peers that renegotiate |
-| **hierarchy** | fixed tree of teams | **ARCMiS sits here** |
+- Agents stay static: one preamble, one tool allowlist, one judge contract each.
+- Selection is dynamic: a task graph re-scores after each delegation, and a failing task can spawn a failure-analyst chain.
 
-- Hierarchy: tier-2 leads over tier-3 specialists. Verified in
-  `hierarchy.rs` and `lead.rs`. Recorded in ADR 0022 and ADR 0026.
-- Dynamic: the task graph re-scores after each delegation, and the
-  orchestrator can spawn a failure-analyst chain mid-task.
-- Static part: fixed role registry, fixed preambles, fixed tool
-  allowlists. The selection is dynamic. The agents are not.
+<p class="cite">Zhu, Y., Liu, L., Yu, J., & Zhang, D. (2026). LLM-based multi-agent orchestration: A survey of frameworks, communication protocols, and emerging patterns. <i>Future Internet, 18</i>(6), 326. Mapping: ADR 0022, ADR 0026.</p>
 
-<!-- Taxonomy mapping slide. -->
+<!-- Taxonomy. Mapping verified in hierarchy.rs, lead.rs, ADR 0022. -->
 
 ---
 layout: default
 ---
 
-# Modernization workflows
+# ReCodeAgent: the pipeline discipline
 
 ```mermaid
 flowchart LR
-  DS["repo<br/>dataset"] --> DI["discover"] --> BR["brief"] --> EX["execute<br/>+ validate"]
-  BR -.->|"evidence gate"| DI
-  EX -.->|"evidence gate"| BR
-  subgraph LEGEND["LEGEND"]
-    L1y["solid = flow"]
-    L2y["dashed = gate sends work back"]
-  end
+  A["analyzer"] --> B["planner"] --> C["translator"] --> D["validator"]
 ```
 
-**ReCodeAgent** (arXiv:2604.07341, ASE 2026):
+- A multi-agent workflow for repository-level translation and validation, run with a frontier model over 118 projects.
+- ARCMiS borrows two things: the `tool_projects` dataset (crust, oxidizer, alphatrans, skel) and the stage discipline. Stages map onto our phases. The pipeline stays config, not hardcoded control flow.
 
-- A multi-agent workflow for repository translation and validation.
-- ARCMiS borrows the `tool_projects` dataset and the stage discipline
-  (ADR 0018, ADR 0022).
+<p class="cite">Ibrahimzada, A. R., Paulsen, B., Kroening, D., & Jabbarvand, R. (2026). ReCodeAgent: A multi-agent workflow for language-agnostic translation and validation of large-scale repositories. arXiv:2604.07341 (ASE 2026). Adoption: ADR 0018, ADR 0022.</p>
 
-**Claude Modernization Plugin:**
-
-- Discovery, brief, and execution flow with evidence-gated phase exits.
-- ARCMiS borrows the gate idea: an exit needs evidence, not a claim.
-
-<!-- Modernization workflow sources. -->
+<!-- Stage list verified in paper.tex §related work. -->
 
 ---
 layout: default
 ---
 
-# System-one models: jev and laya
-
-Judgments cost model turns. Three cheaper rungs exist:
+# Claude Modernization Plugin: gated execution
 
 ```mermaid
 flowchart LR
-  A["1. LLM judge<br/>full decode<br/>one model turn"] --> B["2. jev judge<br/>local checkpoint<br/>same judgment"]
-  B --> C["3. laya typed decision<br/>one forward pass<br/>no decode"]
-  subgraph LEGEND["LEGEND"]
-    D["arrow = cheaper per judgment"]
-  end
-  classDef c1 fill:#dddddd
+  A["discovery"] --> B["brief"] --> C["execution"]
+  B -.->|"evidence gate"| A
+  C -.->|"evidence gate"| B
+```
+
+- A field workflow for modernizing a codebase in three passes.
+- Each pass exits only on evidence: the brief exists, the tests ran.
+- ARCMiS borrows the gate idea: a phase exit needs files, not a claim.
+
+<p class="cite">Adoption: ADR 0022, modernization plugin paragraph.</p>
+
+<!-- Verified in ADR 0022 line 43. -->
+
+---
+layout: default
+---
+
+# Why judgments cost turns
+
+Every classification that a busy LLM makes is one decode on the busy GPU:
+
+```mermaid
+flowchart LR
+  A["1 · LLM judge<br/>full decode<br/>one model turn"] --> B["2 · jev judge<br/>local specialist checkpoint<br/>same judgment"] --> C["3 · typed decision<br/>one forward pass<br/>no token decode"]
+  classDef c1 fill:#e8eef7
   classDef c2 fill:#9BBB59,color:#fff
   classDef c3 fill:#4F81BD,color:#fff
   class A c1
@@ -650,11 +503,10 @@ flowchart LR
   class C c3
 ```
 
-- LLM judge: one full decode per judgment, on the busy GPU.
-- jev judge: the same judgment from a local specialist checkpoint.
-  `jev_judge.rs` (ADR 0023), `jev_triage.rs` (ADR 0027).
-- laya (arXiv:2609.26550): one forward pass answers `choice`, `score`,
-  and `noul`. See `.omp/skills/laya`.
+- The harness makes hundreds of small judgments per run: did a member fail, is a tool call in scope, does a round need help.
+- Each rung down the ladder removes decode work from the main model.
+
+<p class="cite">Ladder per Li, J., Miao, C., Krishnan, S., & Padman, R. (2026). JEV-as-a-judge: Accept when confident, escalate when unsure. arXiv:2609.26550.</p>
 
 <!-- Judge ladder. -->
 
@@ -662,23 +514,39 @@ flowchart LR
 layout: default
 ---
 
-# Where triage is wired today
+# jev in ARCMiS
 
-- Each member dispatch gets a typed triage verdict.
-  Five `agent_trace_observability` questions, min-confidence cascade.
-- Each round gets a laya consultation over its own counters
-  (ADR 0028).
+- **`jev_judge.rs`.** Arbitrates denied `ask` calls in the guard. One laya choice question, threshold 0.9. Below the threshold, the denial stands (ADR 0023).
+- **`jev_triage.rs`.** Triages every lead member dispatch. One forward pass answers five `agent_trace_observability` questions. A min-confidence cascade accepts confident verdicts and falls back on the rest (ADR 0027).
 
-**Honest state:** the round policy defaults to `observe`
-(`round_triage/policy.rs`). The harness records every verdict. No round
-stops on one. Enforcement (`policy: enforce`) exists and is not the
-campaign default.
+**Honest state:** the round policy wires triage as an observer
+(`round_triage/policy.rs`). The harness records every verdict. No round stops on one. Enforcement (`policy: enforce`) exists and is not the campaign default (ADR 0028).
 
-- Measured round confidences sit near 0.31 to 0.33, below the 0.9
-  cascade threshold. The judge falls back on today's data. Reported as
-  measured. Not tuned to force agreement.
+<p class="cite">Li, J., et al. (2026). JEV-as-a-judge. arXiv:2609.26550. ADRs 0023, 0027, 0028.</p>
 
-<!-- Honest wiring state. Verified: round_triage/policy.rs, ADR 0028. -->
+<!-- Bottleneck claim verified in round_triage/policy.rs: observe
+     never stops; enforce paths exist in tests. -->
+
+---
+layout: default
+---
+
+# Typed decisions: laya
+
+One small checkpoint (ModernBERT-large, 421M parameters) answers constrained questions in a single forward pass:
+
+| Question type | Answer |
+|---|---|
+| `choice` | one label, with probabilities |
+| `score` | a rubric level |
+| `noul` | a true-or-false need |
+
+- No token decoding. Microseconds to seconds per call, on CPU.
+- In ARCMiS it backs the judge and the triage. The checkpoint is a specialist: off-workflow questions fall back to base behavior, so the harness checks the trained label sets before it trusts a verdict.
+
+<p class="cite">Laya-rs crate, v0.1.0 (2026). See arXiv:2609.26550 for the typed-decisions method.</p>
+
+<!-- Checkpoint facts from docs/adr/0027 and .omp/skills/laya. -->
 
 ---
 layout: section
@@ -687,153 +555,165 @@ title: Benchmarks
 
 # Benchmarks
 
-<!-- Section divider -->
+<!-- Divider. -->
 
 ---
 layout: default
 ---
 
-# The dataset
+# Setup
 
-`assets/ReCodeAgent/data/tool_projects`, four families:
+<div class="grid grid-cols-2 gap-8 mt-2 text-base">
+<div>
 
-<div class="text-sm mt-2">
-<div class="flex items-center gap-2 mb-1"><div class="bar bar-blue" style="width:520px"></div><span>crust 100</span></div>
-<div class="flex items-center gap-2 mb-1"><div class="bar bar-green" style="width:42px"></div><span>skel 8</span></div>
-<div class="flex items-center gap-2 mb-1"><div class="bar bar-purple" style="width:37px"></div><span>oxidizer 7</span></div>
-<div class="flex items-center gap-2 mb-1"><div class="bar bar-orange" style="width:21px"></div><span>alphatrans 4</span></div>
+| Item | Value |
+|---|---|
+| model | qwen3.8-27B, local |
+| engine | ninfer :8081, RTX 3090 |
+| context | num_ctx 65536 |
+| output | 8192 tokens (four roles: 16384) |
+| temperature | 0.2 |
+| fanout | 3 |
+
+</div>
+<div>
+
+| Budget | Value |
+|---|---|
+| max rounds | 20 |
+| orchestrator turns | 20 |
+| worker turns | 40 |
+| judge turns | 40 |
+| stagnation breaker | 3 rounds |
+
+</div>
 </div>
 
-- Counted on disk: 4 + 100 + 7 + 8 = **119 directories**.
-- The campaign brief says **114**. The delta is 5 problems.
-- Slides below use the brief number 114 and say so.
+| Family | Source language | Problems |
+|---|---|---|
+| crust | C | 100 |
+| skel | Python | 8 |
+| oxidizer | Go | 7 |
+| alphatrans | Java | 4 |
 
-<!-- Dataset families with a bar visual. -->
+- Counted on disk: 119 directories. The campaign brief says 114. Both numbers stated; slides below use 114.
+- Window: 2026-09-26 to 2026-10-06. Target: Rust, scored by cargo.
+
+<p class="cite">Sources: <code>scripts/round-template.yml</code>, <code>assets/ReCodeAgent/data/tool_projects</code>.</p>
+
+<!-- Counts recounted on disk at build time. -->
 
 ---
 layout: default
 ---
 
-# Progress: 13 of 114 problems cleared
+# Results: from rounds to problems
 
-<div class="flex flex-wrap gap-1 max-w-125 my-2">
+<p class="text-sm text-gray-500">Counted 2026-10-06 11:36Z from <code>ROUNDS.yaml</code>, 57 rows.</p>
+
+<div class="grid grid-cols-2 gap-8 mt-2 text-base">
+<div>
+
+<div class="flex items-center gap-2 mb-1.5"><span class="w-36 text-right">ledger rows</span><div class="bar bar-navy" style="width:500px"></div><span><b>57</b></span></div>
+<div class="flex items-center gap-2 mb-1.5"><span class="w-36 text-right">scored rounds</span><div class="bar bar-blue" style="width:368px"></div><span><b>42</b></span></div>
+<div class="flex items-center gap-2 mb-1.5"><span class="w-36 text-right">SOLVED rows</span><div class="bar bar-green" style="width:184px"></div><span><b>21</b></span></div>
+<div class="flex items-center gap-2 mb-1.5"><span class="w-36 text-right">unique problems</span><div class="bar bar-green" style="width:114px"></div><span><b>13</b> / 114</span></div>
+
+<p class="text-xs text-gray-600 mt-2">scored = SOLVED + NOT CLEARED; ABORTED rows carry no harness verdict.</p>
+
+<p class="text-xs text-gray-600 mt-2">chtrie scored a green workspace at the round cap (ledger SOLVED); the campaign counts it VERIFIED-WORKSPACE, a retry candidate, so the cleared count stays 13.</p>
+
+</div>
+<div>
+
+<div class="flex items-center gap-2 mb-1.5"><span class="w-28">SOLVED</span><div class="bar bar-green" style="width:290px"></div><span><b>21</b></span></div>
+<div class="flex items-center gap-2 mb-1.5"><span class="w-28">NOT CLEARED</span><div class="bar bar-red" style="width:290px"></div><span><b>21</b></span></div>
+<div class="flex items-center gap-2 mb-1.5"><span class="w-28">ABORTED</span><div class="bar bar-gray" style="width:193px"></div><span><b>14</b></span></div>
+<div class="flex items-center gap-2 mb-1.5"><span class="w-28">IN FLIGHT</span><div class="bar bar-blue" style="width:14px"></div><span><b>1</b></span></div>
+
+</div>
+</div>
+
+- One problem can span several rounds. A retry keeps its own row. A problem counts once.
+- ABORTED rows are engine or launcher failures, not harness verdicts.
+
+<p class="cite">Ledger: <code>.artifacts/experiments/ROUNDS.yaml</code> and <code>SUMMARY.md</code>.</p>
+
+<!-- Funnel recounted live at build time. -->
+
+---
+layout: default
+---
+
+# Coverage: 13 of 114 problems cleared
+
+<div class="flex flex-wrap gap-1 max-w-180 my-3">
 <span v-for="i in 114" :key="i" class="dot" :class="i <= 13 ? 'dot-ok' : 'dot-todo'"></span>
 </div>
 
-<p class="text-sm"><strong>13 green</strong> = one verified workspace per problem.
-Each dot is one problem.</p>
-
 | Family | Problems | Cleared |
 |---|---|---|
-| crust | 100 | 11 |
-| oxidizer | 7 | 1 |
-| skel | 8 | 1 |
-| alphatrans | 4 | 0 |
+| crust, C | 100 | <span class="inline-block align-middle bar bar-green" style="width:42px"></span> 11 |
+| skel (Python) | 8 | <span class="inline-block align-middle bar bar-green" style="width:4px"></span> 1 |
+| oxidizer (Go) | 7 | <span class="inline-block align-middle bar bar-green" style="width:4px"></span> 1 |
+| alphatrans (Java) | 4 | 0 |
 
-- A problem counts once across retries.
-- The cleared set includes python-source (colorsys) and go-source
-  (gonameparts) problems. All scored as Rust-target rounds.
-- Live: wave 3 of the coverage sweep, 1 round in flight (2026-10-06).
+<p class="text-xs text-gray-600 mt-2">Table counts 119 problem directories on disk; the campaign brief says 114 (both stated, paper §setup); the dot grid uses the brief count.</p>
 
-<!-- Dot grid: 114 dots, first 13 green = one verified workspace per
-     cleared problem. Count from the ledger. The loop only draws the
-     grid. -->
+- A clear needs the round to complete the final validation gate. chtrie stopped at the round cap with a green workspace: VERIFIED-WORKSPACE, a retry candidate, not a clear. One round in flight (strsim) at count time, 2026-10-06 11:36Z.
 
----
-layout: default
----
+<p class="cite">Ledger: <code>ROUNDS.yaml</code>, recount at build time.</p>
 
-# Round verdicts so far
-
-55 ledger rows, counted live from `ROUNDS.yaml` (2026-10-06):
-
-<div class="text-sm mt-2">
-<div class="flex items-center gap-2 mb-1"><span class="w-30">SOLVED</span><div class="bar bar-green" style="width:452px"></div><span>19</span></div>
-<div class="flex items-center gap-2 mb-1"><span class="w-30">NOT CLEARED</span><div class="bar bar-red" style="width:500px"></div><span>21</span></div>
-<div class="flex items-center gap-2 mb-1"><span class="w-30">ABORTED</span><div class="bar bar-gray" style="width:333px"></div><span>14</span></div>
-<div class="flex items-center gap-2 mb-1"><span class="w-30">IN FLIGHT</span><div class="bar bar-blue" style="width:24px"></div><span>1</span></div>
-</div>
-
-- One problem can span several rounds. A retry keeps its own row.
-- ABORTED rows are engine or launcher failures, not harness verdicts.
-
-<!-- Verdict breakdown bar chart, pure HTML/CSS. -->
+<!-- Dot grid drawn by the loop; 13 from the live recount under the
+     cleared-set rule (final validation gate completed). -->
 
 ---
 layout: default
 ---
 
-# Wall clock: solved runs vs failed runs
+# Wall clock
 
-Serial-era solved median: **145 min** (n=15). Three wave-2 failures:
+Serial-era solved median: <b>145 min</b> (n=15). Three later failures:
 
-<div class="relative text-sm mt-4 ml-34" style="height:120px">
-  <div class="absolute top-0 bottom-0 median-line"></div>
-  <div class="absolute -top-5 median-label" style="left:60px">median 145 min</div>
-  <div class="flex items-center gap-2 absolute top-4"><span class="w-32">fft 36 min</span><div class="bar bar-red" style="width:19px"></div></div>
-  <div class="flex items-center gap-2 absolute top-11"><span class="w-32">bst 133 min</span><div class="bar bar-red" style="width:70px"></div></div>
-  <div class="flex items-center gap-2 absolute top-18"><span class="w-32">remimu 885 min</span><div class="bar bar-red" style="width:466px"></div></div>
+<div class="relative text-base mt-8 ml-44" style="height:130px">
+  <div class="absolute top-0 bottom-0 median-line" style="left:230px"></div>
+  <div class="absolute -top-7 median-label" style="left:152px">median 145 min</div>
+  <div class="flex items-center gap-2 absolute top-3"><span class="w-36 text-right">fft, 36 min</span><div class="bar bar-red" style="width:19px"></div></div>
+  <div class="flex items-center gap-2 absolute top-16"><span class="w-36 text-right">bst, 133 min</span><div class="bar bar-red" style="width:72px"></div></div>
+  <div class="flex items-center gap-2 absolute top-29"><span class="w-36 text-right">remimu, 14.7 h</span><div class="bar bar-red" style="width:470px"></div></div>
 </div>
 
-<div class="text-xs text-gray-600 mt-16">
-green = solved run · red = not cleared · dashed line = solved median
-</div>
+<p class="text-sm text-gray-600 mt-16">red = closed without a verified workspace · dashed line = solved median</p>
 
-- A failure can end fast (fft, stuck at Planning) or run long (remimu,
-  5 of 5 batches translated, then the round cap).
-- remimu took 6 times the median and still did not clear.
+- A failure can end fast. fft stalled at Planning and stopped in 36 minutes.
+- A failure can also run long. remimu translated all five batches, hit the round cap, and still did not clear.
 
-<!-- Wall clock comparison with median line. -->
+<p class="cite">Ledger: <code>.artifacts/experiments/SUMMARY.md</code>, wave close notes.</p>
+
+<!-- Wall values from SUMMARY.md wave close notes, full-window
+     accounting. -->
 
 ---
 layout: default
 ---
 
-# Where the tokens go: one failed run
+# Comparison with published baselines
 
-The remimu round (s31, 14.7 h, NOT CLEARED at the round cap):
-
-<div class="text-sm mt-2">
-<div class="flex items-center gap-2 mb-1"><span class="w-42">input tokens</span><div class="bar bar-blue" style="width:500px"></div><span>39.3M</span></div>
-<div class="flex items-center gap-2 mb-1"><span class="w-42">output tokens</span><div class="bar bar-blue" style="width:12px"></div><span>783k</span></div>
-<div class="flex items-center gap-2 mb-1"><span class="w-42">of output: think burn</span><div class="bar bar-purple" style="width:6px"></div><span>~30%</span></div>
+<div class="text-base mt-2">
+<div class="flex items-center gap-2 mb-1.5"><span class="w-48 text-right">ReCodeAgent, compile</span><div class="bar bar-blue" style="width:497px"></div><span><b>99.4%</b></span></div>
+<div class="flex items-center gap-2 mb-1.5"><span class="w-48 text-right">ReCodeAgent, tests</span><div class="bar bar-blue" style="width:433px"></div><span><b>86.5%</b></span></div>
+<div class="flex items-center gap-2 mb-1.5"><span class="w-48 text-right">Skel</span><div class="bar bar-gray" style="width:466px"></div><span><b>93.2%</b></span></div>
+<div class="flex items-center gap-2 mb-1.5"><span class="w-48 text-right">SWE-agent (Crust)</span><div class="bar bar-gray" style="width:391px"></div><span><b>78.3%</b></span></div>
+<div class="flex items-center gap-2 mb-1.5"><span class="w-48 text-right">Oxidizer</span><div class="bar bar-gray" style="width:336px"></div><span><b>67.2%</b></span></div>
+<div class="flex items-center gap-2 mb-1.5"><span class="w-48 text-right">AlphaTrans</span><div class="bar bar-gray" style="width:80px"></div><span><b>15.9% (188/1,181 tests)</b></span></div>
+<div class="flex items-center gap-2 mb-1.5"><span class="w-48 text-right">ARCMiS, cleared</span><div class="bar bar-green" style="width:51px"></div><span><b>13/114 = 11.4%</b></span></div>
 </div>
 
-Deaths along the way (red = run-stopping class):
+<p class="text-base mt-3" style="color:#C0504D"><b>Different protocol.</b> Published numbers: Claude 4.5 Sonnet, 118 projects, developer-test scoring. ARCMiS: local 27B model, one set at a time, toolchain-only scoring. Directional context, not a like-for-like comparison.</p>
 
-<div class="text-sm mt-2">
-<div class="flex items-center gap-2 mb-1"><span class="w-42">MaxTurns deaths</span><div class="bar bar-red" style="width:500px"></div><span>30</span></div>
-<div class="flex items-center gap-2 mb-1"><span class="w-42">Length (output cap) deaths</span><div class="bar bar-red" style="width:150px"></div><span>9</span></div>
-<div class="flex items-center gap-2 mb-1"><span class="w-42">admission 503s</span><div class="bar bar-gray" style="width:133px"></div><span>8</span></div>
-</div>
+<p class="cite">Ibrahimzada, A. R., et al. (2026). ReCodeAgent. arXiv:2604.07341; baseline table verified in project report, §baseline. AlphaTrans per Ibrahimzada, A. R., et al. (2025), FSE, as reproduced in the ReCodeAgent baseline table.</p>
 
-<p class="text-xs text-gray-600 mt-1">Legend: blue = tokens, purple = wasted output, red = member deaths, gray = engine overload.</p>
-
-<!-- Token flow and death census for one failed run. -->
-
----
-layout: default
----
-
-# Comparison with ReCodeAgent
-
-| | ReCodeAgent | ARCMiS |
-|---|---|---|
-| model | Claude 4.5 Sonnet | qwen3.8-27B, local |
-| protocol | their developer-test suites | toolchain-only scoring |
-| scale | 118 projects | one set at a time |
-
-<div class="text-sm mt-4">
-<div class="flex items-center gap-2 mb-1"><span class="w-40">RCA compile</span><div class="bar bar-blue" style="width:497px"></div><span>99.4%</span></div>
-<div class="flex items-center gap-2 mb-1"><span class="w-40">RCA test pass</span><div class="bar bar-blue" style="width:433px"></div><span>86.5%</span></div>
-<div class="flex items-center gap-2 mb-1"><span class="w-40">ARCMiS cleared</span><div class="bar bar-green" style="width:57px"></div><span>13/114 = 11.4%</span></div>
-</div>
-
-<p class="text-xs text-gray-600 mt-1">Different protocol: ARCMiS has no aggregate compile percent.
-The green bar is problems cleared under a stricter, toolchain-only gate.
-Directional context, not a like-for-like comparison.</p>
-
-<!-- ReCodeAgent comparison with bars and protocol label. -->
+<!-- Baseline numbers verified in paper.tex lines 1090-1108. -->
 
 ---
 layout: default
@@ -841,15 +721,16 @@ layout: default
 
 # Estimated time to finish
 
-- Campaign start: 2026-09-26. Elapsed: 10 days (2026-10-06).
-- Rate so far: 13 cleared / 10 days = about 1.3 per day.
-- Remaining: (114 - 13) / 1.3 = about **78 days**.
+<p class="text-3xl mt-6" style="color:#1F497D">≈ 78 days</p>
 
-<p class="text-sm mt-2">This is an estimate from the current rate, not a
-commitment. The rate changes with problem size. The LoC walk now reaches
-larger sets, so later problems cost more per set.</p>
+<p class="text-xl mt-4">at the current rate: 13 cleared in 10 days, 101 problems remaining.</p>
 
-<!-- Rate based estimate, labeled as estimate. -->
+- The rate is not constant. The sweep walks problems in ascending size order, so later problems cost more wall time per set.
+- This is an estimate from the current rate, not a commitment.
+
+<p class="cite">Ledger: <code>.artifacts/experiments/ROUNDS.yaml</code>, recount at build time.</p>
+
+<!-- Rate estimate from the live recount. -->
 
 ---
 layout: section
@@ -858,7 +739,7 @@ title: References
 
 # References
 
-<!-- Section divider -->
+<!-- Divider. -->
 
 ---
 layout: default
@@ -866,22 +747,33 @@ layout: default
 
 # References
 
-- ReCodeAgent: A Multi-agent Workflow for Language-Agnostic
-  Translation and Validation of Large-Scale Repositories.
-  arXiv:2604.07341, ASE 2026.
-- LLM-Based Multi-Agent Orchestration: A Survey of Frameworks,
-  Communication Protocols, and Emerging Patterns (the Q2 survey).
-- Typed decisions. arXiv:2609.26550. laya-rs crate, `.omp/skills/laya`.
-- ARCMiS ADRs 0018, 0022, 0023, 0026, 0027, 0028, 0029 in `docs/adr/`.
-- Dataset: `assets/ReCodeAgent/data/tool_projects`.
-- Ledger: `.artifacts/experiments/ROUNDS.yaml` and `SUMMARY.md`.
+<div class="text-sm leading-6 mt-2 space-y-2">
 
-<!-- Reference list slide. -->
+<p>Dang, D.-H., & Nguyen, T.-D. (2026). <i>ARCMiS: Agentic repository-level code migration for small language models.</i> Project report, VNU Hanoi.</p>
+
+<p>Ibrahimzada, A. R., Paulsen, B., Kroening, D., & Jabbarvand, R. (2026). ReCodeAgent: A multi-agent workflow for language-agnostic translation and validation of large-scale repositories. <i>arXiv preprint</i> arXiv:2604.07341 (ASE 2026).</p>
+
+<p>Ibrahimzada, A. R., Ke, K., Pawagi, M., Abid, M. S., Pan, R., Sinha, S., & Jabbarvand, R. (2025). AlphaTrans: A neuro-symbolic compositional approach for repository-level code translation and validation. <i>Proceedings of the ACM on Software Engineering (FSE)</i>.</p>
+
+<p>Jimenez, C. E., Yang, J., Wettig, A., Yao, S., Pei, K., Press, O., & Narasimhan, K. (2024). SWE-bench: Can language models resolve real-world GitHub issues? <i>ICLR 2024</i>.</p>
+
+<p>Li, J., Miao, C., Krishnan, S., & Padman, R. (2026). JEV-as-a-judge: Accept when confident, escalate when unsure. <i>arXiv preprint</i> arXiv:2609.26550.</p>
+
+<p>Seacord, R. C., Plakosh, D., & Lewis, G. A. (2003). <i>Modernizing legacy systems: Software technologies, engineering processes, and business practices.</i> Addison-Wesley.</p>
+
+<p>Zhu, Y., Liu, L., Yu, J., & Zhang, D. (2026). LLM-based multi-agent orchestration: A survey of frameworks, communication protocols, and emerging patterns. <i>Future Internet, 18</i>(6), 326.</p>
+
+</div>
+
+<p class="text-xs text-gray-500 mt-3">Project artifacts: ADRs 0018, 0022, 0023, 0026, 0027, 0028 (<code>docs/adr/</code>); dataset <code>assets/ReCodeAgent/data/tool_projects</code>; ledger <code>.artifacts/experiments/ROUNDS.yaml</code>.</p>
+
+<!-- APA 7 reference list. -->
 
 ---
 layout: end
+class: end-light
 ---
 
 # Thank you
 
-<!-- Closing slide. -->
+<!-- Closing. Keep the resdir look: white ground, navy heading, no dark cover. -->

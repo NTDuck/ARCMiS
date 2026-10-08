@@ -6,6 +6,7 @@ use blackboard::Phase;
 use blackboard::TaskList;
 use blackboard::TaskStatus;
 use serde::Serialize;
+use std::path::Path;
 
 /// One progress snapshot.
 #[derive(Debug, Clone, Serialize)]
@@ -28,7 +29,7 @@ pub struct Progress {
 }
 
 /// Read the progress from the run directory. Missing files read as empty.
-pub fn snapshot(run_dir: &std::path::Path) -> anyhow::Result<Progress> {
+pub fn snapshot(run_dir: &Path) -> anyhow::Result<Progress> {
     let state = blackboard::state::read(run_dir)?.unwrap_or(blackboard::State {
         phase: Phase::Preflight,
         phase_delegations: 0,

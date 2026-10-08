@@ -265,17 +265,19 @@ async fn dispatch(
                 tier: 1,
             }
         },
-        TierRoute::Lead(lead_name) =>
+        TierRoute::Lead(lead_name) => {
             crate::lead::run_lead_batch(
                 agents, config, workspace, ledger, jev_triage, phase, task_id, &lead_name, delegation,
             )
-            .await,
-        TierRoute::Direct =>
+            .await
+        },
+        TierRoute::Direct => {
             if delegation.team {
                 run_collective(agents, config, workspace, ledger, run_dir, phase, task_id, delegation).await
             } else {
                 run_single(agents, config, workspace, ledger, phase, task_id, delegation, 1).await
-            },
+            }
+        },
     }
 }
 
@@ -328,7 +330,7 @@ fn route_tier1(
         return TierRoute::Direct;
     };
     match crate::hierarchy::lead_for(teams, role) {
-        Some(team) if lead_exists(&team.lead) =>
+        Some(team) if lead_exists(&team.lead) => {
             if config.hierarchy.deny_direct {
                 TierRoute::Refuse {
                     role,
@@ -336,7 +338,8 @@ fn route_tier1(
                 }
             } else {
                 TierRoute::Lead(team.lead.clone())
-            },
+            }
+        },
         _ => TierRoute::Direct,
     }
 }
@@ -407,7 +410,10 @@ pub(crate) async fn run_single(
         delegation.task, phase
     );
     if matches!(role, Role::Validator | Role::Critic) {
-        instruction.push_str("\n\nThe translated workspace lives under target/; start from target/Cargo.toml.");
+        instruction.push_str(
+            "\n\nThe translated workspace lives under target/; start from the project manifest in target/ \
+             (Cargo.toml, go.mod, pom.xml, package.json, or pyproject.toml as applicable).",
+        );
     }
     let turns = match role {
         Role::Validator | Role::Critic | Role::FailureAnalyst | Role::FleetAnalyst => config.judge_turns,
@@ -719,13 +725,17 @@ mod tests {
                 let handle = tokio::spawn(async move {
                     // Later indexes finish first: reversed completion order.
                     tokio::time::sleep(std::time::Duration::from_millis(10 * (2 - index as u64))).await;
-                    (index, format!("t{index}"), TaskResult {
-                        id: format!("t{index}"),
-                        role: Role::Orchestrator,
-                        passed: true,
-                        output: "ok".into(),
-                        tier: 1,
-                    })
+                    (
+                        index,
+                        format!("t{index}"),
+                        TaskResult {
+                            id: format!("t{index}"),
+                            role: Role::Orchestrator,
+                            passed: true,
+                            output: "ok".into(),
+                            tier: 1,
+                        },
+                    )
                 });
                 (index, format!("t{index}"), handle)
             })
@@ -746,13 +756,17 @@ mod tests {
                     if index == 0 {
                         panic!("dispatch exploded");
                     }
-                    (index, format!("t{index}"), TaskResult {
-                        id: format!("t{index}"),
-                        role: Role::Orchestrator,
-                        passed: true,
-                        output: "ok".into(),
-                        tier: 1,
-                    })
+                    (
+                        index,
+                        format!("t{index}"),
+                        TaskResult {
+                            id: format!("t{index}"),
+                            role: Role::Orchestrator,
+                            passed: true,
+                            output: "ok".into(),
+                            tier: 1,
+                        },
+                    )
                 });
                 (index, format!("t{index}"), handle)
             })

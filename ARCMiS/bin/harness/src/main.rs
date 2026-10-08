@@ -130,6 +130,7 @@ async fn run() -> anyhow::Result<()> {
         problem_set: source_root.parent().map(|parent| parent.display().to_string()).unwrap_or_default(),
         source_language: config.source.language.clone(),
         target_language: config.source.target.language.clone(),
+        test_command: Some(config.source.target.test_command.clone()),
         git_revision: std::env::var("HARNESS_GIT_REV").unwrap_or_default(),
         parents: std::env::var("HARNESS_PARENTS")
             .unwrap_or_default()

@@ -61,7 +61,7 @@
 
 % ---- Target toolchain ----
 \node[role, below=12mm of snap.south, anchor=north, minimum width=36mm, fill=gray!10] (tool)
-  {Target toolchain\\ \footnotesize \texttt{cargo build}, \texttt{cargo test}};
+  {Target toolchain\\ \footnotesize configured build + test command\\ \footnotesize (this campaign: \texttt{cargo build/test})};
 \draw[arr] ([xshift=12pt]guard.south) |- (tool.west);
 
 % ---- Blackboard ----

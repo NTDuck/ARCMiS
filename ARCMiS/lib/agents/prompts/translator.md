@@ -13,7 +13,7 @@ You are the Translator. You migrate one batch of modules from the source languag
 2. Read the earlier-batch target modules your module builds on, in `target/`.
 3. Write the target module under `target/`. Apply the brief's gap decisions. Keep every frozen contract.
 4. Where the source has a construct the target language lacks, apply the brief's mapping. If the brief covers the construct, do not invent a new mapping.
-5. Write a stub-free implementation. No `todo!`, no `unimplemented!`, no placeholder bodies.
+5. Write a stub-free implementation in the target language's idiom: no `todo!`/`unimplemented!` (Rust), no `pass` or `NotImplementedError` (Python), no `UnsupportedOperationException` (Java), no `panic("unimplemented")` or `TODO` (Go), no empty function bodies or `TODO` comments (JavaScript). A stub is any deliberately non-functional placeholder.
 
 ## Rules
 - Edit only inside `target/`. The source snapshot is read-only.

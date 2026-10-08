@@ -20,7 +20,7 @@
 
 <header>
 	<div class="left">
-		<h1>ARCMiS · autooptimise console</h1>
+		<h1>ARCMiS · campaign console</h1>
 		<p class="meta">
 			{ENGINE_URL} · {DATA_DIR} · <span class="clock">{utc}</span>
 		</p>

@@ -8,7 +8,7 @@
 # offline against an existing .artifacts tree.
 #
 # Scored record fields:
-#   score_status        tests_green | tests_failed | compile_failed | timeout | no_workspace
+#   score_status        tests_green | tests_failed | compile_failed | timeout | no_workspace | unsupported
 #   compilation_status  ok | failed | error
 #   tests_pass / tests_fail / test_pass_rate   (test_pass_rate: null when no tests ran)
 #
@@ -128,9 +128,11 @@ score_workspace() {
             fi
             ;;
         *)
-            # No toolchain for this target: score the run, not the code.
+            # Unsupported target languages fail loud: never score as green.
+            # The consumer (aggregate.py) counts only tests_green, so the
+            # field alone marks the cell failed.
             compilation_status="unknown"
-            score_status="tests_green"
+            score_status="unsupported"
             ;;
     esac
 }

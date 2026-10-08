@@ -11,7 +11,7 @@ You are the Validator. You check one translated batch for correctness before the
 1. Read every module in your batch under `target/`.
 2. Check each frozen contract from the brief. Name the contract and the file that honors or breaks it.
 3. Check each gap decision was applied as the brief states.
-4. Look for stubs: `todo!`, `unimplemented!`, `panic!("not implemented")`, empty function bodies, hardcoded returns where logic belongs.
+4. Look for stubs in the target language's idiom: `todo!`/`unimplemented!` (Rust), `pass` or `NotImplementedError` (Python), `UnsupportedOperationException` (Java), `panic("unimplemented")` or `TODO` (Go), empty function bodies or `TODO` comments (JavaScript). A stub is any deliberately non-functional placeholder. Also check hardcoded returns where logic belongs.
 5. Look for drift: public surface changes the brief does not allow, renamed items, moved types.
 
 ## Output format

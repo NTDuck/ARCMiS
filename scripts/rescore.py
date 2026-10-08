@@ -28,17 +28,31 @@ def run(cmd, cwd, timeout=600):
 def parse_test_counts(text):
     p = sum(int(m) for m in re.findall(r"(\d+) passed", text))
     f = sum(int(m) for m in re.findall(r"(\d+) failed", text))
+    # Go test: `--- FAIL:` per failing test; `ok  ` lines count package-level
+    # passes when no per-test counts exist.
+    f += len(re.findall(r"^--- FAIL:", text, re.MULTILINE))
+    if p == 0 and f == 0:
+        p = len(re.findall(r"^ok  ", text, re.MULTILINE))
+    # Maven surefire: `Tests run: X, Failures: Y` lines, summed.
+    if not re.search(r"\d+ passed", text):
+        for m in re.finditer(r"Tests run: (\d+), Failures: (\d+)", text):
+            p += int(m.group(1)) - int(m.group(2))
+            f += int(m.group(2))
     return p, f
 
 
 def find_project_root(workspace: Path, target_language: str) -> Path | None:
     target = workspace / "target"
     if target.is_dir():
-        if target_language == "rust" and (target / "Cargo.toml").is_file():
+        if (target / "Cargo.toml").is_file():
+            return target if target_language in ("rust", None, "") else None
+        if target_language in ("python", None, "") and any(target.rglob("pyproject.toml")):
             return target
-        if target_language == "python" and any(target.rglob("pyproject.toml")):
+        if target_language in ("javascript", None, "") and any(target.rglob("package.json")):
             return target
-        if target_language == "javascript" and any(target.rglob("package.json")):
+        if target_language in ("go", None, "") and any(target.rglob("go.mod")):
+            return target
+        if target_language in ("java", None, "") and (any(target.rglob("pom.xml")) or any(target.rglob("build.gradle"))):
             return target
     # None, not workspace: without this the toolchain command runs from the
     # workspace and walks up into the ARCMiS repo itself, scoring the
@@ -48,7 +62,7 @@ def find_project_root(workspace: Path, target_language: str) -> Path | None:
 
 def rescore(exp_dir: Path) -> dict:
     manifest = json.loads((exp_dir / "manifest.json").read_text())
-    target_language = manifest.get("target_language", "rust")
+    target_language = manifest.get("target_language")
     workspace = exp_dir / "workspace"
     # A run without a translated tree must fail here, not fall through to
     # running the test command in the caller's own repo root (which once
@@ -99,23 +113,42 @@ def rescore(exp_dir: Path) -> dict:
         record["detail"] = "no translated project under workspace/target"
         return record
 
-    if target_language == "rust":
-        rc, out = run(["cargo", "build"], cwd=project_root, timeout=900)
+    if target_language is None:
+        # Infer from the manifests the find actually matched, so a manifest
+        # without target_language still scores the right toolchain.
+        for marker, language in (("Cargo.toml", "rust"), ("go.mod", "go"), ("pom.xml", "java"),
+                                 ("pyproject.toml", "python"), ("package.json", "javascript")):
+            if (project_root / marker).is_file():
+                target_language = language
+                break
+            if any(project_root.parent.rglob(marker)) or any(project_root.rglob(marker)):
+                target_language = language
+                break
+
+    # Language -> (pre-build command, fallback test command). None test
+    # fallback means test_command is required.
+    toolchains = {
+        "rust": (["cargo", "build"], ["cargo", "test"]),
+        "go": (["go", "build", "./..."], ["go", "test", "./..."]),
+        "java": (["mvn", "-q", "-DskipTests", "compile"], None),
+        "python": (None, None),
+        "javascript": (None, None),
+    }
+    pre_build, fallback_test = toolchains.get(target_language, (None, None))
+    if pre_build:
+        rc, out = run(pre_build, cwd=project_root, timeout=900)
         if rc != 0:
             record["stage"] = "translate"
             record["detail"] = out[-400:]
             return record
-        if test_command:
-            rc, out = run(["sh", "-c", test_command], cwd=project_root, timeout=900)
-        else:
-            rc, out = run(["cargo", "test"], cwd=project_root, timeout=900)
+    if test_command:
+        rc, out = run(["sh", "-c", test_command], cwd=project_root, timeout=900)
+    elif fallback_test:
+        rc, out = run(fallback_test, cwd=project_root, timeout=900)
     else:
-        if test_command:
-            rc, out = run(["sh", "-c", test_command], cwd=project_root, timeout=900)
-        else:
-            record["stage"] = "validate"
-            record["detail"] = "no test_command configured"
-            return record
+        record["stage"] = "validate"
+        record["detail"] = "no test_command configured"
+        return record
 
     p, f = parse_test_counts(out)
     record["tests_passed"] = p
@@ -124,6 +157,8 @@ def rescore(exp_dir: Path) -> dict:
     if rc != 0:
         record["stage"] = "validate"
     record["detail"] = out[-400:]
+    if rc == 0 and p == 0 and f == 0:
+        record["detail"] = "package-level success; no per-test counts in output. " + record["detail"]
     return record
 
 

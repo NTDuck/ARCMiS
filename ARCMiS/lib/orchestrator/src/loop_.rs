@@ -588,19 +588,21 @@ pub(crate) fn judge_output(role: Role, output: &str) -> Result<(), String> {
             Some((word, detail)) => Err(format!("repair {word}: {detail}")),
             None => Err("repairer produced no REPAIR line".into()),
         },
-        Role::FailureAnalyst =>
+        Role::FailureAnalyst => {
             if judges::parse_diagnosis(output).is_some() {
                 Ok(())
             } else {
                 Err("failure analyst produced no DIAGNOSIS line".into())
-            },
+            }
+        },
         // Declarative roles pass when they produced nonempty output.
-        _ =>
+        _ => {
             if output.trim().is_empty() {
                 Err("empty specialist output".into())
             } else {
                 Ok(())
-            },
+            }
+        },
     }
 }
 
@@ -821,7 +823,7 @@ mod tests {
             DecisionVerb::Done,
         ];
         let (c, e) = split_leading_closes(&ds);
-        println!("MICRO closes={c:?} eff matches done={}", matches!(e, DecisionVerb::Done));
+        tracing::debug!(?c, eff_matches_done = matches!(e, DecisionVerb::Done), "MICRO split result");
         assert!(matches!(e, DecisionVerb::Done));
     }
 

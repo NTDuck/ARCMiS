@@ -26,7 +26,11 @@
 		{ id: 'cell-inflight', label: 'Go to in-flight slots', hint: 'cell', kind: 'cell', target: 'In-flight rounds' },
 		{ id: 'cell-closes', label: 'Go to recent closes', hint: 'cell', kind: 'cell', target: 'Recent closes' },
 		{ id: 'cell-engine', label: 'Go to engine', hint: 'cell', kind: 'cell', target: 'Engine' },
-		{ id: 'cell-actions', label: 'Go to actions', hint: 'cell', kind: 'cell', target: 'Actions' }
+		{ id: 'cell-actions', label: 'Go to actions', hint: 'cell', kind: 'cell', target: 'Actions' },
+		{ id: 'cell-live', label: 'Go to live rounds', hint: 'cell', kind: 'cell', target: 'Live rounds' },
+		{ id: 'cell-campaign', label: 'Go to campaign state', hint: 'cell', kind: 'cell', target: 'Campaign state' },
+		{ id: 'cell-fleet', label: 'Go to fleet health', hint: 'cell', kind: 'cell', target: 'Fleet health' },
+		{ id: 'cell-history', label: 'Go to wall-time history', hint: 'cell', kind: 'cell', target: 'Wall-time history' }
 	];
 
 	let query = $state('');

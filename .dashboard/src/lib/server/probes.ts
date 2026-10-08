@@ -15,6 +15,17 @@ import type {
 const REPO = '/home/ayin/projs/ARCMiS';
 const EXP = `${REPO}/.artifacts/experiments`;
 const CLEARED_VERDICTS = new Set(['SOLVED', 'CLEARED', 'VERIFIED-WORKSPACE']);
+// Ledger verdict SOLVED but campaign class is not a clear (cleared-set
+// semantics: rounds that completed through Done with the final validation
+// gate passed). Source of record: .artifacts/experiments/SUMMARY.md
+// 2026-10-06 entries — chtrie (round cap before Done) and commons-csv s27
+// (rescore banked before dir reuse by a retry attempt).
+const LEDGER_SOLVED_NOT_CLEAR = new Set([
+	'20261006T055729Zv3s33-chtrie-sweep',
+	'20261002T064559Zv3s27-commons-csv-sweep',
+	'20261006T153706Zv3s34-rect_pack_h-sweep',
+	'20261006T153306Zv3s34-strsim-sweep'
+]);
 
 export async function scoreboard(): Promise<ScoreboardState> {
 	const state: ScoreboardState = {
@@ -51,7 +62,9 @@ export async function scoreboard(): Promise<ScoreboardState> {
 				latest.set(r.candidate_id, r.verdict);
 			}
 		}
-		const sweepLatest = [...latest.entries()].filter(([id]) => /v3s\d+/.test(id));
+		const sweepLatest = [...latest.entries()].filter(
+			([id]) => /v3s\d+/.test(id) && !LEDGER_SOLVED_NOT_CLEAR.has(id)
+		);
 		state.cleared = sweepLatest.filter(([, v]) => CLEARED_VERDICTS.has(v)).length;
 		// Rate: cleared rounds / distinct days on which any sweep round was launched.
 		const daySet = new Set<string>();

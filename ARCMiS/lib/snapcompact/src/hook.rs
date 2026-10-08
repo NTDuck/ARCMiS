@@ -8,6 +8,7 @@ use rig::agent::CompletionCallAction;
 use rig::agent::HookContext;
 use rig::completion::Document;
 use rig::completion::Message;
+use std::sync::Arc;
 
 use crate::compact::compact;
 use crate::compact::CompactOptions;
@@ -24,7 +25,7 @@ pub struct SnapcompactHook {
     /// Compaction knobs.
     pub options: CompactOptions,
     /// Shared font, parsed once at startup.
-    pub font: std::sync::Arc<BdfFont>,
+    pub font: Arc<BdfFont>,
     /// User query appended after the archived frames when the turn's prompt
     /// is a tool-result-only message. The hook's history patch replaces any
     /// history patch an earlier hook installed — including a trailing-user

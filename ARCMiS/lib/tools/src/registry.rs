@@ -109,32 +109,35 @@ where
     Arc::new(EnvelopeOf::<T>(PhantomData))
 }
 
+/// Register one tool envelope into the registry.
+#[macro_export]
+macro_rules! put {
+    ($registry:expr, $t:ty) => {
+        $registry.register(envelope_of::<$t>());
+    };
+}
+
 /// Build the default registry with every filesystem, search, runtime, and
 /// coordination tool in this crate.
 #[must_use]
 pub fn default_registry() -> ToolRegistry {
     let mut registry = ToolRegistry::new();
-    macro_rules! put {
-        ($t:ty) => {
-            registry.register(envelope_of::<$t>());
-        };
-    }
-    put!(crate::read::Read);
-    put!(crate::write::Write);
-    put!(crate::edit::Edit);
-    put!(crate::search::Search);
-    put!(crate::find::Find);
-    put!(crate::ast_grep::AstGrep);
-    put!(crate::ast_edit::AstEdit);
-    put!(crate::bash::Bash);
-    put!(crate::eval::Eval);
-    put!(crate::ssh::Ssh);
-    put!(crate::lsp::Lsp);
-    put!(crate::debug::Debug);
-    put!(crate::task::Task);
-    put!(crate::irc::Irc);
-    put!(crate::todo::Todo);
-    put!(crate::job::Job);
-    put!(crate::ask::Ask);
+    crate::put!(registry, crate::read::Read);
+    crate::put!(registry, crate::write::Write);
+    crate::put!(registry, crate::edit::Edit);
+    crate::put!(registry, crate::search::Search);
+    crate::put!(registry, crate::find::Find);
+    crate::put!(registry, crate::ast_grep::AstGrep);
+    crate::put!(registry, crate::ast_edit::AstEdit);
+    crate::put!(registry, crate::bash::Bash);
+    crate::put!(registry, crate::eval::Eval);
+    crate::put!(registry, crate::ssh::Ssh);
+    crate::put!(registry, crate::lsp::Lsp);
+    crate::put!(registry, crate::debug::Debug);
+    crate::put!(registry, crate::task::Task);
+    crate::put!(registry, crate::irc::Irc);
+    crate::put!(registry, crate::todo::Todo);
+    crate::put!(registry, crate::job::Job);
+    crate::put!(registry, crate::ask::Ask);
     registry
 }
