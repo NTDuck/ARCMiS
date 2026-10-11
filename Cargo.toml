@@ -17,6 +17,7 @@ bdf-parser = "0.1.0"
 cucumber = "0.21.1"
 image = { version = "0.25", default-features = false, features = ["png"] }
 laya-rs = { version = "0.1", default-features = false }
+omp-rpc = { git = "https://github.com/xoannova/oh-my-pi-omp", rev = "40e9368ef0458fd9073329cdff4174895f91bc6b" }
 oxi-hashline = "0.64.0"
 petgraph = "0.8.3"
 serde = { version = "1.0.229", features = ["derive"] }
