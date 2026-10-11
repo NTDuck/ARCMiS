@@ -36,6 +36,7 @@ Numbered, immutable Architecture Decision Records. Format and policy: [`.omp/rul
 | [0030](0030-omprpc-transport-replaces-rig.md) | omp-RPC transport replaces Rig | accepted |
 | [0031](0031-mas-core-conductor-over-omp-transport.md) | mas-core conductor: static hierarchy, dynamic routing, blackboard | accepted |
 | [0032](0032-mandatory-config-file-cli.md) | Mandatory config-file CLI | accepted |
+| [0033](0033-omprpc-stdio-client-over-crates-io-omp-rpc.md) | omprpc stdio client over the crates.io omp-rpc crate | accepted |
 
 ## References
 
