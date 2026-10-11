@@ -38,6 +38,7 @@ Numbered, immutable Architecture Decision Records. Format and policy: [`.omp/rul
 | [0032](0032-mandatory-config-file-cli.md) | Mandatory config-file CLI | accepted |
 | [0033](0033-omprpc-stdio-client-over-crates-io-omp-rpc.md) | omprpc stdio client over the crates.io omp-rpc crate | accepted |
 | [0034](0034-mas-core-transport-seam.md) | mas-core transport seam over the omp session | accepted |
+| [0035](0035-oh-my-pi-omp-rust-sdk-transport.md) | oh-my-pi-omp Rust SDK as the agent transport | accepted |
 
 ## References
 
