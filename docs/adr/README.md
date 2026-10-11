@@ -1,0 +1,43 @@
+# Decision Records
+
+Numbered, immutable Architecture Decision Records. Format and policy: [`.omp/rules/decisions.md`](../../.omp/rules/decisions.md).
+
+- One file per decision: `NNNN-kebab-case-title.md`.
+- Once accepted, never edited — superseded by a new record that links back.
+- Every decision not directly inferrable from code lands here, with a WHY comment at the affected site.
+
+| # | Title | Status |
+| - | ----- | ------ |
+| [0001](0001-litmus-derived-rust-scaffold.md) | Litmus-derived Rust scaffold | accepted |
+| [0002](0002-stable-rustfmt-drop-required-version.md) | Stable rustfmt: drop required_version | accepted |
+| [0003](0003-rig-distilled-into-arex-skill-graph.md) | Distill rig into AREX-style skill graph | accepted |
+| [0004](0004-mise-tasks-instead-of-cargo-aliases.md) | Mise tasks instead of cargo aliases | accepted |
+| [0005](0005-simplified-technical-english-for-rules.md) | Simplified Technical English for rules and agent text | accepted |
+| [0006](0006-workspace-layout-and-cucumber-tests.md) | Workspace layout and cucumber tests | accepted |
+| [0007](0007-ollama-migration-agent.md) | Ollama-driven migration agent over GildedRose | accepted |
+| [0008](0008-clarity-logging-no-tuning-nested-layout.md) | Code clarity, minimal code, logging, no tuning, nested layout | accepted |
+| [0009](0009-crate-naming-manifest-structure-module-layout.md) | Crate naming, manifest structure, and module layout | accepted |
+| [0010](0010-user-facing-code-order-and-macro-qualification.md) | User-facing code order, macro qualification, and module flattening | macro qualification superseded by [0016](0016-readability-style-anyhow-result-yml.md) |
+| [0011](0011-util-directory-layout.md) | Util directory layout | accepted |
+| [0012](0012-seventeen-tool-surface.md) | Seventeen-tool surface after oh-my-pi | accepted |
+| [0013](0013-react-default-agent.md) | ReAct default agent | superseded by [0015](0015-two-structured-artifact-agents.md) |
+| [0015](0015-two-structured-artifact-agents.md) | Two structured-artifact agents: monolith and validator | accepted |
+| [0016](0016-readability-style-anyhow-result-yml.md) | Readability-first style: plain paths, anyhow, struct init | accepted |
+| [0017](0017-rig-idiom-corpus-style.md) | Rig idiom: bare names from a one-import corpus style | accepted |
+| [0018](0018-multi-method-agents.md) | Multi-method agents: monolith, ledger, recode | accepted |
+| [0019](0019-folder-per-method.md) | One folder per method | accepted |
+| [0020](0020-meta-harness-experiment-contract.md) | Meta-Harness experiment contract | accepted |
+| [0021](0021-survey-sweep-methods-models.md) | Survey sweep across methods and models | accepted |
+| [0022](0022-hierarchical-dynamic-adaptive-orchestration.md) | Hierarchical dynamic-adaptive orchestration | accepted |
+| [0023](0023-laya-backed-jev-judge.md) | Laya-backed Jev judge on the guard Ask slot | accepted |
+| [0027](0027-laya-typed-triage-on-lead-dispatch.md) | Laya typed-decision triage on lead member dispatch | accepted |
+| [0028](0028-per-round-laya-triage-and-enforce-policy.md) | Per-round laya triage with an observe/enforce policy | accepted |
+| [0029](0029-round-parallel-dispatch.md) | Round-parallel dispatch | accepted |
+| [0030](0030-omprpc-transport-replaces-rig.md) | omp-RPC transport replaces Rig | accepted |
+| [0031](0031-mas-core-conductor-over-omp-transport.md) | mas-core conductor: static hierarchy, dynamic routing, blackboard | accepted |
+| [0032](0032-mandatory-config-file-cli.md) | Mandatory config-file CLI | accepted |
+
+## References
+
+- [OpenAI: Harness engineering](https://openai.com/index/harness-engineering/) — repository as system of record. A short AGENTS.md as map, `docs/` as encyclopedia.
+- [Martin Fowler: ArchitectureDecisionRecord](https://martinfowler.com/bliki/ArchitectureDecisionRecord.html) — ADR form: short, numbered, immutable, supersede-don't-edit.

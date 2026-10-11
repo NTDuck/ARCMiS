@@ -1,0 +1,16 @@
+{
+  "name": "arcmis-slides",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "slidev build slides.md --out dist --base /slides/",
+    "export": "slidev export slides.md --output slides.pdf --executable-path /run/current-system/sw/bin/chromium"
+  },
+  "dependencies": {
+    "@slidev/cli": "^53.0.0",
+    "@slidev/theme-default": "^0.25.0"
+  },
+  "devDependencies": {
+    "playwright-chromium": "^1.58.0"
+  }
+}
