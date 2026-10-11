@@ -1,0 +1,71 @@
+# Example run configuration for a MAS modernization run.
+#
+# The path to this file is a mandatory CLI argument:
+#
+#     mise run cli -- configs/example.yml
+#
+# There is no default config. Every codebase-specific value lives here, never
+# in the binary (ADR 0030).
+
+run:
+  name: c-json-to-rust
+
+paths:
+  input_dir: assets/cjson/C
+  output_dir: .artifacts/c-json-to-rust/Rust
+
+languages:
+  pair:
+    source: c
+    target: rust
+  test_command: cargo test
+
+model:
+  # Optional omp model identifier. Absent keeps the launching side's default
+  # SLM posture (ashaiballant/qwen3.8-27b-df2 candidate).
+  id: ashaiballant/qwen3.8-27b-df2
+  # Extra arguments appended verbatim to the `omp` launch command.
+  extra_args: []
+
+hierarchy:
+  # Static three-tier layout (ADR 0026). Disabled reproduces single-tier
+  # behavior exactly. Each member must sit under exactly one lead.
+  enabled: true
+  teams:
+    - lead: discovery-lead
+      members: [analyst, architect]
+      turns: 40
+      stagnation_rounds: 3
+    - lead: migration-lead
+      members: [translator, validator, tester, repairer]
+      turns: 40
+      stagnation_rounds: 3
+    - lead: integration-lead
+      members: [planner, failure-analyst, critic]
+      turns: 40
+      stagnation_rounds: 3
+
+blackboard:
+  max_topic_revisions: 16
+  inbox_depth: 32
+
+guard:
+  allowlist: [read, write, edit, bash]
+  denylist: [bash:rm -rf, bash:git push]
+
+compaction:
+  threshold_tokens: 12000
+  keep_recent_tokens: 4000
+
+laya:
+  # Local checkpoint only (ADR 0023). No hub download happens in a run.
+  enabled: true
+  checkpoint_dir: assets/models/laya-typed-decisions
+  confidence_threshold: 0.9
+
+limits:
+  turns: 60
+  fanout: 2
+  collective_turns: 40
+  max_repairs: 2
+  stagnation_rounds: 3

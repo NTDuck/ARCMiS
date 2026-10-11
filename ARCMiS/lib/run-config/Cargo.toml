@@ -1,0 +1,25 @@
+[package]
+name = "ARCMiS-run-config"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Run configuration schema and preflight validation for MAS modernization runs."
+
+[lib]
+name = "run_config"
+
+[dependencies]
+anyhow.workspace = true
+serde.workspace = true
+serde_yaml.workspace = true
+
+[dev-dependencies]
+tempfile = "3"
+
+[lints.rust]
+non_snake_case = "allow"
+
+[lints.clippy]
+let_and_return = "allow"
+too_many_arguments = "allow"
