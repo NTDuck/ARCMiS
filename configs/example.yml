@@ -5,7 +5,7 @@
 #     mise run cli -- configs/example.yml
 #
 # There is no default config. Every codebase-specific value lives here, never
-# in the binary (ADR 0030).
+# in the binary (ADR 0032).
 
 run:
   name: c-json-to-rust
