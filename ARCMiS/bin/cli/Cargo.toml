@@ -1,0 +1,25 @@
+[package]
+name = "ARCMiS-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Command-line entrypoint for ARCMiS runs."
+
+[[bin]]
+name = "cli"
+path = "src/main.rs"
+
+[dependencies]
+run-config = { package = "ARCMiS-run-config", path = "../../lib/run-config" }
+
+anyhow.workspace = true
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tracing.workspace = true
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+
+[dev-dependencies]
+tempfile = "3"
+
+[lints]
+workspace = true
