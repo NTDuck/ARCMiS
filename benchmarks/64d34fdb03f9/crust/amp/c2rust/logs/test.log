@@ -1,0 +1,4 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.01s
+     Running unittests src/lib.rs (target/debug/deps/amp-61cfbcfd71b12ff9)
+     Running tests/roundtrip.rs (target/debug/deps/roundtrip-da4e45bc8c6550ce)
+   Doc-tests amp

@@ -1,0 +1,15 @@
+# One benchmark cell: crust/ulidgen c->rust
+family: crust
+project: ulidgen
+source_language: c
+target_language: rust
+commit: 97335e9ee6ad
+config: benchmarks/97335e9ee6ad/crust/ulidgen/c2rust/config.yml
+output_dir: .artifacts/bench/crust/ulidgen/c2rust
+duration_seconds: 2700
+harness_exit: 124
+score_status: timeout
+compilation_status: error
+tests_pass: 0
+tests_fail: 0
+test_pass_rate: null

@@ -1,0 +1,88 @@
+# LoRA (bf16) fine-tune of Ternary-Bonsai-2-27B on ReCodeAgent traces.
+# Invoke via: axolotl train qlora/configs/ternary-bonsai2-qlora.yml
+#
+# MODEL: fraserprice/Ternary-Bonsai-2-27B-vllm (safetensors repack of
+# Prism ML's ternary Bonsai 2 27B; base model Qwen/Qwen3.8-27B).
+#
+# WHY NOT QLoRA: the weights are already ternary {−1, 0, +1} in a Hadamard-
+# rotated g128 basis (~1.72 bits/weight). Loading them into 4-bit NF4 is
+# unsound on two counts: (a) weights land near ±1 / 0, so NF4 quantization
+# is nearly lossless but buys almost nothing (the model is already ~9x
+# smaller than FP16 — the entire point of the format), and (b) more
+# importantly, the packed ternary format needs its own dequantization path
+# (prism_ternary kernels); there is no NF4 path for it. The HF-format
+# safetensors in this repo carry the 2-bit codes + FP16 group scales; the
+# correct training setup is plain LoRA on the model as served.
+#
+# CAVEAT: standard HF transformers/axolotl has no prism_ternary support
+# either — training this model requires the fraserprice/bonsai-vllm
+# `prism_ternary` kernels or an unpacked-to-bf16 build. If axolotl cannot
+# load this repo directly, fall back to prism-ml/Ternary-Bonsai-2-27B-vllm
+# with `prism_ternary` support added to axolotl, or wait for an official
+# unpacked bf16 release of Bonsai 2 27B. Kept as plain LoRA (bf16, no
+# load_in_4bit) so the config is sound the moment the loader exists.
+base_model: fraserprice/Ternary-Bonsai-2-27B-vllm
+
+# Model + adapter ------------------------------------------------------------
+# NOT load_in_4bit: ternary weights are already ~1.72 bits/weight; NF4 adds
+# a quantization layer on top of a format that does not support it.
+load_in_4bit: false
+adapter: lora
+lora_r: 32
+lora_alpha: 64
+lora_dropout: 0.05
+lora_target_linear: true
+lora_fan_in_fan_out: false
+
+# Sequence -------------------------------------------------------------------
+sequence_len: 4096
+sample_packing: true
+pad_to_sequence_len: true
+
+# Data -----------------------------------------------------------------------
+datasets:
+  - path: qlora/datasets/recodeagent/train.jsonl
+    type: chat_template
+    chat_template: chatml
+    field_messages: messages
+    message_property_mappings:
+      role: role
+      content: content
+val_set_size: 0.02
+dataset_prepared_path: qlora/runs/prepared-bonsai2
+
+# Chat template --------------------------------------------------------------
+chat_template: chatml
+
+# Training schedule ----------------------------------------------------------
+num_epochs: 2
+micro_batch_size: 1
+gradient_accumulation_steps: 16
+warmup_steps: 40
+learning_rate: 0.0002
+lr_scheduler: cosine
+optimizer: paged_adamw_8bit
+weight_decay: 0.0
+max_grad_norm: 1.0
+bf16: true
+tf32: true
+gradient_checkpointing: true
+
+# Eval + output --------------------------------------------------------------
+output_dir: qlora/runs/ternary-bonsai2-sft
+logging_steps: 5
+save_steps: 200
+save_total_limit: 3
+eval_steps: 100
+eval_table_size: 0
+eval_causal_lm_metrics: []
+early_stopping_patience: 3
+hub_model_id: ""
+test_datasets:
+  - path: qlora/datasets/recodeagent/val.jsonl
+    type: chat_template
+    chat_template: chatml
+    field_messages: messages
+    message_property_mappings:
+      role: role
+      content: content

@@ -1,0 +1,31 @@
+run:
+  model: smtek/Swift-Qwen3.8-27B:map-k4v
+  max_turns: 14
+  num_ctx: 32768
+  max_output_tokens: 8192
+  max_retries: 1
+  think: true
+  temperature: 0.2
+output:
+  dir: .artifacts/experiments/alphatrans-commons-fileupload/workspace
+source:
+  language: java
+  root: assets/ReCodeAgent/data/tool_projects/alphatrans/commons-fileupload/java
+  target:
+    language: python
+    test_command: uv run --with pytest python3 -m pytest -q -p no:cacheprovider --tb=no
+mas:
+  fanout: 3
+  max_rounds: 20
+  role_output_tokens:
+    analyst: 16384
+    architect: 16384
+    planner: 16384
+    translator: 16384
+    validator: 16384
+    critic: 16384
+    repairer: 16384
+    tester: 16384
+  role_think:
+    analyst: false
+    translator: false

@@ -1,0 +1,54 @@
+commit: 64d34fdb03f9
+cells_completed: 4
+families:
+- family: crust
+  cells: 4
+  compiled: 4
+  tests_green: 4
+  avg_test_pass_rate: 100.0
+  median_duration_seconds: 5400
+cells:
+- family: crust
+  project: 2dpartint
+  source_language: c
+  target_language: rust
+  score_status: tests_green
+  compilation_status: ok
+  tests_pass: 25
+  tests_fail: 0
+  test_pass_rate: 100
+  duration_seconds: 5400
+  cell_dir: /home/ayin/projs/ARCMiS/benchmarks/64d34fdb03f9/crust/2dpartint/c2rust
+- family: crust
+  project: 42-kocaeli-printf
+  source_language: c
+  target_language: rust
+  score_status: tests_green
+  compilation_status: ok
+  tests_pass: 24
+  tests_fail: 0
+  test_pass_rate: 100
+  duration_seconds: 1598
+  cell_dir: /home/ayin/projs/ARCMiS/benchmarks/64d34fdb03f9/crust/42-kocaeli-printf/c2rust
+- family: crust
+  project: aes128-simd
+  source_language: c
+  target_language: rust
+  score_status: tests_green
+  compilation_status: ok
+  tests_pass: 66
+  tests_fail: 0
+  test_pass_rate: 100
+  duration_seconds: 3675
+  cell_dir: /home/ayin/projs/ARCMiS/benchmarks/64d34fdb03f9/crust/aes128-simd/c2rust
+- family: crust
+  project: amp
+  source_language: c
+  target_language: rust
+  score_status: tests_green
+  compilation_status: ok
+  tests_pass: 5
+  tests_fail: 0
+  test_pass_rate: 100
+  duration_seconds: 5400
+  cell_dir: /home/ayin/projs/ARCMiS/benchmarks/64d34fdb03f9/crust/amp/c2rust

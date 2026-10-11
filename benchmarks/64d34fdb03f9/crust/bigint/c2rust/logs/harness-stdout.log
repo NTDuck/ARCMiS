@@ -1,0 +1,11 @@
+[preflight] snapshot 10 files from assets/ReCodeAgent/data/tool_projects/crust/bigint/c
+[delegate] analyst <- Analyze the source codebase to create a source map and a brief that cites every module
+[phase] Contract
+[delegate] architect <- Produce the migration contract at analysis/brief.md from analysis/source-map.md: define the target-language API surface for all 28 public functions, the memory-management and ownership model replacing C manual allocation/out-params, struct-by-value semantics, error-handling strategy, build/test configuration mapping (CMake/CTest/gcov equivalents), and the module-to-target-file layout.
+[delegate] validator <- Validate analysis/brief.md against analysis/source-map.md: confirm all 28 public API functions are covered with a target-language signature, verify the ownership/RAII model is consistent (no dangling out-params or manual free), check that the 9 frozen contracts are testable and non-contradictory, and confirm the build/test mapping (CMake/CTest/gcov → Cargo/cargo test/cargo-llvm-cov) is complete. Report any gaps or inconsistencies as a list.
+[phase] Planning
+[gate] decision refused; see the failure ledger
+[delegate] planner <- Create the migration batch plan for the Rust target: partition all target modules (the 28 public API functions grouped by dependency, per analysis/brief.md's target layout) into an ordered set of batches such that every target module appears in exactly one batch and each batch's dependencies are satisfied by earlier batches (batch order compiles). Record the batch list, per-batch scope, and dependency rationale in meta/plan.md and add a corresponding task entry.
+[delegate] validator <- Audit the Planning-phase batch plan (meta/plan.md and analysis/plan.json) against analysis/brief.md's Target layout and analysis/source-map.md: confirm (1) all 7 in-scope target modules (target/src/lib.rs, target/Cargo.toml, target/Makefile, target/README.md, target/LICENSE, target/assets/, target/coverage_report.json) appear in exactly one batch each, (2) the 3 test files are correctly excluded (tester-owned), (3) batch-1 → batch-2 → batch-3 dependency order compiles (each batch's deps satisfied by earlier batches), and (4) no module code was written by the planner. Report any inconsistency as a list; if none, state PASS.
+[phase] Pilot
+[gate] decision refused; see the failure ledger

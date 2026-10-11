@@ -1,0 +1,5 @@
+jev_triage:
+  enabled: true
+  checkpoint: assets/models/laya-typed-decisions
+  confidence_threshold: 0.9
+  policy: enforce

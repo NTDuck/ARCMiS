@@ -1,0 +1,21 @@
+run:
+  model: smtek/Swift-Qwen3.8-27B:map-k4v
+  max_turns: 14
+  num_ctx: 32768
+  max_output_tokens: 8192
+  max_retries: 1
+  think: true
+  temperature: 0.2
+output:
+  dir: .artifacts/experiments/crust-leftpad/workspace
+source:
+  language: c
+  root: assets/ReCodeAgent/data/tool_projects/crust/leftpad/c
+  target:
+    language: rust
+    test_command: sh -c '(cd target 2>/dev/null && cargo test) || cargo test'
+mas:
+  fanout: 3
+  max_rounds: 20
+  role_output_tokens:
+    translator: 16384

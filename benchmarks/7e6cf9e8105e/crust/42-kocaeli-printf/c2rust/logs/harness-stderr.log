@@ -1,0 +1,4 @@
+    Finished `release` profile [optimized] target(s) in 0.60s
+warning: the following packages contain code that will be rejected by a future version of Rust: nom v6.1.2
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running `target/release/harness --config benchmarks/7e6cf9e8105e/crust/42-kocaeli-printf/c2rust/config.yml`

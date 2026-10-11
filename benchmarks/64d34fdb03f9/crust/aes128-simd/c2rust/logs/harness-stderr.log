@@ -1,0 +1,10 @@
+   Compiling ARCMiS-tools v0.1.0 (/home/ayin/projs/ARCMiS/ARCMiS/lib/tools)
+   Compiling ARCMiS-blackboard v0.1.0 (/home/ayin/projs/ARCMiS/ARCMiS/lib/blackboard)
+   Compiling ARCMiS-snapcompact v0.1.0 (/home/ayin/projs/ARCMiS/ARCMiS/lib/snapcompact)
+   Compiling ARCMiS-agents v0.1.0 (/home/ayin/projs/ARCMiS/ARCMiS/lib/agents)
+   Compiling ARCMiS-orchestrator v0.1.0 (/home/ayin/projs/ARCMiS/ARCMiS/lib/orchestrator)
+   Compiling harness v0.1.0 (/home/ayin/projs/ARCMiS/ARCMiS/bin/harness)
+    Finished `release` profile [optimized] target(s) in 14.69s
+warning: the following packages contain code that will be rejected by a future version of Rust: nom v6.1.2
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running `target/release/harness --config benchmarks/7e6cf9e8105e/crust/aes128-simd/c2rust/config.yml`

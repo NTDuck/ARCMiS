@@ -1,0 +1,19 @@
+# Command aliases for this repository. Run with: mise run <name>
+# These replace the cargo aliases that lived in .cargo/config.toml. See docs/adr/0004.
+
+# Declared toolchains for the benchmark sweep (bench/). The sweep
+# scores with the SYSTEM toolchains, not mise-managed ones; this table is the
+# declaration of record (all-or-none rule). Verify before a sweep:
+#   cargo --version && go version && node --version && java -version
+#   .venv-bench/bin/python -m pytest --version
+# System minimums: rust >= 1.90, go >= 1.24, node >= 22, java 21, python 3.13.
+# The run config file is a mandatory CLI argument. Example:
+#   mise run cli -- configs/example.yml
+[tasks.cli]
+run = "cargo run --bin cli --"
+
+[tasks.lint-rustfmt]
+run = "cargo fmt --all"
+
+[tasks.lint-clippy]
+run = "cargo clippy --fix --workspace --all-targets --allow-dirty"

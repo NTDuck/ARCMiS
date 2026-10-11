@@ -1,0 +1,5 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.01s
+     Running unittests src/lib.rs (target/debug/deps/ft_printf-bcc4de8b62328e26)
+     Running tests/batch1.rs (target/debug/deps/batch1-445f86f0dcc290da)
+     Running tests/batch2.rs (target/debug/deps/batch2-f0a3cada3c340bc1)
+   Doc-tests ft_printf

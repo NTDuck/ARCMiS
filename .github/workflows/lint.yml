@@ -1,0 +1,60 @@
+name: Lint
+
+on:
+  workflow_call:
+
+jobs:
+  cargo-fmt:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+        channel:
+          - nightly
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.channel }}
+          components: rustfmt
+
+      - run: cargo fmt --all -- --check
+
+  repo-lint-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Rule linter (qualified paths, derives, naming, print ban)
+        run: python3 .omp/scripts/lint-rules.py
+  
+  cargo-clippy:
+    needs:
+      - cargo-fmt
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+        channel:
+          - nightly
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.channel }}
+          components: clippy
+
+      - run: cargo clippy --workspace --all-targets  # Removed `--all-features` due to mutually exlucisve feature flags

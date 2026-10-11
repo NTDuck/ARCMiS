@@ -1,0 +1,36 @@
+family: crust
+project: aes128-simd
+source_language: c
+target_language: rust
+commit: 7e6cf9e8105e
+config: benchmarks/7e6cf9e8105e/crust/aes128-simd/c2rust/config.yml
+output_dir: .artifacts/bench/crust/aes128-simd/c2rust
+duration_seconds: 3675
+harness_exit: 0
+score_status: tests_green
+compilation_status: ok
+tests_pass: 66
+tests_fail: 0
+test_pass_rate: 100
+aggregate: 'harness_id: mas-20260925040608
+
+  final_phase: Done
+
+  completed: true
+
+  rounds: 37
+
+  delegations: 17
+
+  tasks_done: 17
+
+  tasks_total: 17
+
+  stop_reason: ''All phases complete: 9/9 batches translated and validated, integration
+  test passes, Hardening verdict pass, and FinalValidation toolchain (cargo build
+  + cargo test) exits zero on the target workspace. No outstanding tasks or failures
+  remain.''
+
+  duration_seconds: 3660
+
+  '

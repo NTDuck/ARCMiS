@@ -1,0 +1,27 @@
+# Benchmark datasets prepared, runs deferred until the inference engine is
+# available. This file is the manifest for bench/run-benchmarks.sh: one cell
+# per (tool, project, source_lang -> target_lang). Dataset roots point into
+# the assets/ReCodeAgent submodule checkout; the source-language dir is the
+# run's source root and the sibling target-language dir is ReCodeAgent's
+# reference, not the run's input (see bench/run-benchmarks.sh emit_cells).
+#
+# Raw run output lives under .artifacts/bench/ (gitignored); scored records
+# land under benchmarks/<commit>/<tool>/<project>/<src>2<dst>/result.yml.
+
+datasets:
+  crust: # C -> Rust
+    source_language: c
+    target_language: rust
+    root: assets/ReCodeAgent/data/tool_projects/crust
+  oxidizer: # Go -> Rust
+    source_language: go
+    target_language: rust
+    root: assets/ReCodeAgent/data/tool_projects/oxidizer
+  alphatrans: # Java -> Python
+    source_language: java
+    target_language: python
+    root: assets/ReCodeAgent/data/tool_projects/alphatrans
+  skel: # Python -> JavaScript
+    source_language: python
+    target_language: javascript
+    root: assets/ReCodeAgent/data/tool_projects/skel

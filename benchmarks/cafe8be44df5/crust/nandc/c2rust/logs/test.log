@@ -1,0 +1,24 @@
+warning: type `u4` should have an upper camel case name
+  --> src/lib.rs:13:10
+   |
+13 | pub type u4 = u8;
+   |          ^^ help: convert the identifier to upper camel case (notice the capitalization): `U4`
+   |
+   = note: `#[warn(non_camel_case_types)]` (part of `#[warn(nonstandard_style)]`) on by default
+
+warning: `nandc` (lib) generated 1 warning
+warning: `nandc` (lib test) generated 1 warning (1 duplicate)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.01s
+     Running unittests src/lib.rs (target/debug/deps/nandc-4a1c034bbfa0c4eb)
+     Running tests/nand.rs (target/debug/deps/nand-a4c71717c070b20f)
+   Doc-tests nandc
+warning: type `u4` should have an upper camel case name
+  --> src/lib.rs:13:10
+   |
+13 | pub type u4 = u8;
+   |          ^^ help: convert the identifier to upper camel case (notice the capitalization): `U4`
+   |
+   = note: `#[warn(non_camel_case_types)]` (part of `#[warn(nonstandard_style)]`) on by default
+
+warning: 1 warning emitted
+

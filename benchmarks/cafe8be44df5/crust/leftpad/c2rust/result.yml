@@ -1,0 +1,14 @@
+family: crust
+project: leftpad
+source_language: c
+target_language: rust
+commit: cafe8be44df5
+config: benchmarks/cafe8be44df5/crust/leftpad/c2rust/config.yml
+output_dir: .artifacts/bench/crust/leftpad/c2rust
+duration_seconds: 2100
+harness_exit: 124
+score_status: compile_failed
+compilation_status: failed
+tests_pass: 0
+tests_fail: 0
+test_pass_rate: null

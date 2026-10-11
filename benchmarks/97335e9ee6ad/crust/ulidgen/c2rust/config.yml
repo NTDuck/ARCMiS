@@ -1,0 +1,43 @@
+# Benchmark run configuration, generated per sample by
+# scripts/bench/run-benchmark.sh. Generous ceilings: a run must not end from a
+# model failure, a context overflow (snapcompact absorbs it), or a turn/round
+# ceiling. Values are high finite numbers because 0 means "zero" in both the
+# rig turn loop and the driver round range, not "unlimited".
+
+run:
+  provider: ollama
+  model: qwen3.8:27b-mtp-q4_K_M
+  # Per-agent-call model turns (rig trips MaxTurnsError at the ceiling).
+  max_turns: 200
+  num_ctx: 65536
+  max_output_tokens: 16384
+  max_retries: 2
+  think: false
+  temperature: 0.2
+
+output:
+  dir: .artifacts/bench/crust/ulidgen/c2rust
+
+source:
+  language: c
+  root: assets/ReCodeAgent/data/tool_projects/crust/ulidgen/c
+  target:
+    language: rust
+    test_command: cargo test
+
+mas:
+  # Driver round range 0..max_rounds; 0 would mean zero rounds, so use a high
+  # finite ceiling. ~400 rounds at worst-case round cost stays inside the
+  # per-cell wall-clock timeout.
+  max_rounds: 400
+  manager_turns: 40
+  worker_turns: 200
+  # Repair attempts per diagnosed failure before escalation.
+  max_repairs: 6
+  # 0 disables the stagnation breaker (breaker.rs skips when 0).
+  stagnation_rounds: 0
+  plan_cap: 6000
+  notes_cap: 12000
+  model_ladder:
+    - qwen3.8:27b-mtp-q4_K_M
+  max_generated_tests_per_module: 8
