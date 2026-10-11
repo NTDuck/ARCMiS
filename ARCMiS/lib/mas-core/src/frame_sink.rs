@@ -5,8 +5,8 @@
 //! Every other frame is bookkeeping and passes through unobserved.
 
 use crate::context::ContextStore;
+use crate::frames::Event;
 use crate::taskgraph::TaskGraph;
-use omprpc::frame::Event;
 
 /// Apply one decoded frame to the graph and context.
 pub fn absorb(graph: &mut TaskGraph, context: &mut ContextStore, event: Event) {

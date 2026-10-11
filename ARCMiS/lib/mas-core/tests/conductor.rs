@@ -6,6 +6,8 @@ use mas_core::conductor::Conductor;
 use mas_core::conductor::RunLimits;
 use mas_core::conductor::Verdict;
 use mas_core::error::ConductorError;
+use mas_core::frames::Event;
+use mas_core::frames::ResponseFrame;
 use mas_core::gateway::Gateway;
 use mas_core::gateway::ToolCall;
 use mas_core::hierarchy::TeamRegistry;
@@ -15,7 +17,6 @@ use mas_core::taskgraph::GraphBudgets;
 use mas_core::taskgraph::WorkItem;
 use mas_core::transport::Transport;
 use mas_core::transport::TransportError;
-use omprpc::frame::Event;
 
 /// A transport that answers each prompt with one success response frame,
 /// then reports timeout so the drain loop ends.
@@ -50,7 +51,7 @@ impl Transport for ScriptedTransport {
             return Err(TransportError::Timeout);
         }
         self.responses_left -= 1;
-        Ok(Event::Response(omprpc::frame_payloads::ResponseFrame {
+        Ok(Event::Response(ResponseFrame {
             id: Some("req-1".to_owned()),
             command: None,
             success: true,

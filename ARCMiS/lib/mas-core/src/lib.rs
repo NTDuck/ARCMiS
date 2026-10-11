@@ -10,6 +10,7 @@
 //! - `mailbox` — bounded direct-message queues.
 //! - `gateway` — deterministic tool-call gateway.
 //! - `compact` — snapcompact-style context compaction.
+//! - `frames` — wire frame vocabulary over the omp session.
 //! - `transport` — Transport seam over the omp session.
 //! - `conductor` — one run: phases, dispatches, event loop.
 
@@ -23,6 +24,7 @@ pub mod conductor;
 pub mod context;
 pub mod error;
 pub mod frame_sink;
+pub mod frames;
 pub mod gateway;
 pub mod hierarchy;
 pub mod mailbox;
@@ -59,5 +61,6 @@ pub use taskgraph::NodeId;
 pub use taskgraph::TaskGraph;
 pub use taskgraph::TaskStatus;
 pub use taskgraph::WorkItem;
+pub use transport::OmpLaunchConfig;
 pub use transport::OmpTransport;
 pub use transport::Transport;

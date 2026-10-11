@@ -20,9 +20,9 @@ dependencies = [
 name = "ARCMiS-mas-core"
 version = "0.1.0"
 dependencies = [
- "ARCMiS-omprpc",
  "ARCMiS-run-config",
  "laya-rs",
+ "omp-rpc",
  "serde",
  "serde_json",
  "thiserror 2.0.21",
@@ -837,6 +837,16 @@ checksum = "91df4bbde75afed763b708b7eee1e8e7651e02d97f6d5dd763e89367e957b23b"
 dependencies = [
  "hermit-abi",
  "libc",
+]
+
+[[package]]
+name = "omp-rpc"
+version = "0.1.0"
+source = "git+https://github.com/xoannova/oh-my-pi-omp?rev=40e9368ef0458fd9073329cdff4174895f91bc6b#40e9368ef0458fd9073329cdff4174895f91bc6b"
+dependencies = [
+ "libc",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
