@@ -1,0 +1,23 @@
+[package]
+name = "ARCMiS-mas-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Conductor runtime: static hierarchy, dynamic routing, blackboard, tool gateway, compaction over the omp transport."
+
+[lib]
+name = "mas_core"
+
+[dependencies]
+omprpc = { package = "ARCMiS-omprpc", path = "../omprpc" }
+run-config = { package = "ARCMiS-run-config", path = "../run-config" }
+laya-rs.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, features = ["macros", "sync", "rt-multi-thread"] }
+tracing.workspace = true
+
+[lints]
+workspace = true
