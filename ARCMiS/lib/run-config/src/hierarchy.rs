@@ -5,6 +5,7 @@ use serde::Deserialize;
 /// Tier-2 lead teams. A disabled hierarchy reproduces the single-tier
 /// behavior exactly.
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 #[serde(default)]
 #[derive(Default)]
 pub struct HierarchyConfig {
@@ -19,6 +20,7 @@ pub struct HierarchyConfig {
 
 /// One tier-2 team: a lead plus the specialists it may dispatch.
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct TeamConfig {
     /// Lead role name, for example `migration-lead`.
     pub lead: String,

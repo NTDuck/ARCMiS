@@ -11,6 +11,7 @@ use serde::Deserialize;
 /// (see `validation`): a quiet `""` default would hide the run's real
 /// inputs (ADR 0032).
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SectionConfig {
     /// Identifies the run in logs and output artifacts. Must not be empty.
     pub run: RunName,
@@ -44,6 +45,7 @@ pub struct SectionConfig {
 
 /// Run identification.
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct RunName {
     /// Human-readable run identifier, cited in logs and artifacts.
     pub name: String,
@@ -53,6 +55,7 @@ pub struct RunName {
 /// `rust`. Kept as free-form strings: the schema must not hold them tighter
 /// than the verifying tools do (`.omp/rules/no-tuning.md`).
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 #[serde(default)]
 pub struct LanguagesConfig {
     /// One `{ source, target }` language pair per run. ReCodeAgent runs
@@ -77,6 +80,7 @@ impl Default for LanguagesConfig {
 
 /// One `{ source, target }` programming-language pair.
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct LanguagePair {
     /// Programming language of `paths.input_dir`.
     pub source: String,
@@ -88,6 +92,7 @@ pub struct LanguagePair {
 /// arguments assembled by the `omprpc` crate. This section stays plain
 /// strings: argument shaping belongs to the transport, not the schema.
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 #[serde(default)]
 #[derive(Default)]
 pub struct ModelConfig {
@@ -103,6 +108,7 @@ pub struct ModelConfig {
 /// through topics: findings, plans, and artifacts cite the blackboard as
 /// the single rendezvous point (ADR 0031).
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 #[serde(default)]
 pub struct BlackboardConfig {
     /// Topic revisions kept per topic. Older revisions roll off when a
@@ -137,6 +143,7 @@ pub struct GuardConfig {
 /// input crosses `threshold_tokens`, the oldest context archives down to
 /// `keep_recent_tokens`. Zero disables compaction for all agents.
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 #[serde(default)]
 pub struct CompactionConfig {
     /// Compaction trigger point, in projected input tokens.
@@ -157,6 +164,7 @@ impl Default for CompactionConfig {
 /// Laya typed-decision guard settings (ADRs 0023, 0027). Local checkpoint
 /// only: the hub feature stays off, so sandboxed runs never fetch models.
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 #[serde(default)]
 pub struct LayaConfig {
     /// Master switch. Off disables every typed-decision consultation.
@@ -182,6 +190,7 @@ impl Default for LayaConfig {
 
 /// Budget ceilings bounding the run loop.
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 #[serde(default)]
 pub struct LimitsConfig {
     /// Total orchestrator round budget per run.
