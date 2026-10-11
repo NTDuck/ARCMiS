@@ -25,7 +25,8 @@ model:
   # default SLM posture.
   id: ashalliants/qwen3.8-27b
   # Extra arguments appended verbatim to the `omp` launch command.
-  extra_args: []
+  # pi-reasonix writes a non-JSON stdout banner that aborts the SDK's strict JSONL handshake. --no-extensions disables extension discovery.
+  extra_args: ["--no-extensions"]
 
 hierarchy:
   # Static three-tier layout (ADR 0026). Disabled reproduces single-tier
