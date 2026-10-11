@@ -175,20 +175,14 @@ fn validate_yaml(yaml_text: String) -> Vec<ValidationError> {
 fn unknown_top_level_section_is_a_deserialization_error() {
     let yaml_text = minimal_yaml() + "\ncommand_center:\n  enabled: true\n";
 
-    assert!(
-        parse_and_validate(&yaml_text).is_err(),
-        "expected unknown top-level section to fail deserialization"
-    );
+    assert!(parse_and_validate(&yaml_text).is_err(), "expected unknown top-level section to fail deserialization");
 }
 
 #[test]
 fn unknown_nested_key_is_a_deserialization_error() {
     let yaml_text = minimal_yaml() + "\nlaya:\n  checkpointdir: assets/models\n";
 
-    assert!(
-        parse_and_validate(&yaml_text).is_err(),
-        "expected unknown nested key to fail deserialization"
-    );
+    assert!(parse_and_validate(&yaml_text).is_err(), "expected unknown nested key to fail deserialization");
 }
 
 #[test]
