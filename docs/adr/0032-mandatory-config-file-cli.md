@@ -39,14 +39,11 @@ the whole file in one pass.
 - Ad-hoc exploration costs one extra file. That cost buys
   reproduce-by-inspection: feeding the config file back to the CLI
   recreates the run.
-- Precedence refusal replaces silent correction. An unsupported or
-  unrecognized config section fails validation instead of being
-  guessed around, preventing slow drift toward hidden defaults.
 - Partial files slow down nobody silently. Aggregated findings cite
   every rejected field at once, so one invocation surfaces every
   fix needed.
-- Sudden opportunistic config types, such as new guard directives
-  or extra laya fields, deserializing under `serde(default)`
-  merely adopt namespace-safe fallback behavior without alarming
-  unrelated operators. Conflict discovery happens at preflight, not
-  mid-run.
+- One rule covers unknown input: any key or section outside the
+  schema fails validation. `serde(default)` applies only to the
+  documented optional sections when they are absent. A typo such as
+  `laya.checkpointdir` surfaces as a preflight finding, never as
+  silent fallback behavior.
