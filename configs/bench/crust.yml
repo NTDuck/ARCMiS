@@ -1,0 +1,58 @@
+# ReCodeAgent benchmark cell: crust C -> Rust (assets/ReCodeAgent/data/tool_projects/crust, project 2dpartint).
+
+run:
+  name: crust-c2rust
+
+paths:
+  input_dir: assets/ReCodeAgent/data/tool_projects/crust/2dpartint/c
+  output_dir: .artifacts/bench/crust-c2rust/
+
+languages:
+  pair:
+    source: c
+    target: rust
+  test_command: cargo test
+
+model:
+  id: ashalliants/qwen3.8-27b
+  extra_args: []
+
+hierarchy:
+  enabled: true
+  teams:
+    - lead: discovery-lead
+      members: [analyst, architect]
+      turns: 40
+      stagnation_rounds: 3
+    - lead: migration-lead
+      members: [translator, validator, tester, repairer]
+      turns: 40
+      stagnation_rounds: 3
+    - lead: integration-lead
+      members: [planner, failure-analyst, critic]
+      turns: 40
+      stagnation_rounds: 3
+
+blackboard:
+  max_topic_revisions: 16
+  inbox_depth: 32
+
+guard:
+  allowlist: [read, write, edit, bash]
+  denylist: [bash:rm -rf, bash:git push]
+
+compaction:
+  threshold_tokens: 12000
+  keep_recent_tokens: 4000
+
+laya:
+  enabled: true
+  checkpoint_dir: assets/models/laya-typed-decisions
+  confidence_threshold: 0.9
+
+limits:
+  turns: 60
+  fanout: 2
+  collective_turns: 40
+  max_repairs: 2
+  stagnation_rounds: 3
