@@ -11,7 +11,10 @@ name = "cli"
 path = "src/main.rs"
 
 [dependencies]
+mas-core = { package = "ARCMiS-mas-core", path = "../../lib/mas-core" }
 run-config = { package = "ARCMiS-run-config", path = "../../lib/run-config" }
+
+laya-rs.workspace = true
 
 anyhow.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

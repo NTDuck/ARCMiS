@@ -6,8 +6,10 @@ version = 4
 name = "ARCMiS-cli"
 version = "0.1.0"
 dependencies = [
+ "ARCMiS-mas-core",
  "ARCMiS-run-config",
  "anyhow",
+ "laya-rs",
  "tempfile",
  "tokio",
  "tracing",
