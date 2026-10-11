@@ -21,9 +21,9 @@ languages:
   test_command: cargo test
 
 model:
-  # Optional omp model identifier. Absent keeps the launching side's default
-  # SLM posture (ashaiballant/qwen3.8-27b-df2 candidate).
-  id: ashaiballant/qwen3.8-27b-df2
+  # Optional omp model identifier. Absent keeps the launching side's
+  # default SLM posture.
+  id: ashalliants/qwen3.8-27b
   # Extra arguments appended verbatim to the `omp` launch command.
   extra_args: []
 
