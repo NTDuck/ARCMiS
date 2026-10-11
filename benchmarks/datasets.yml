@@ -1,12 +1,10 @@
-# Benchmark datasets prepared, runs deferred until the inference engine is
-# available. This file is the manifest for bench/run-benchmarks.sh: one cell
-# per (tool, project, source_lang -> target_lang). Dataset roots point into
-# the assets/ReCodeAgent submodule checkout; the source-language dir is the
-# run's source root and the sibling target-language dir is ReCodeAgent's
-# reference, not the run's input (see bench/run-benchmarks.sh emit_cells).
+# Benchmark datasets for MAS modernization runs. This file is the manifest
+# that feeds `mise run cli -- <config>`: one run config per (tool, project)
+# pair. Each run config points at one dataset root below.
 #
-# Raw run output lives under .artifacts/bench/ (gitignored); scored records
-# land under benchmarks/<commit>/<tool>/<project>/<src>2<dst>/result.yml.
+# Dataset roots point into the assets/ReCodeAgent submodule checkout. The
+# source-language dir is the run's source root. The sibling target-language
+# dir is ReCodeAgent's reference, not the run's input.
 
 datasets:
   crust: # C -> Rust
