@@ -1,6 +1,6 @@
 //! Integration tests for the taskgraph crate.
 
-use hierarchy::Role;
+use domain::Role;
 use mas_taskgraph::GraphBudgets;
 use mas_taskgraph::Kind;
 use mas_taskgraph::TaskGraph;

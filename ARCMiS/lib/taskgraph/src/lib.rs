@@ -12,10 +12,10 @@
 
 use std::path::PathBuf;
 
-use hierarchy::Role;
-use phase::Evidence;
-use phase::Phase;
-use verdict::Verdict;
+use artifact::Verdict;
+use domain::Evidence;
+use domain::Phase;
+use domain::Role;
 
 /// Index-based node handle.
 pub type NodeId = usize;

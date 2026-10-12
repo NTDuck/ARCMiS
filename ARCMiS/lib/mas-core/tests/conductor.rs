@@ -3,25 +3,25 @@
 use std::collections::VecDeque;
 use std::time::Duration;
 
-use error::ConductorError;
-use frames::Event;
-use frames::PromptErrorDetail;
-use frames::PromptResultFrame;
-use frames::ResponseFrame;
-use frames::SubagentLifecycleFrame;
-use frames::SubagentLifecyclePayload;
-use gateway::Gateway;
-use gateway::ToolCall;
-use hierarchy::TeamRegistry;
+use artifact::Verdict;
+use decision::Router;
+use domain::Gateway;
+use domain::Phase;
+use domain::TeamRegistry;
+use domain::ToolCall;
 use mas_core::conductor::Conductor;
 use mas_core::conductor::RunLimits;
-use phase::Phase;
-use router::Router;
+use runtime::ConductorError;
+use runtime::Event;
+use runtime::PromptErrorDetail;
+use runtime::PromptResultFrame;
+use runtime::ResponseFrame;
+use runtime::SubagentLifecycleFrame;
+use runtime::SubagentLifecyclePayload;
+use runtime::Transport;
+use runtime::TransportError;
 use taskgraph::GraphBudgets;
 use taskgraph::WorkItem;
-use transport::Transport;
-use transport::TransportError;
-use verdict::Verdict;
 
 /// A transport that answers each prompt with one success response frame,
 /// then reports timeout so the drain loop ends.
@@ -153,7 +153,7 @@ fn error_frame(id: &str) -> Event {
 /// One analyst work item with the given instruction.
 fn analyst_item(instruction: &str) -> WorkItem {
     WorkItem {
-        role: hierarchy::Role::Analyst,
+        role: domain::Role::Analyst,
         kind: taskgraph::Kind::Analyze,
         instruction: instruction.to_owned(),
     }
@@ -195,7 +195,7 @@ async fn run_completes_through_the_phase_walk() {
         Conductor::new(transport, TeamRegistry::direct(), Router::keyword_only(), Gateway::permissive(), limits());
     conductor.add_work(
         WorkItem {
-            role: hierarchy::Role::Analyst,
+            role: domain::Role::Analyst,
             kind: taskgraph::Kind::Analyze,
             instruction: "map the source".to_owned(),
         },
@@ -234,7 +234,7 @@ async fn closed_transport_maps_to_transport_error() {
     );
     conductor.add_work(
         WorkItem {
-            role: hierarchy::Role::Analyst,
+            role: domain::Role::Analyst,
             kind: taskgraph::Kind::Analyze,
             instruction: "map the source".to_owned(),
         },
@@ -258,7 +258,7 @@ fn gateway_sits_in_front_of_tool_calls() {
         tool: "bash".to_owned(),
         args: "rm -rf /".to_owned(),
     });
-    assert!(matches!(verdict, gateway::ToolVerdict::Deny { .. }));
+    assert!(matches!(verdict, domain::ToolVerdict::Deny { .. }));
 }
 
 #[tokio::test]

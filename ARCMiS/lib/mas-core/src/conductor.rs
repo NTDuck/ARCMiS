@@ -14,22 +14,22 @@
 use std::collections::HashSet;
 use std::time::Duration;
 
-use error::ConductorError;
-use frames::Event;
-use gateway::Gateway;
-use gateway::ToolCall;
-use gateway::ToolVerdict;
-use hierarchy::TeamRegistry;
-use phase::Evidence;
-use phase::Phase;
-use phase::PhaseMachine;
-use router::Router;
+use artifact::Verdict;
+use decision::Router;
+use domain::Evidence;
+use domain::Gateway;
+use domain::Phase;
+use domain::PhaseMachine;
+use domain::TeamRegistry;
+use domain::ToolCall;
+use domain::ToolVerdict;
+use runtime::ConductorError;
+use runtime::Event;
+use runtime::Transport;
+use runtime::TransportError;
 use taskgraph::GraphBudgets;
 use taskgraph::TaskGraph;
 use taskgraph::WorkItem;
-use transport::Transport;
-use transport::TransportError;
-use verdict::Verdict;
 
 use crate::context::ContextStore;
 use crate::frame_sink;

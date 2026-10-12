@@ -10,16 +10,11 @@ description = "Conductor runtime: static hierarchy, dynamic routing, tool gatewa
 name = "mas_core"
 
 [dependencies]
-error = { package = "ARCMiS-error", path = "../error" }
-frames = { package = "ARCMiS-frames", path = "../frames" }
-compact = { package = "ARCMiS-compact", path = "../compact" }
-transport = { package = "ARCMiS-transport", path = "../transport" }
-hierarchy = { package = "ARCMiS-hierarchy", path = "../hierarchy" }
-phase = { package = "ARCMiS-phase", path = "../phase" }
-gateway = { package = "ARCMiS-gateway", path = "../gateway" }
-verdict = { package = "ARCMiS-verdict", path = "../verdict" }
+runtime = { package = "ARCMiS-runtime", path = "../runtime" }
+domain = { package = "ARCMiS-domain", path = "../domain" }
+artifact = { package = "ARCMiS-artifact", path = "../artifact" }
+decision = { package = "ARCMiS-decision", path = "../decision" }
 taskgraph = { package = "ARCMiS-taskgraph", path = "../taskgraph" }
-router = { package = "ARCMiS-router", path = "../router" }
 tracing.workspace = true
 
 [dev-dependencies]

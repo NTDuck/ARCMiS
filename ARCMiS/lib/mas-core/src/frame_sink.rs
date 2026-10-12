@@ -6,7 +6,7 @@
 //! on the node. A failing result logs its wire detail for triage. Every
 //! other frame is bookkeeping and passes through unobserved.
 
-use frames::Event;
+use runtime::Event;
 use taskgraph::TaskGraph;
 
 use crate::context::ContextStore;

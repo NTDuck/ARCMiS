@@ -5,10 +5,10 @@
 //! passes the budget, compaction keeps the newest half of the budget
 //! and archives the rest (ADR 0031).
 
-use compact::compact_frames;
-use compact::project_tokens;
-use compact::CompactionOutcome;
-use compact::ContextFrame;
+use runtime::compact_frames;
+use runtime::project_tokens;
+use runtime::CompactionOutcome;
+use runtime::ContextFrame;
 
 /// One run's context frames plus the compaction trigger.
 #[derive(Debug)]

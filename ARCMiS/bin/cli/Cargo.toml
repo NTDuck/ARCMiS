@@ -12,14 +12,12 @@ path = "src/main.rs"
 
 [dependencies]
 mas-core = { package = "ARCMiS-mas-core", path = "../../lib/mas-core" }
-run-config = { package = "ARCMiS-run-config", path = "../../lib/run-config" }
-error = { package = "ARCMiS-error", path = "../../lib/error" }
-gateway = { package = "ARCMiS-gateway", path = "../../lib/gateway" }
-hierarchy = { package = "ARCMiS-hierarchy", path = "../../lib/hierarchy" }
-router = { package = "ARCMiS-router", path = "../../lib/router" }
+runtime = { package = "ARCMiS-runtime", path = "../../lib/runtime" }
+domain = { package = "ARCMiS-domain", path = "../../lib/domain" }
+artifact = { package = "ARCMiS-artifact", path = "../../lib/artifact" }
+decision = { package = "ARCMiS-decision", path = "../../lib/decision" }
 taskgraph = { package = "ARCMiS-taskgraph", path = "../../lib/taskgraph" }
-transport = { package = "ARCMiS-transport", path = "../../lib/transport" }
-verdict = { package = "ARCMiS-verdict", path = "../../lib/verdict" }
+run-config = { package = "ARCMiS-run-config", path = "../../lib/run-config" }
 
 laya-rs.workspace = true
 

@@ -1,0 +1,21 @@
+[package]
+name = "ARCMiS-decision"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Decision making: JEV decision service and router."
+
+[lib]
+name = "mas_decision"
+
+[dependencies]
+runtime = { package = "ARCMiS-runtime", path = "../runtime" }
+domain = { package = "ARCMiS-domain", path = "../domain" }
+artifact = { package = "ARCMiS-artifact", path = "../artifact" }
+laya-rs.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+
+[lints]
+workspace = true

@@ -13,20 +13,20 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-use error::ConductorError;
-use gateway::Gateway;
-use hierarchy::Role;
-use hierarchy::TeamRegistry;
+use artifact::Verdict;
+use decision::Router;
+use domain::Gateway;
+use domain::Role;
+use domain::TeamRegistry;
 use mas_core::conductor::Conductor;
 use mas_core::conductor::RunLimits;
 use mas_core::conductor::RunSummary;
-use router::Router;
+use runtime::ConductorError;
+use runtime::OmpLaunchConfig;
+use runtime::OmpTransport;
 use taskgraph::GraphBudgets;
 use taskgraph::Kind;
 use taskgraph::WorkItem;
-use transport::OmpLaunchConfig;
-use transport::OmpTransport;
-use verdict::Verdict;
 
 #[tokio::main]
 async fn main() -> ExitCode {
@@ -339,7 +339,7 @@ enum CliError {
         source: laya::Error,
     },
     SessionStart {
-        source: transport::TransportError,
+        source: runtime::TransportError,
     },
     Run {
         error: ConductorError,
@@ -540,16 +540,16 @@ languages:
         assert_eq!(limits.context_budget, 12_000);
 
         let gateway_instance = build_gateway(&config);
-        let denied = gateway_instance.judge(&gateway::ToolCall {
+        let denied = gateway_instance.judge(&domain::ToolCall {
             tool: String::from("bash"),
             args: String::from("rm -rf /"),
         });
-        assert!(matches!(denied, gateway::ToolVerdict::Deny { .. }));
-        let allowed = gateway_instance.judge(&gateway::ToolCall {
+        assert!(matches!(denied, domain::ToolVerdict::Deny { .. }));
+        let allowed = gateway_instance.judge(&domain::ToolCall {
             tool: String::from("read"),
             args: String::from("one file"),
         });
-        assert!(matches!(allowed, gateway::ToolVerdict::Allow));
+        assert!(matches!(allowed, domain::ToolVerdict::Allow));
     }
 
     #[test]

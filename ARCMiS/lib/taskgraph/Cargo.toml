@@ -10,9 +10,8 @@ description = "Typed task DAG with fan-out bounds, per-node repair budgets, and 
 name = "mas_taskgraph"
 
 [dependencies]
-hierarchy = { package = "ARCMiS-hierarchy", path = "../hierarchy" }
-phase = { package = "ARCMiS-phase", path = "../phase" }
-verdict = { package = "ARCMiS-verdict", path = "../verdict" }
+domain = { package = "ARCMiS-domain", path = "../domain" }
+artifact = { package = "ARCMiS-artifact", path = "../artifact" }
 tracing.workspace = true
 
 [lints]
