@@ -4,10 +4,9 @@ use serde::Deserialize;
 
 /// Tier-2 lead teams. A disabled hierarchy reproduces the single-tier
 /// behavior exactly.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[serde(default)]
-#[derive(Default)]
 pub struct HierarchyConfig {
     /// Whether the tier-2 lead teams are active.
     pub enabled: bool,
@@ -31,4 +30,27 @@ pub struct TeamConfig {
     pub turns: usize,
     /// Consecutive stagnant inner rounds before the lead escalates.
     pub stagnation_rounds: usize,
+    /// Migration strategy for the team. Absent means `Parallel`
+    /// (ADR 0038).
+    #[serde(default)]
+    pub strategy: Option<TeamStrategy>,
+}
+
+/// Migration strategy for one team (ADR 0038). The default is
+/// `Parallel`; absent in the config file means `Parallel`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum TeamStrategy {
+    /// Concurrent dispatch for independent modules.
+    Parallel,
+    /// Sequential dispatch respecting dependencies.
+    Topological,
+    /// Grouping for cycles.
+    Grouped,
+}
+
+impl Default for TeamStrategy {
+    fn default() -> Self {
+        Self::Parallel
+    }
 }

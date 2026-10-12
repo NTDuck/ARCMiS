@@ -10,7 +10,11 @@ use std::collections::HashMap;
 /// Runs every preflight check. Collects every finding so that the operator
 /// fixes the whole file in one pass.
 pub fn expect_valid(config: &SectionConfig) -> Vec<ValidationError> {
-    reject_blank_strings(config).into_iter().chain(reject_ambiguous_members(config)).collect()
+    reject_blank_strings(config)
+        .into_iter()
+        .chain(reject_unknown_members(config))
+        .chain(reject_ambiguous_members(config))
+        .collect()
 }
 
 /// Rejects a blank mandatory field.
@@ -36,6 +40,59 @@ fn blank_field(field: &'static str) -> ValidationError {
         field,
         reason: String::from("must not be empty or whitespace"),
     }
+}
+
+/// Rejects a member name that does not resolve to any role. The alias
+/// table covers old names; anything else is a typo (ADR 0038).
+#[must_use]
+fn reject_unknown_members(config: &SectionConfig) -> Vec<ValidationError> {
+    config.hierarchy.teams.iter().flat_map(|team| reject_unknown_in_team(team)).collect()
+}
+
+#[must_use]
+fn reject_unknown_in_team(team: &TeamConfig) -> Vec<ValidationError> {
+    team.members
+        .iter()
+        .filter(|member| !is_known_member(member))
+        .map(|member| ValidationError {
+            field: "hierarchy.teams.members",
+            reason: format!("{member} is not a known role"),
+        })
+        .collect()
+}
+
+/// Whether `name` resolves to a role through the alias table.
+fn is_known_member(name: &str) -> bool {
+    let normalized = name.trim().to_ascii_lowercase();
+    matches!(
+        normalized.as_str(),
+        "analyst"
+            | "architect"
+            | "planner"
+            | "translator"
+            | "validator"
+            | "tester"
+            | "failure-analyst"
+            | "repairer"
+            | "critic"
+            | "fleet-analyst"
+            | "legacy-analyst"
+            | "topology-analyst"
+            | "business-rules-extractor"
+            | "citation-auditor"
+            | "strategy-selector"
+            | "architecture-critic"
+            | "test-engineer"
+            | "module-scheduler"
+            | "uplift-worker"
+            | "transform-worker"
+            | "reimagine-worker"
+            | "independent-reviewer"
+            | "differential-tester"
+            | "proof-builder"
+            | "security-auditor"
+            | "patch-reviewer"
+    )
 }
 
 /// A member that sits in two teams makes routing ambiguous. Preflight

@@ -17,7 +17,7 @@ mod schema;
 mod validation;
 
 pub use errors::ValidationError;
-pub use hierarchy::{HierarchyConfig, TeamConfig};
+pub use hierarchy::{HierarchyConfig, TeamConfig, TeamStrategy};
 pub use load::parse_and_validate;
 pub use paths::PathsConfig;
 pub use schema::{

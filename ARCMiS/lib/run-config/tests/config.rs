@@ -110,11 +110,11 @@ languages:
 hierarchy:
   teams:
     - lead: alpha-lead
-      members: [shared-member, other-member]
+      members: [uplift-worker, transform-worker]
       turns: 4
       stagnation_rounds: 2
     - lead: beta-lead
-      members: [second-member, shared-member]
+      members: [reimagine-worker, uplift-worker]
       turns: 4
       stagnation_rounds: 2
 "#,
@@ -133,7 +133,7 @@ hierarchy:
         "expected exactly one hierarchy finding, got {:?}",
         findings
     );
-    assert!(findings[0].reason.contains("shared-member"), "expected shared member name in reason");
+    assert!(findings[0].reason.contains("uplift-worker"), "expected shared member name in reason");
 }
 
 #[test]
