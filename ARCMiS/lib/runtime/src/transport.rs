@@ -1,14 +1,9 @@
-//! Transport seam between the conductor and the omp child (ADR 0034, ADR 0035).
+//! The default transport over one SDK session.
 //!
-//! The conductor drives one run through `send` and `recv` only. The
-//! default implementation wraps one `omp_rpc::Client` session from the
-//! xoannova oh-my-pi-omp SDK (ADR 0035). Tests swap in a scripted
-//! transport. The trait stays object-safe: one run holds one boxed
-//! transport.
+//! `Client` holds no `Debug` impl, so the transport reports its shape
+//! through `spawn` outcomes instead.
 
 use std::collections::VecDeque;
-use std::future::Future;
-use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::sync::Arc;
 use std::time::Duration;
@@ -16,129 +11,15 @@ use std::time::Duration;
 use omp_rpc::Client;
 use omp_rpc::ClientOptions;
 use omp_rpc::Error as SdkError;
-use omp_rpc::Event as SdkEvent;
 use omp_rpc::PromptCommand;
 use omp_rpc::SetSubagentSubscriptionCommand;
-use omp_rpc::SubagentSubscriptionLevel;
 
-use crate::error::TransportError;
+use crate::forward_frames::forward_frames;
 use crate::frames::Event;
-use crate::map::map_sdk_event;
-
-/// One bidirectional frame stream. `send` is fire-and-forget: terminal
-/// frames arrive through `recv`.
-pub trait Transport {
-    /// Submit one prompt. Returns the request id at once.
-    fn send_prompt(&mut self, message: &str) -> impl Future<Output = Result<String, TransportError>> + Send;
-
-    /// Receive the next decoded event.
-    fn recv(&mut self) -> impl Future<Output = Result<Event, TransportError>> + Send;
-
-    /// Receive the next event with a deadline. `Timeout` on expiry.
-    fn recv_within(&mut self, timeout: Duration) -> impl Future<Output = Result<Event, TransportError>> + Send;
-}
-
-/// Knobs for the omp child process. The caller owns every value.
-#[derive(Debug, Clone)]
-pub struct OmpLaunchConfig {
-    /// Binary to launch. The host wrapper (`ompl`) sits here, so the
-    /// library never names a binary itself (config rule).
-    pub program: String,
-    /// Session model, passed as `--model=<value>`.
-    pub model: Option<String>,
-    /// Tool approval mode, passed as `--approval-mode=<value>`.
-    pub approval_mode: String,
-    /// Extra arguments appended after the fixed flags.
-    pub extra_args: Vec<String>,
-    /// Working directory of the child.
-    pub working_dir: PathBuf,
-    /// Environment variables for the child.
-    pub env: Vec<(String, String)>,
-    /// Subagent frames the server forwards after the handshake.
-    pub subagent_subscription: SubagentSubscriptionLevel,
-    /// Disable every built-in tool. The advisor uses this to keep the
-    /// session read-only: no file writes, no command execution.
-    pub read_only: bool,
-}
-
-impl Default for OmpLaunchConfig {
-    fn default() -> Self {
-        Self {
-            program: "omp".to_string(),
-            model: None,
-            approval_mode: "yolo".to_string(),
-            extra_args: Vec::new(),
-            // WHY a literal: the config rule bans environment reads in
-            // library code. `Command::current_dir(".")` inherits the
-            // parent cwd at spawn time, so the behavior matches a plain
-            // shell launch.
-            working_dir: PathBuf::from("."),
-            env: Vec::new(),
-            // WHY events: the frame vocabulary routes subagent panes by
-            // `payload.agent` and `payload.id`. Only the events level
-            // forwards the raw session events the router needs (ADR 0030).
-            subagent_subscription: SubagentSubscriptionLevel::Events,
-            read_only: false,
-        }
-    }
-}
-
-impl OmpLaunchConfig {
-    /// Build the child argv: mode, model, approval mode, passthrough args.
-    ///
-    /// WHY `--model`: omp selects the session model with
-    /// `--model=<value>` (fuzzy match, `provider/model`). The form comes
-    /// from `omp --help`. No RPC-level model message exists.
-    ///
-    /// WHY `--no-tools`: a read-only session disables every built-in
-    /// tool at the CLI level. The advisor cannot write files or run
-    /// commands even if a prompt asks for it (ADR 0036 section 6).
-    pub fn argv(&self) -> Vec<String> {
-        let mut argv = vec!["--mode".to_string(), "rpc".to_string()];
-        if let Some(model) = &self.model {
-            argv.push(format!("--model={model}"));
-        }
-        argv.push(format!("--approval-mode={}", self.approval_mode));
-        if self.read_only {
-            argv.push("--no-tools".to_string());
-        }
-        argv.extend(self.extra_args.iter().cloned());
-        argv
-    }
-}
-
-/// Map one SDK error onto the local transport error.
-pub fn map_sdk_error(error: SdkError) -> TransportError {
-    match error {
-        SdkError::Closed => TransportError::Closed,
-        SdkError::Timeout {
-            ..
-        } => TransportError::Timeout,
-        SdkError::Command {
-            command,
-            error: detail,
-            code: Some(code),
-        } => TransportError::BadRequest(format!("{command} failed ({code}): {detail}")),
-        SdkError::Command {
-            command,
-            error: detail,
-            code: None,
-        } => TransportError::BadRequest(format!("{command} failed: {detail}")),
-        SdkError::Protocol(detail) => TransportError::BadRequest(detail),
-        SdkError::InvalidArgument(detail) => TransportError::BadRequest(detail),
-        SdkError::Io(error) => TransportError::Send(error.to_string()),
-        SdkError::Json(error) => TransportError::Send(error.to_string()),
-    }
-}
-
-/// Forward decoded SDK frames into the async stream until the child ends.
-pub fn forward_frames(receiver: std::sync::mpsc::Receiver<SdkEvent>, sender: &tokio::sync::mpsc::Sender<Event>) {
-    for frame in receiver.iter() {
-        if sender.blocking_send(map_sdk_event(frame)).is_err() {
-            return;
-        }
-    }
-}
+use crate::omp_launch_config::OmpLaunchConfig;
+use crate::sdk_error_map::map_sdk_error;
+use crate::transport_error::TransportError;
+use crate::transport_trait::Transport;
 
 /// The default transport over one SDK session. `Client` holds no
 /// `Debug` impl, so the transport reports its shape through `spawn`

@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::SystemTime;
 
-pub use runtime::ValidationError;
+pub use runtime::validation_error::ValidationError;
 
 /// Unique identifier for one artifact.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
