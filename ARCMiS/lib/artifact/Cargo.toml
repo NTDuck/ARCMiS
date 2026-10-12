@@ -1,0 +1,17 @@
+[package]
+name = "ARCMiS-artifact"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Typed artifact store with owner, schema, provenance, and validation rule per artifact."
+
+[lib]
+name = "mas_artifact"
+
+[dependencies]
+error = { package = "ARCMiS-error", path = "../error" }
+tracing.workspace = true
+
+[lints]
+workspace = true

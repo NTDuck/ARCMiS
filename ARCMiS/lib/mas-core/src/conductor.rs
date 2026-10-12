@@ -32,16 +32,7 @@ use crate::taskgraph::WorkItem;
 use crate::transport::Transport;
 use crate::transport::TransportError;
 
-/// How a run ended.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Verdict {
-    /// Every phase gate held through FinalValidation.
-    Success,
-    /// The run ended early. Carries the failure class.
-    Failed {
-        reason: String,
-    },
-}
+pub use verdict::Verdict;
 
 /// End-of-run summary.
 #[derive(Debug, Clone, PartialEq)]

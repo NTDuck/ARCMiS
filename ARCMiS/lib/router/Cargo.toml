@@ -1,0 +1,21 @@
+[package]
+name = "ARCMiS-router"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Layered routing with laya typed decisions and keyword fallback."
+
+[lib]
+name = "mas_router"
+
+[dependencies]
+hierarchy = { package = "ARCMiS-hierarchy", path = "../hierarchy" }
+laya-rs.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+hierarchy = { package = "ARCMiS-hierarchy", path = "../hierarchy" }
+
+[lints]
+workspace = true

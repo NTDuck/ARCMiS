@@ -21,6 +21,12 @@ module-phase = { package = "ARCMiS-module-phase", path = "../module-phase" }
 gateway = { package = "ARCMiS-gateway", path = "../gateway" }
 blackboard = { package = "ARCMiS-blackboard", path = "../blackboard" }
 mailbox = { package = "ARCMiS-mailbox", path = "../mailbox" }
+artifact = { package = "ARCMiS-artifact", path = "../artifact" }
+jev = { package = "ARCMiS-jev", path = "../jev" }
+verdict = { package = "ARCMiS-verdict", path = "../verdict" }
+taskgraph = { package = "ARCMiS-taskgraph", path = "../taskgraph" }
+router = { package = "ARCMiS-router", path = "../router" }
+advisor = { package = "ARCMiS-advisor", path = "../advisor" }
 laya-rs.workspace = true
 omp-rpc.workspace = true
 serde.workspace = true

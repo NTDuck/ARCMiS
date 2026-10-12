@@ -1,0 +1,19 @@
+[package]
+name = "ARCMiS-taskgraph"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Typed task DAG with fan-out bounds, per-node repair budgets, and stagnation detection."
+
+[lib]
+name = "mas_taskgraph"
+
+[dependencies]
+hierarchy = { package = "ARCMiS-hierarchy", path = "../hierarchy" }
+phase = { package = "ARCMiS-phase", path = "../phase" }
+verdict = { package = "ARCMiS-verdict", path = "../verdict" }
+tracing.workspace = true
+
+[lints]
+workspace = true
