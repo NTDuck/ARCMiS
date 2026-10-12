@@ -4,7 +4,6 @@ use mas_frames::map_sdk_event;
 use mas_frames::Event;
 use omp_rpc::AgentSource;
 use omp_rpc::Event as SdkEvent;
-use omp_rpc::PromptError;
 use omp_rpc::PromptResultEvent;
 use omp_rpc::PromptStatus;
 use omp_rpc::RpcNotification;
