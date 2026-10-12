@@ -1,42 +1,22 @@
 //! `mas_core` is the conductor runtime over the omp transport (ADR 0031).
 //!
+//! The conductor crate wires the composition crates together. It owns
+//! the run lifetime, the transport handle, the task graph, the phase
+//! machines, the artifact store, the router, the gateway, the
+//! blackboard, the mailbox, the advisor, and the JEV service.
+//!
 //! Modules:
-//! - `error` — run failure classes.
-//! - `hierarchy` — static team registry from the run config.
-//! - `phase` — evidence-gated phase machine with regression edges.
-//! - `taskgraph` — typed nodes, dependencies, budgets, stagnation.
-//! - `router` — layered routing with laya typed decisions.
-//! - `blackboard` — bounded topic revisions.
-//! - `mailbox` — bounded direct-message queues.
-//! - `module_phase` — per-module FSM (ADR 0039 section 2).
-//! - `gateway` — deterministic tool-call gateway.
-//! - `compact` — snapcompact-style context compaction.
-//! - `frames` — wire frame vocabulary over the omp session.
-//! - `transport` — Transport seam over the omp session.
-//! - `advisor` — read-only OMP consultation handle (ADR 0036 section 6).
 //! - `conductor` — one run: phases, dispatches, event loop.
+//! - `context` — rolling context window with budget-driven compaction.
+//! - `frame_sink` — maps decoded omp frames onto task-graph state changes.
 
 // The workspace naming rule prefixes crates with ARCMiS-. The generated
 // snake_case identifier trips only this lint.
 #![allow(non_snake_case)]
 
-pub mod advisor;
-pub mod artifact;
-pub mod blackboard;
-pub mod compact;
 pub mod conductor;
 pub mod context;
-pub mod error;
 pub mod frame_sink;
-pub mod frames;
-pub mod gateway;
-pub mod hierarchy;
-pub mod mailbox;
-pub mod module_phase;
-pub mod phase;
-pub mod router;
-pub mod taskgraph;
-pub mod transport;
 
 pub use advisor::AdvisorConfig;
 pub use advisor::AdvisorConsultation;

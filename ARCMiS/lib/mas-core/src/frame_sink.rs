@@ -6,9 +6,10 @@
 //! on the node. A failing result logs its wire detail for triage. Every
 //! other frame is bookkeeping and passes through unobserved.
 
+use frames::Event;
+use taskgraph::TaskGraph;
+
 use crate::context::ContextStore;
-use crate::frames::Event;
-use crate::taskgraph::TaskGraph;
 
 /// Apply one decoded frame to the graph and context.
 pub fn absorb(graph: &mut TaskGraph, context: &mut ContextStore, event: Event) {

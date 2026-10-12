@@ -5,23 +5,23 @@ use std::time::Duration;
 
 use mas_core::conductor::Conductor;
 use mas_core::conductor::RunLimits;
-use mas_core::conductor::Verdict;
-use mas_core::error::ConductorError;
-use mas_core::frames::Event;
-use mas_core::frames::PromptErrorDetail;
-use mas_core::frames::PromptResultFrame;
-use mas_core::frames::ResponseFrame;
-use mas_core::frames::SubagentLifecycleFrame;
-use mas_core::frames::SubagentLifecyclePayload;
-use mas_core::gateway::Gateway;
-use mas_core::gateway::ToolCall;
-use mas_core::hierarchy::TeamRegistry;
-use mas_core::phase::Phase;
-use mas_core::router::Router;
-use mas_core::taskgraph::GraphBudgets;
-use mas_core::taskgraph::WorkItem;
-use mas_core::transport::Transport;
-use mas_core::transport::TransportError;
+use error::ConductorError;
+use frames::Event;
+use frames::PromptErrorDetail;
+use frames::PromptResultFrame;
+use frames::ResponseFrame;
+use frames::SubagentLifecycleFrame;
+use frames::SubagentLifecyclePayload;
+use gateway::Gateway;
+use gateway::ToolCall;
+use hierarchy::TeamRegistry;
+use phase::Phase;
+use router::Router;
+use taskgraph::GraphBudgets;
+use taskgraph::WorkItem;
+use transport::Transport;
+use transport::TransportError;
+use verdict::Verdict;
 
 /// A transport that answers each prompt with one success response frame,
 /// then reports timeout so the drain loop ends.
@@ -153,8 +153,8 @@ fn error_frame(id: &str) -> Event {
 /// One analyst work item with the given instruction.
 fn analyst_item(instruction: &str) -> WorkItem {
     WorkItem {
-        role: mas_core::hierarchy::Role::Analyst,
-        kind: mas_core::taskgraph::Kind::Analyze,
+        role: hierarchy::Role::Analyst,
+        kind: taskgraph::Kind::Analyze,
         instruction: instruction.to_owned(),
     }
 }
@@ -195,8 +195,8 @@ async fn run_completes_through_the_phase_walk() {
         Conductor::new(transport, TeamRegistry::direct(), Router::keyword_only(), Gateway::permissive(), limits());
     conductor.add_work(
         WorkItem {
-            role: mas_core::hierarchy::Role::Analyst,
-            kind: mas_core::taskgraph::Kind::Analyze,
+            role: hierarchy::Role::Analyst,
+            kind: taskgraph::Kind::Analyze,
             instruction: "map the source".to_owned(),
         },
         Vec::new(),
@@ -234,8 +234,8 @@ async fn closed_transport_maps_to_transport_error() {
     );
     conductor.add_work(
         WorkItem {
-            role: mas_core::hierarchy::Role::Analyst,
-            kind: mas_core::taskgraph::Kind::Analyze,
+            role: hierarchy::Role::Analyst,
+            kind: taskgraph::Kind::Analyze,
             instruction: "map the source".to_owned(),
         },
         Vec::new(),
@@ -258,7 +258,7 @@ fn gateway_sits_in_front_of_tool_calls() {
         tool: "bash".to_owned(),
         args: "rm -rf /".to_owned(),
     });
-    assert!(matches!(verdict, mas_core::gateway::ToolVerdict::Deny { .. }));
+    assert!(matches!(verdict, gateway::ToolVerdict::Deny { .. }));
 }
 
 #[tokio::test]

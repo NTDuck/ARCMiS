@@ -3,11 +3,39 @@
 version = 4
 
 [[package]]
+name = "ARCMiS-advisor"
+version = "0.1.0"
+dependencies = [
+ "ARCMiS-error",
+ "ARCMiS-transport",
+ "tracing",
+]
+
+[[package]]
+name = "ARCMiS-artifact"
+version = "0.1.0"
+dependencies = [
+ "ARCMiS-error",
+ "tracing",
+]
+
+[[package]]
+name = "ARCMiS-blackboard"
+version = "0.1.0"
+
+[[package]]
 name = "ARCMiS-cli"
 version = "0.1.0"
 dependencies = [
+ "ARCMiS-error",
+ "ARCMiS-gateway",
+ "ARCMiS-hierarchy",
  "ARCMiS-mas-core",
+ "ARCMiS-router",
  "ARCMiS-run-config",
+ "ARCMiS-taskgraph",
+ "ARCMiS-transport",
+ "ARCMiS-verdict",
  "anyhow",
  "laya-rs",
  "tempfile",
@@ -17,17 +45,109 @@ dependencies = [
 ]
 
 [[package]]
-name = "ARCMiS-mas-core"
+name = "ARCMiS-compact"
+version = "0.1.0"
+dependencies = [
+ "tracing",
+]
+
+[[package]]
+name = "ARCMiS-error"
+version = "0.1.0"
+dependencies = [
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "ARCMiS-frames"
+version = "0.1.0"
+dependencies = [
+ "omp-rpc",
+ "serde",
+ "serde_json",
+ "tracing",
+]
+
+[[package]]
+name = "ARCMiS-gateway"
+version = "0.1.0"
+
+[[package]]
+name = "ARCMiS-hierarchy"
 version = "0.1.0"
 dependencies = [
  "ARCMiS-run-config",
+ "tracing",
+]
+
+[[package]]
+name = "ARCMiS-jev"
+version = "0.1.0"
+dependencies = [
  "laya-rs",
+ "serde_json",
+ "tracing",
+]
+
+[[package]]
+name = "ARCMiS-mailbox"
+version = "0.1.0"
+
+[[package]]
+name = "ARCMiS-mas-core"
+version = "0.1.0"
+dependencies = [
+ "ARCMiS-advisor",
+ "ARCMiS-artifact",
+ "ARCMiS-blackboard",
+ "ARCMiS-compact",
+ "ARCMiS-error",
+ "ARCMiS-frames",
+ "ARCMiS-gateway",
+ "ARCMiS-hierarchy",
+ "ARCMiS-jev",
+ "ARCMiS-mailbox",
+ "ARCMiS-module-phase",
+ "ARCMiS-phase",
+ "ARCMiS-router",
+ "ARCMiS-run-config",
+ "ARCMiS-taskgraph",
+ "ARCMiS-transport",
+ "ARCMiS-verdict",
  "omp-rpc",
  "serde",
  "serde_json",
  "thiserror 2.0.21",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "ARCMiS-module-phase"
+version = "0.1.0"
+dependencies = [
+ "tracing",
+]
+
+[[package]]
+name = "ARCMiS-phase"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "tracing",
+]
+
+[[package]]
+name = "ARCMiS-repository"
+version = "0.1.0"
+
+[[package]]
+name = "ARCMiS-router"
+version = "0.1.0"
+dependencies = [
+ "ARCMiS-hierarchy",
+ "laya-rs",
+ "serde_json",
 ]
 
 [[package]]
@@ -38,6 +158,38 @@ dependencies = [
  "serde",
  "serde_yaml",
  "tempfile",
+]
+
+[[package]]
+name = "ARCMiS-taskgraph"
+version = "0.1.0"
+dependencies = [
+ "ARCMiS-hierarchy",
+ "ARCMiS-phase",
+ "ARCMiS-verdict",
+ "tracing",
+]
+
+[[package]]
+name = "ARCMiS-test-outcomes"
+version = "0.1.0"
+
+[[package]]
+name = "ARCMiS-transport"
+version = "0.1.0"
+dependencies = [
+ "ARCMiS-error",
+ "ARCMiS-frames",
+ "omp-rpc",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "ARCMiS-verdict"
+version = "0.1.0"
+dependencies = [
+ "ARCMiS-artifact",
 ]
 
 [[package]]

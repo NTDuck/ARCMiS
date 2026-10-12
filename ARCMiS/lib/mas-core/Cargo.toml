@@ -27,7 +27,6 @@ verdict = { package = "ARCMiS-verdict", path = "../verdict" }
 taskgraph = { package = "ARCMiS-taskgraph", path = "../taskgraph" }
 router = { package = "ARCMiS-router", path = "../router" }
 advisor = { package = "ARCMiS-advisor", path = "../advisor" }
-laya-rs.workspace = true
 omp-rpc.workspace = true
 serde.workspace = true
 serde_json.workspace = true

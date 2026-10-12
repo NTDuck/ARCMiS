@@ -16,17 +16,17 @@ use std::process::ExitCode;
 use mas_core::conductor::Conductor;
 use mas_core::conductor::RunLimits;
 use mas_core::conductor::RunSummary;
-use mas_core::conductor::Verdict;
-use mas_core::error::ConductorError;
-use mas_core::gateway::Gateway;
-use mas_core::hierarchy::Role;
-use mas_core::hierarchy::TeamRegistry;
-use mas_core::router::Router;
-use mas_core::taskgraph::GraphBudgets;
-use mas_core::taskgraph::Kind;
-use mas_core::taskgraph::WorkItem;
-use mas_core::transport::OmpLaunchConfig;
-use mas_core::transport::OmpTransport;
+use error::ConductorError;
+use gateway::Gateway;
+use hierarchy::Role;
+use hierarchy::TeamRegistry;
+use router::Router;
+use taskgraph::GraphBudgets;
+use taskgraph::Kind;
+use taskgraph::WorkItem;
+use transport::OmpLaunchConfig;
+use transport::OmpTransport;
+use verdict::Verdict;
 
 #[tokio::main]
 async fn main() -> ExitCode {
@@ -339,7 +339,7 @@ enum CliError {
         source: laya::Error,
     },
     SessionStart {
-        source: mas_core::transport::TransportError,
+        source: transport::TransportError,
     },
     Run {
         error: ConductorError,
@@ -539,17 +539,17 @@ languages:
         assert_eq!(limits.graph.stagnation_rounds, 3);
         assert_eq!(limits.context_budget, 12_000);
 
-        let gateway = build_gateway(&config);
-        let denied = gateway.judge(&mas_core::gateway::ToolCall {
+        let gateway_instance = build_gateway(&config);
+        let denied = gateway_instance.judge(&gateway::ToolCall {
             tool: String::from("bash"),
             args: String::from("rm -rf /"),
         });
-        assert!(matches!(denied, mas_core::gateway::ToolVerdict::Deny { .. }));
-        let allowed = gateway.judge(&mas_core::gateway::ToolCall {
+        assert!(matches!(denied, gateway::ToolVerdict::Deny { .. }));
+        let allowed = gateway_instance.judge(&gateway::ToolCall {
             tool: String::from("read"),
             args: String::from("one file"),
         });
-        assert!(matches!(allowed, mas_core::gateway::ToolVerdict::Allow));
+        assert!(matches!(allowed, gateway::ToolVerdict::Allow));
     }
 
     #[test]
