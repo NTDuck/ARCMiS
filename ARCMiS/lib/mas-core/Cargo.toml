@@ -4,35 +4,27 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Conductor runtime: static hierarchy, dynamic routing, blackboard, tool gateway, compaction over the omp transport."
+description = "Conductor runtime: static hierarchy, dynamic routing, tool gateway, compaction over the omp transport."
 
 [lib]
 name = "mas_core"
 
 [dependencies]
-run-config = { package = "ARCMiS-run-config", path = "../run-config" }
 error = { package = "ARCMiS-error", path = "../error" }
 frames = { package = "ARCMiS-frames", path = "../frames" }
 compact = { package = "ARCMiS-compact", path = "../compact" }
 transport = { package = "ARCMiS-transport", path = "../transport" }
 hierarchy = { package = "ARCMiS-hierarchy", path = "../hierarchy" }
 phase = { package = "ARCMiS-phase", path = "../phase" }
-module-phase = { package = "ARCMiS-module-phase", path = "../module-phase" }
 gateway = { package = "ARCMiS-gateway", path = "../gateway" }
-blackboard = { package = "ARCMiS-blackboard", path = "../blackboard" }
-mailbox = { package = "ARCMiS-mailbox", path = "../mailbox" }
-artifact = { package = "ARCMiS-artifact", path = "../artifact" }
-jev = { package = "ARCMiS-jev", path = "../jev" }
 verdict = { package = "ARCMiS-verdict", path = "../verdict" }
 taskgraph = { package = "ARCMiS-taskgraph", path = "../taskgraph" }
 router = { package = "ARCMiS-router", path = "../router" }
-advisor = { package = "ARCMiS-advisor", path = "../advisor" }
-omp-rpc.workspace = true
-serde.workspace = true
-serde_json.workspace = true
-thiserror.workspace = true
-tokio = { workspace = true, features = ["macros", "sync", "rt-multi-thread", "time"] }
 tracing.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+tokio = { workspace = true, features = ["macros", "sync", "rt-multi-thread", "time"] }
 
 [lints]
 workspace = true

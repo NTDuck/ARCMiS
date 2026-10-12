@@ -97,27 +97,17 @@ version = "0.1.0"
 name = "ARCMiS-mas-core"
 version = "0.1.0"
 dependencies = [
- "ARCMiS-advisor",
- "ARCMiS-artifact",
- "ARCMiS-blackboard",
  "ARCMiS-compact",
  "ARCMiS-error",
  "ARCMiS-frames",
  "ARCMiS-gateway",
  "ARCMiS-hierarchy",
- "ARCMiS-jev",
- "ARCMiS-mailbox",
- "ARCMiS-module-phase",
  "ARCMiS-phase",
  "ARCMiS-router",
- "ARCMiS-run-config",
  "ARCMiS-taskgraph",
  "ARCMiS-transport",
  "ARCMiS-verdict",
- "omp-rpc",
- "serde",
  "serde_json",
- "thiserror 2.0.21",
  "tokio",
  "tracing",
 ]
