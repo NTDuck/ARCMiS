@@ -15,6 +15,12 @@ error = { package = "ARCMiS-error", path = "../error" }
 frames = { package = "ARCMiS-frames", path = "../frames" }
 compact = { package = "ARCMiS-compact", path = "../compact" }
 transport = { package = "ARCMiS-transport", path = "../transport" }
+hierarchy = { package = "ARCMiS-hierarchy", path = "../hierarchy" }
+phase = { package = "ARCMiS-phase", path = "../phase" }
+module-phase = { package = "ARCMiS-module-phase", path = "../module-phase" }
+gateway = { package = "ARCMiS-gateway", path = "../gateway" }
+blackboard = { package = "ARCMiS-blackboard", path = "../blackboard" }
+mailbox = { package = "ARCMiS-mailbox", path = "../mailbox" }
 laya-rs.workspace = true
 omp-rpc.workspace = true
 serde.workspace = true

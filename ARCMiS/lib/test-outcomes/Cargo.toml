@@ -1,0 +1,13 @@
+[package]
+name = "ARCMiS-test-outcomes"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Test outcome aggregation for the MAS conductor."
+
+[lib]
+name = "mas_test_outcomes"
+
+[lints]
+workspace = true

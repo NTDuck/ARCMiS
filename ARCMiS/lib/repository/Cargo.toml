@@ -1,0 +1,13 @@
+[package]
+name = "ARCMiS-repository"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Repository metadata for the MAS conductor."
+
+[lib]
+name = "mas_repository"
+
+[lints]
+workspace = true

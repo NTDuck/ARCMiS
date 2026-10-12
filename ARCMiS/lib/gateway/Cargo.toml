@@ -1,0 +1,13 @@
+[package]
+name = "ARCMiS-gateway"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Deterministic tool-call policy for the MAS conductor."
+
+[lib]
+name = "mas_gateway"
+
+[lints]
+workspace = true
