@@ -6,6 +6,11 @@
 //! Every phase advance is evidence-gated. Every failure burns repair
 //! budget before it escalates.
 
+// WHY the allow: the conductor still drives the legacy ten-phase walk
+// for backward compatibility. The deprecated variants map to their
+// forward-walk successors at the FSM boundary.
+#![allow(deprecated)]
+
 use std::collections::HashSet;
 use std::time::Duration;
 

@@ -8,6 +8,7 @@
 //! - `router` — layered routing with laya typed decisions.
 //! - `blackboard` — bounded topic revisions.
 //! - `mailbox` — bounded direct-message queues.
+//! - `module_phase` — per-module FSM (ADR 0039 section 2).
 //! - `gateway` — deterministic tool-call gateway.
 //! - `compact` — snapcompact-style context compaction.
 //! - `frames` — wire frame vocabulary over the omp session.
@@ -20,6 +21,7 @@
 #![allow(non_snake_case)]
 
 pub mod advisor;
+pub mod artifact;
 pub mod blackboard;
 pub mod compact;
 pub mod conductor;
@@ -30,6 +32,7 @@ pub mod frames;
 pub mod gateway;
 pub mod hierarchy;
 pub mod mailbox;
+pub mod module_phase;
 pub mod phase;
 pub mod router;
 pub mod taskgraph;
@@ -40,6 +43,18 @@ pub use advisor::AdvisorConsultation;
 pub use advisor::AdvisorError;
 pub use advisor::AdvisorVerdict;
 pub use advisor::OmpAdvisor;
+pub use artifact::Artifact;
+pub use artifact::ArtifactContent;
+pub use artifact::ArtifactEntry;
+pub use artifact::ArtifactId;
+pub use artifact::ArtifactKind;
+pub use artifact::ArtifactStore;
+pub use artifact::Provenance;
+pub use artifact::ProvenanceAction;
+pub use artifact::ProvenanceEntry;
+pub use artifact::Schema;
+pub use artifact::ValidationError;
+pub use artifact::ValidationRule;
 pub use blackboard::Blackboard;
 pub use compact::compact_frames;
 pub use compact::CompactionOutcome;
@@ -56,6 +71,9 @@ pub use hierarchy::Team;
 pub use hierarchy::TeamRegistry;
 pub use mailbox::Mailbox;
 pub use mailbox::Message;
+pub use module_phase::ModulePhase;
+pub use module_phase::ModuleStateMachine;
+pub use module_phase::ModuleTransition;
 pub use phase::Evidence;
 pub use phase::Phase;
 pub use phase::PhaseMachine;
