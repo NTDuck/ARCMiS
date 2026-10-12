@@ -45,7 +45,10 @@ fn any_failure_marks_failed() {
     ];
     let verdict = computer.compute(&evidence);
     assert!(matches!(verdict, Verdict::Failed { .. }));
-    if let Verdict::Failed { reason } = verdict {
+    if let Verdict::Failed {
+        reason,
+    } = verdict
+    {
         assert_eq!(reason, "timeout");
     }
 }
@@ -59,7 +62,10 @@ fn failure_without_reason_uses_default() {
         failure_reason: None,
     }];
     let verdict = computer.compute(&evidence);
-    if let Verdict::Failed { reason } = verdict {
+    if let Verdict::Failed {
+        reason,
+    } = verdict
+    {
         assert_eq!(reason, "task failed");
     } else {
         panic!("expected Failed verdict");

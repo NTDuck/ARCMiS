@@ -76,10 +76,7 @@ fn permits_checks_lead_membership() {
 
 #[test]
 fn validate_unique_memberships_rejects_duplicates() {
-    let configs = vec![
-        team("lead-a", &["strategy-selector"]),
-        team("lead-b", &["strategy-selector"]),
-    ];
+    let configs = vec![team("lead-a", &["strategy-selector"]), team("lead-b", &["strategy-selector"])];
     let registry = TeamRegistry::compile(true, &configs);
     let duplicates = registry.validate_unique_memberships().expect_err("duplicate membership");
     assert!(duplicates.contains(&"strategy-selector"));

@@ -48,7 +48,9 @@ fn validation_error_display_names_the_rejection() {
         reason: "mismatch".to_owned(),
     };
     assert_eq!(rule.to_string(), "rule content-hash rejected artifact: mismatch");
-    let unknown = ValidationError::UnknownArtifact { id: "a1".to_owned() };
+    let unknown = ValidationError::UnknownArtifact {
+        id: "a1".to_owned(),
+    };
     assert_eq!(unknown.to_string(), "unknown artifact a1");
 }
 

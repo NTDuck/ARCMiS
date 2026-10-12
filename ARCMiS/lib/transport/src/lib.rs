@@ -26,8 +26,8 @@ use omp_rpc::PromptCommand;
 use omp_rpc::SetSubagentSubscriptionCommand;
 use omp_rpc::SubagentSubscriptionLevel;
 
-use frames::Event;
 use frames::map_sdk_event;
+use frames::Event;
 
 pub use error::TransportError;
 

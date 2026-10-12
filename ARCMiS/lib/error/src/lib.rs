@@ -92,13 +92,21 @@ pub enum ValidationError {
 impl std::fmt::Display for ValidationError {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ValidationError::SchemaMismatch { schema, reason } => {
+            ValidationError::SchemaMismatch {
+                schema,
+                reason,
+            } => {
                 write!(formatter, "schema {schema} rejected content: {reason}")
             },
-            ValidationError::RuleViolation { rule, reason } => {
+            ValidationError::RuleViolation {
+                rule,
+                reason,
+            } => {
                 write!(formatter, "rule {rule} rejected artifact: {reason}")
             },
-            ValidationError::UnknownArtifact { id } => write!(formatter, "unknown artifact {id}"),
+            ValidationError::UnknownArtifact {
+                id,
+            } => write!(formatter, "unknown artifact {id}"),
         }
     }
 }

@@ -205,8 +205,15 @@ impl ArtifactStore {
     /// Re-validate one entry. Returns `UnknownArtifact` when the id is
     /// absent. The store does not retain the schema or rule objects, so
     /// re-validation requires the caller to supply them.
-    pub fn validate(&self, id: &ArtifactId, schema: &dyn Schema, rule: &dyn ValidationRule) -> Result<(), ValidationError> {
-        let entry = self.entries.get(id).ok_or_else(|| ValidationError::UnknownArtifact { id: id.0.clone() })?;
+    pub fn validate(
+        &self,
+        id: &ArtifactId,
+        schema: &dyn Schema,
+        rule: &dyn ValidationRule,
+    ) -> Result<(), ValidationError> {
+        let entry = self.entries.get(id).ok_or_else(|| ValidationError::UnknownArtifact {
+            id: id.0.clone(),
+        })?;
         schema.validate(&entry.artifact.content).map_err(|reason| ValidationError::SchemaMismatch {
             schema: schema.name().to_owned(),
             reason,

@@ -10,10 +10,7 @@ fn keyword_only_router_routes_by_keyword() {
     let router = Router::keyword_only();
     let decision = router.route_failure("borrow checker error");
     assert_eq!(decision.role, Role::UpliftWorker);
-    assert!(matches!(
-        decision.basis,
-        RouteBasis::Keyword(DecisionSource::Keyword { .. })
-    ));
+    assert!(matches!(decision.basis, RouteBasis::Keyword(DecisionSource::Keyword { .. })));
 }
 
 #[test]

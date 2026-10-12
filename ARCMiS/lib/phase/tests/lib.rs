@@ -24,9 +24,7 @@ fn forward_walk_covers_every_phase_in_order() {
         Phase::Done,
     ];
     for next in walk {
-        machine
-            .try_advance(next, "gate met", Some(Evidence::CompletedDispatch))
-            .expect("forward advance");
+        machine.try_advance(next, "gate met", Some(Evidence::CompletedDispatch)).expect("forward advance");
     }
     assert_eq!(machine.phase(), Phase::Done);
     assert_eq!(machine.history.len(), walk.len());
