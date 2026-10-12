@@ -1,8 +1,10 @@
 //! `frame_sink` maps decoded omp frames onto task-graph state changes.
 //!
-//! One `Response` frame completes the oldest in-progress node. One
-//! non-success `PromptResult` frame burns one repair attempt on it.
-//! Every other frame is bookkeeping and passes through unobserved.
+//! One `Response` frame completes the oldest in-progress node. A
+//! `PromptResult` frame with the wire status `completed` completes it the
+//! same way. A result with `error` or `aborted` burns one repair attempt
+//! on the node. Every other frame is bookkeeping and passes through
+//! unobserved.
 
 use crate::context::ContextStore;
 use crate::frames::Event;
@@ -20,13 +22,26 @@ pub fn absorb(graph: &mut TaskGraph, context: &mut ContextStore, event: Event) {
             }
         },
         Event::PromptResult(result) => {
-            let failed = result.status.as_deref().is_some_and(|status| status != "success");
-            if failed {
-                let in_progress = graph.ids_in_progress();
-                if let Some(id) = in_progress.first().copied() {
-                    let status = graph.record_failure(id);
-                    tracing::warn!(id, ?status, "work item failed");
-                }
+            // WHY `completed`, not `success`: the wire vocabulary is
+            // `omp_rpc::PromptStatus` (completed | aborted | error). No
+            // `success` value exists on the wire, so the old comparison
+            // marked every finished turn a failure and burned the repair
+            // budget.
+            match result.status.as_deref() {
+                Some("completed") => {
+                    let in_progress = graph.ids_in_progress();
+                    if let Some(id) = in_progress.first().copied() {
+                        graph.finish(id);
+                    }
+                },
+                Some("error") | Some("aborted") => {
+                    let in_progress = graph.ids_in_progress();
+                    if let Some(id) = in_progress.first().copied() {
+                        let status = graph.record_failure(id);
+                        tracing::warn!(id, ?status, "work item failed");
+                    }
+                },
+                _ => {},
             }
         },
         Event::Ready(_) | Event::Other(_) => {},
