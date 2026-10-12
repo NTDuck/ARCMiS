@@ -11,6 +11,10 @@ name = "mas_core"
 
 [dependencies]
 run-config = { package = "ARCMiS-run-config", path = "../run-config" }
+error = { package = "ARCMiS-error", path = "../error" }
+frames = { package = "ARCMiS-frames", path = "../frames" }
+compact = { package = "ARCMiS-compact", path = "../compact" }
+transport = { package = "ARCMiS-transport", path = "../transport" }
 laya-rs.workspace = true
 omp-rpc.workspace = true
 serde.workspace = true

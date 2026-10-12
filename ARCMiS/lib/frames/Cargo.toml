@@ -1,0 +1,19 @@
+[package]
+name = "ARCMiS-frames"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Wire frame vocabulary over the omp RPC child."
+
+[lib]
+name = "mas_frames"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+omp-rpc.workspace = true
+tracing.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,16 @@
+[package]
+name = "ARCMiS-error"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Run failure classes for the MAS conductor and its collaborators."
+
+[lib]
+name = "mas_error"
+
+[dependencies]
+thiserror.workspace = true
+
+[lints]
+workspace = true
