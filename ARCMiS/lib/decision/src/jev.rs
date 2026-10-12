@@ -4,68 +4,11 @@
 //! decisions. It uses a laya typed-decision model when available and
 //! falls back to deterministic rules when the model is absent.
 
-/// Failure triage decision.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum FailureTriage {
-    /// Retry the same handler.
-    Retry,
-    /// Route to a repair handler.
-    Repair,
-    /// Escalate to a human.
-    Escalate,
-}
-
-/// Next handler to dispatch to.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum NextHandler {
-    /// The same handler retries.
-    Same,
-    /// A repair handler picks up.
-    Repair,
-    /// A human reviewer picks up.
-    Human,
-}
-
-/// Escalation priority.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum EscalationPriority {
-    /// Low priority: routine escalation.
-    Low,
-    /// Medium priority: standard escalation.
-    Medium,
-    /// High priority: urgent escalation.
-    High,
-}
-
-/// Retry strategy for one failure.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RetryStrategy {
-    /// Retry immediately.
-    Immediate,
-    /// Retry after a short delay.
-    Delayed,
-    /// Do not retry.
-    None,
-}
-
-/// Configuration for the JEV decision service.
-#[derive(Debug, Clone)]
-pub struct JevConfig {
-    /// Confidence threshold below which the service falls back to
-    /// deterministic rules.
-    pub confidence_threshold: f64,
-    /// Whether the service is enabled.
-    pub enabled: bool,
-}
-
-impl Default for JevConfig {
-    fn default() -> Self {
-        Self {
-            confidence_threshold: 0.7,
-            enabled: true,
-        }
-    }
-}
+use crate::escalation_priority::EscalationPriority;
+use crate::failure_triage::FailureTriage;
+use crate::jev_config::JevConfig;
+use crate::next_handler::NextHandler;
+use crate::retry_strategy::RetryStrategy;
 
 /// JEV decision service.
 #[derive(Debug, Default)]

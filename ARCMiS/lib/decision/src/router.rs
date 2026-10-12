@@ -8,42 +8,9 @@ use domain::Role;
 use laya::Answer;
 use laya::QuestionKind;
 
-/// How a decision was reached. Every variant names its basis.
-#[derive(Debug, Clone, PartialEq)]
-pub enum DecisionSource {
-    /// A laya choice answer picked a verdict label.
-    Triage {
-        /// Verdict label from the triage agent.
-        verdict: String,
-        /// Confidence score from the triage agent.
-        confidence: f64,
-    },
-    /// No keyword matched. Deterministic fallback.
-    KeywordMiss,
-    /// A keyword rule matched.
-    Keyword {
-        /// Keyword that matched.
-        keyword: &'static str,
-    },
-}
-
-/// Which routing layer answered.
-#[derive(Debug, Clone, PartialEq)]
-pub enum RouteBasis {
-    /// Laya typed decision.
-    Typed(DecisionSource),
-    /// Deterministic keyword layer.
-    Keyword(DecisionSource),
-}
-
-/// One routing decision: target role plus its basis.
-#[derive(Debug, Clone, PartialEq)]
-pub struct RouteDecision {
-    /// Specialist to dispatch.
-    pub role: Role,
-    /// How the router reached the decision.
-    pub basis: RouteBasis,
-}
+use crate::decision_source::DecisionSource;
+use crate::route_basis::RouteBasis;
+use crate::route_decision::RouteDecision;
 
 /// The question id this router expects the triage agent to answer.
 pub const TRIAGE_QUESTION: &str = "verdict";
