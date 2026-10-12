@@ -8,6 +8,7 @@ use mas_core::conductor::RunLimits;
 use mas_core::conductor::Verdict;
 use mas_core::error::ConductorError;
 use mas_core::frames::Event;
+use mas_core::frames::PromptErrorDetail;
 use mas_core::frames::PromptResultFrame;
 use mas_core::frames::ResponseFrame;
 use mas_core::gateway::Gateway;
@@ -113,6 +114,7 @@ fn completed_frame(id: &str) -> Event {
         agent_invoked: Some(true),
         status: Some("completed".to_owned()),
         session_settled: Some(true),
+        error: None,
     })
 }
 
@@ -123,6 +125,11 @@ fn error_frame(id: &str) -> Event {
         agent_invoked: Some(true),
         status: Some("error".to_owned()),
         session_settled: Some(true),
+        error: Some(PromptErrorDetail {
+            message: "Agent is already processing".to_owned(),
+            retryable: true,
+            ..Default::default()
+        }),
     })
 }
 

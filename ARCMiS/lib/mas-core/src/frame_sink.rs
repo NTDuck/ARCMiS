@@ -3,8 +3,8 @@
 //! One `Response` frame completes the oldest in-progress node. A
 //! `PromptResult` frame with the wire status `completed` completes it the
 //! same way. A result with `error` or `aborted` burns one repair attempt
-//! on the node. Every other frame is bookkeeping and passes through
-//! unobserved.
+//! on the node. A failing result logs its wire detail for triage. Every
+//! other frame is bookkeeping and passes through unobserved.
 
 use crate::context::ContextStore;
 use crate::frames::Event;
@@ -34,11 +34,24 @@ pub fn absorb(graph: &mut TaskGraph, context: &mut ContextStore, event: Event) {
                         graph.finish(id);
                     }
                 },
-                Some("error") | Some("aborted") => {
+                Some(result_status @ ("error" | "aborted")) => {
                     let in_progress = graph.ids_in_progress();
                     if let Some(id) = in_progress.first().copied() {
-                        let status = graph.record_failure(id);
-                        tracing::warn!(id, ?status, "work item failed");
+                        let item_state = graph.record_failure(id);
+                        let detail = result.error.as_ref();
+                        // WHY structured fields: a real failure must carry
+                        // its wire detail so the run log names the cause.
+                        tracing::warn!(
+                            id,
+                            item_state = ?item_state,
+                            result_status,
+                            message = detail.map_or("", |error| error.message.as_str()),
+                            retryable = detail.is_some_and(|error| error.retryable),
+                            provider = detail.and_then(|error| error.provider.as_deref()).unwrap_or(""),
+                            model = detail.and_then(|error| error.model.as_deref()).unwrap_or(""),
+                            http_status = detail.and_then(|error| error.http_status),
+                            "work item failed"
+                        );
                     }
                 },
                 _ => {},

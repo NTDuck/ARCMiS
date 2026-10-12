@@ -72,6 +72,13 @@ fn map_notification(notification: RpcNotification) -> Event {
             agent_invoked: Some(result.agent_invoked),
             status: Some(result.status.as_str().to_owned()),
             session_settled: Some(result.session_settled),
+            error: result.error.map(|error| PromptErrorDetail {
+                message: error.message,
+                retryable: error.retryable,
+                provider: error.provider,
+                model: error.model,
+                http_status: error.http_status,
+            }),
         }),
         RpcNotification::SubagentLifecycle(frame) => Event::SubagentLifecycle(SubagentLifecycleFrame {
             payload: SubagentLifecyclePayload {
@@ -161,6 +168,22 @@ pub struct ResponseFrame {
     pub error: Option<serde_json::Value>,
 }
 
+/// Failure detail of one prompt result with a failing status. Mirrors
+/// the wire `error` object of `prompt_result`.
+#[derive(Debug, Clone, Default, PartialEq, Deserialize)]
+pub struct PromptErrorDetail {
+    #[serde(default)]
+    pub message: String,
+    #[serde(default)]
+    pub retryable: bool,
+    #[serde(default)]
+    pub provider: Option<String>,
+    #[serde(default)]
+    pub model: Option<String>,
+    #[serde(rename = "httpStatus", default)]
+    pub http_status: Option<i64>,
+}
+
 /// Terminal state of one prompt command.
 #[derive(Debug, Clone, Deserialize)]
 pub struct PromptResultFrame {
@@ -172,6 +195,8 @@ pub struct PromptResultFrame {
     pub status: Option<String>,
     #[serde(rename = "sessionSettled", default)]
     pub session_settled: Option<bool>,
+    #[serde(default)]
+    pub error: Option<PromptErrorDetail>,
 }
 
 /// Registry transition for one subagent. Route by `payload.agent`.
@@ -335,6 +360,33 @@ mod tests {
         assert_eq!(mapped.status.as_deref(), Some("error"));
         assert_eq!(mapped.id.as_deref(), Some("req_2"));
         assert_eq!(mapped.session_settled, Some(true));
+        assert_eq!(mapped.error, None);
+    }
+
+    #[test]
+    fn prompt_result_keeps_the_error_detail() {
+        let frame = SdkEvent::Notification(RpcNotification::PromptResult(PromptResultEvent {
+            agent_invoked: true,
+            status: PromptStatus::Error,
+            session_settled: true,
+            id: Some("req_3".to_string()),
+            error: Some(omp_rpc::PromptError {
+                message: "Agent is already processing".to_string(),
+                retryable: true,
+                provider: Some("local-engine".to_string()),
+                model: Some("qwen3.8-27b".to_string()),
+                http_status: None,
+            }),
+        }));
+        let Event::PromptResult(mapped) = map_sdk_event(frame) else {
+            panic!("expected a prompt result frame");
+        };
+        let detail = mapped.error.expect("expected the error detail");
+        assert_eq!(detail.message, "Agent is already processing");
+        assert!(detail.retryable);
+        assert_eq!(detail.provider.as_deref(), Some("local-engine"));
+        assert_eq!(detail.model.as_deref(), Some("qwen3.8-27b"));
+        assert_eq!(detail.http_status, None);
     }
 
     #[test]
