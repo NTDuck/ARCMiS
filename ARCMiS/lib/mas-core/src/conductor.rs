@@ -6,11 +6,13 @@
 //! Every phase advance is evidence-gated. Every failure burns repair
 //! budget before it escalates.
 
+use std::collections::HashSet;
 use std::time::Duration;
 
 use crate::context::ContextStore;
 use crate::error::ConductorError;
 use crate::frame_sink;
+use crate::frames::Event;
 use crate::gateway::Gateway;
 use crate::gateway::ToolCall;
 use crate::gateway::ToolVerdict;
@@ -92,8 +94,10 @@ pub struct Conductor<T: Transport> {
     limits: RunLimits,
     context: ContextStore,
     dispatches: usize,
+    /// Subagent ids with an open lifecycle span. A `started` frame
+    /// opens a span. The closing frame for that agent closes it.
+    open_subagents: HashSet<String>,
 }
-
 impl<T: Transport> Conductor<T> {
     /// Assemble one run over `transport`.
     pub fn new(transport: T, registry: TeamRegistry, router: Router, gateway: Gateway, limits: RunLimits) -> Self {
@@ -109,9 +113,9 @@ impl<T: Transport> Conductor<T> {
             limits,
             context,
             dispatches: 0,
+            open_subagents: HashSet::new(),
         }
     }
-
     /// Current phase.
     pub fn phase(&self) -> Phase {
         self.phases.phase()
@@ -141,15 +145,21 @@ impl<T: Transport> Conductor<T> {
     /// drain frames. Returns what the round accomplished.
     pub async fn round(&mut self) -> Result<RoundOutcome, ConductorError> {
         let done_before = self.graph.status_counts().done;
+        // WHY the gate: the session processes one prompt at a time and
+        // rejects a second while the first is in flight or a subagent
+        // span stays open. Hold dispatch until the run absorbs the last
+        // result and closes every span. Send at most one prompt per round.
         let ready = self.graph.ready();
-        let dispatched = ready.len();
-        for id in ready {
+        let gate_open = self.graph.ids_in_progress().is_empty() && self.open_subagents.is_empty();
+        let mut dispatched = 0;
+        if let Some(id) = ready.first().copied().filter(|_| gate_open) {
             self.graph.admit(id);
             self.graph.start(id);
             let instruction = self.instruction_for(id);
             let request_id = self.transport.send_prompt(&instruction).await.map_err(Self::transport_error)?;
             tracing::debug!(id, request_id, "dispatched work item");
             self.dispatches += 1;
+            dispatched = 1;
         }
         self.drain_events().await?;
         self.context.settle();
@@ -231,7 +241,10 @@ impl<T: Transport> Conductor<T> {
     async fn drain_events(&mut self) -> Result<(), ConductorError> {
         loop {
             match self.transport.recv_within(self.limits.event_timeout).await {
-                Ok(event) => frame_sink::absorb(&mut self.graph, &mut self.context, event),
+                Ok(event) => {
+                    self.track_subagent_span(&event);
+                    frame_sink::absorb(&mut self.graph, &mut self.context, event);
+                },
                 Err(TransportError::Timeout) => {
                     // WHY the poll keeps going: a quiet wait while a turn
                     // is in flight is normal waiting on a slow engine,
@@ -242,6 +255,20 @@ impl<T: Transport> Conductor<T> {
                 },
                 Err(TransportError::Closed) => return Err(ConductorError::Transport("transport closed".to_owned())),
                 Err(other) => return Err(ConductorError::Transport(other.to_string())),
+            }
+        }
+    }
+
+    /// Keep the open-span set current from lifecycle frames. A
+    /// `started` frame opens a span. Every other frame closes the span
+    /// for that agent.
+    fn track_subagent_span(&mut self, event: &Event) {
+        if let Event::SubagentLifecycle(frame) = event {
+            let agent = frame.payload.agent.clone();
+            if frame.payload.status == "started" {
+                self.open_subagents.insert(agent);
+            } else {
+                self.open_subagents.remove(&agent);
             }
         }
     }

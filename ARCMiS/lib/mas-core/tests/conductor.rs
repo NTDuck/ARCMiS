@@ -11,6 +11,8 @@ use mas_core::frames::Event;
 use mas_core::frames::PromptErrorDetail;
 use mas_core::frames::PromptResultFrame;
 use mas_core::frames::ResponseFrame;
+use mas_core::frames::SubagentLifecycleFrame;
+use mas_core::frames::SubagentLifecyclePayload;
 use mas_core::gateway::Gateway;
 use mas_core::gateway::ToolCall;
 use mas_core::hierarchy::TeamRegistry;
@@ -65,20 +67,24 @@ impl Transport for ScriptedTransport {
 }
 
 /// A transport that replays one scripted frame sequence, then reports
-/// timeout. It records every action so tests can assert ordering.
+/// timeout. Each frame carries a poll delay: it releases after that many
+/// quiet polls, so a late frame can land while the run works on. While a
+/// subagent span from the script is open, it rejects a prompt with the
+/// session refusal text. This mirrors the live session.
 #[derive(Default)]
 struct StreamTransport {
     prompts: Vec<String>,
-    actions: Vec<String>,
-    /// Frames left to hand out, oldest first.
-    script: VecDeque<Result<Event, TransportError>>,
+    /// Open while the last lifecycle frame of the script is a start.
+    span_open: bool,
+    /// Frames left to hand out, oldest first, with poll delays.
+    script: VecDeque<(Event, usize)>,
 }
 
 impl StreamTransport {
-    fn replaying(script: Vec<Result<Event, TransportError>>) -> Self {
+    fn replaying(script: Vec<(Event, usize)>) -> Self {
         Self {
             prompts: Vec::new(),
-            actions: Vec::new(),
+            span_open: false,
             script: script.into(),
         }
     }
@@ -86,8 +92,13 @@ impl StreamTransport {
 
 impl Transport for StreamTransport {
     async fn send_prompt(&mut self, message: &str) -> Result<String, TransportError> {
+        if self.span_open {
+            return Err(TransportError::BadRequest(
+                "Agent is already processing. Use steer() or followUp() to queue messages, or wait for completion."
+                    .to_owned(),
+            ));
+        }
         self.prompts.push(message.to_owned());
-        self.actions.push(format!("send:{}", self.prompts.len()));
         Ok(format!("req-{}", self.prompts.len()))
     }
 
@@ -96,12 +107,18 @@ impl Transport for StreamTransport {
     }
 
     async fn recv_within(&mut self, _timeout: Duration) -> Result<Event, TransportError> {
-        match self.script.pop_front() {
-            Some(Ok(Event::SubagentLifecycle(frame))) => {
-                self.actions.push(format!("lifecycle:{}:{}", frame.payload.agent, frame.payload.status));
-                Ok(Event::SubagentLifecycle(frame))
+        match self.script.front_mut() {
+            Some(entry) => {
+                if entry.1 > 0 {
+                    entry.1 -= 1;
+                    return Err(TransportError::Timeout);
+                }
+                let (frame, _) = self.script.pop_front().expect("front present");
+                if let Event::SubagentLifecycle(lifecycle) = &frame {
+                    self.span_open = lifecycle.payload.status == "started";
+                }
+                Ok(frame)
             },
-            Some(frame) => frame,
             None => Err(TransportError::Timeout),
         }
     }
@@ -140,6 +157,23 @@ fn analyst_item(instruction: &str) -> WorkItem {
         kind: mas_core::taskgraph::Kind::Analyze,
         instruction: instruction.to_owned(),
     }
+}
+
+/// One subagent lifecycle frame for the named agent.
+fn lifecycle_frame(agent: &str, status: &str) -> Event {
+    Event::SubagentLifecycle(SubagentLifecycleFrame {
+        payload: SubagentLifecyclePayload {
+            id: format!("{agent}-{status}"),
+            agent: agent.to_owned(),
+            agent_source: None,
+            description: None,
+            status: status.to_owned(),
+            session_file: None,
+            parent_tool_call_id: None,
+            index: 0,
+            detached: None,
+        },
+    })
 }
 
 fn limits() -> RunLimits {
@@ -229,7 +263,7 @@ fn gateway_sits_in_front_of_tool_calls() {
 
 #[tokio::test]
 async fn completed_result_finishes_the_item_without_repair_burn() {
-    let transport = StreamTransport::replaying(vec![Ok(completed_frame("req-1"))]);
+    let transport = StreamTransport::replaying(vec![(completed_frame("req-1"), 0)]);
     let mut conductor =
         Conductor::new(transport, TeamRegistry::direct(), Router::keyword_only(), Gateway::permissive(), limits());
     conductor.add_work(analyst_item("map the source"), Vec::new());
@@ -243,7 +277,7 @@ async fn completed_result_finishes_the_item_without_repair_burn() {
 
 #[tokio::test]
 async fn error_result_burns_the_repair_budget() {
-    let transport = StreamTransport::replaying(vec![Ok(error_frame("req-1"))]);
+    let transport = StreamTransport::replaying(vec![(error_frame("req-1"), 0)]);
     let mut limits = limits();
     limits.graph.max_repairs = 0;
     let mut conductor =
@@ -260,12 +294,10 @@ async fn error_result_burns_the_repair_budget() {
 
 #[tokio::test]
 async fn in_flight_turns_do_not_count_as_stagnation() {
-    // Several quiet polls while the only item stays in flight, then the
-    // completed result. The quiet polls are normal waiting on a slow
-    // engine, not stalls.
-    let mut script = (0..4).map(|_| Err(TransportError::Timeout)).collect::<Vec<_>>();
-    script.push(Ok(completed_frame("req-1")));
-    let transport = StreamTransport::replaying(script);
+    // More quiet polls than the stagnation ceiling, while the only item
+    // stays in flight, then the completed result. The quiet polls are
+    // normal waiting on a slow engine, not stalls.
+    let transport = StreamTransport::replaying(vec![(completed_frame("req-1"), 6)]);
     let mut conductor =
         Conductor::new(transport, TeamRegistry::direct(), Router::keyword_only(), Gateway::permissive(), limits());
     conductor.add_work(analyst_item("map the source"), Vec::new());
@@ -273,4 +305,28 @@ async fn in_flight_turns_do_not_count_as_stagnation() {
     assert_eq!(summary.verdict, Verdict::Success);
     assert_eq!(summary.final_phase, Phase::Done);
     assert_eq!(summary.dispatches, 1);
+}
+
+#[tokio::test]
+async fn dispatch_holds_while_a_subagent_span_is_open() {
+    // The first result arrives while the subagent span is still open.
+    // The closing frame lands two quiet polls later, like a detached
+    // agent finishing after the top-level result. The second result
+    // follows it. A prompt sent in that window meets the session
+    // refusal and ends the run. The test passes only if dispatch holds
+    // until the span closes.
+    let script = vec![
+        (lifecycle_frame("scout", "started"), 0),
+        (completed_frame("req-1"), 0),
+        (lifecycle_frame("scout", "completed"), 2),
+        (completed_frame("req-2"), 2),
+    ];
+    let transport = StreamTransport::replaying(script);
+    let mut conductor =
+        Conductor::new(transport, TeamRegistry::direct(), Router::keyword_only(), Gateway::permissive(), limits());
+    let first = conductor.add_work(analyst_item("map the source"), Vec::new());
+    conductor.add_work(analyst_item("translate the batch"), vec![first]);
+    let summary = conductor.run().await.unwrap();
+    assert_eq!(summary.verdict, Verdict::Success);
+    assert_eq!(summary.dispatches, 2);
 }
