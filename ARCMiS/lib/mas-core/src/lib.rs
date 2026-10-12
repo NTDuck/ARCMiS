@@ -12,12 +12,14 @@
 //! - `compact` — snapcompact-style context compaction.
 //! - `frames` — wire frame vocabulary over the omp session.
 //! - `transport` — Transport seam over the omp session.
+//! - `advisor` — read-only OMP consultation handle (ADR 0036 section 6).
 //! - `conductor` — one run: phases, dispatches, event loop.
 
 // The workspace naming rule prefixes crates with ARCMiS-. The generated
 // snake_case identifier trips only this lint.
 #![allow(non_snake_case)]
 
+pub mod advisor;
 pub mod blackboard;
 pub mod compact;
 pub mod conductor;
@@ -33,6 +35,11 @@ pub mod router;
 pub mod taskgraph;
 pub mod transport;
 
+pub use advisor::AdvisorConfig;
+pub use advisor::AdvisorConsultation;
+pub use advisor::AdvisorError;
+pub use advisor::AdvisorVerdict;
+pub use advisor::OmpAdvisor;
 pub use blackboard::Blackboard;
 pub use compact::compact_frames;
 pub use compact::CompactionOutcome;

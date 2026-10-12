@@ -72,6 +72,9 @@ pub struct OmpLaunchConfig {
     pub env: Vec<(String, String)>,
     /// Subagent frames the server forwards after the handshake.
     pub subagent_subscription: SubagentSubscriptionLevel,
+    /// Disable every built-in tool. The advisor uses this to keep the
+    /// session read-only: no file writes, no command execution.
+    pub read_only: bool,
 }
 
 impl Default for OmpLaunchConfig {
@@ -91,6 +94,7 @@ impl Default for OmpLaunchConfig {
             // `payload.agent` and `payload.id`. Only the events level
             // forwards the raw session events the router needs (ADR 0030).
             subagent_subscription: SubagentSubscriptionLevel::Events,
+            read_only: false,
         }
     }
 }
@@ -101,12 +105,19 @@ impl OmpLaunchConfig {
     /// WHY `--model`: omp selects the session model with
     /// `--model=<value>` (fuzzy match, `provider/model`). The form comes
     /// from `omp --help`. No RPC-level model message exists.
+    ///
+    /// WHY `--no-tools`: a read-only session disables every built-in
+    /// tool at the CLI level. The advisor cannot write files or run
+    /// commands even if a prompt asks for it (ADR 0036 section 6).
     pub fn argv(&self) -> Vec<String> {
         let mut argv = vec!["--mode".to_string(), "rpc".to_string()];
         if let Some(model) = &self.model {
             argv.push(format!("--model={model}"));
         }
         argv.push(format!("--approval-mode={}", self.approval_mode));
+        if self.read_only {
+            argv.push("--no-tools".to_string());
+        }
         argv.extend(self.extra_args.iter().cloned());
         argv
     }
