@@ -10,50 +10,12 @@
 // snake_case identifier trips only this lint.
 #![allow(non_snake_case)]
 
-/// One context frame awaiting a keep-or-archive decision.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ContextFrame {
-    /// Frame text.
-    pub text: String,
-    /// Who produced the frame. Used in the archive stub.
-    pub source: String,
-}
+pub mod compact_frames;
+pub mod compaction_outcome;
+pub mod context_frame;
+pub mod project_tokens;
 
-/// Projected token count for one frame. Floor of one keeps empty frames
-/// visible to the budget instead of vanishing.
-pub fn project_tokens(text: &str) -> usize {
-    (text.len() / 4).max(1)
-}
-
-/// Result of one compaction pass.
-#[derive(Debug, Default, PartialEq, Eq)]
-pub struct CompactionOutcome {
-    /// Frames retained, in original order.
-    pub kept: Vec<ContextFrame>,
-    /// Frames archived, oldest first.
-    pub archived: Vec<ContextFrame>,
-}
-
-/// Compact `frames` to fit `budget` projected tokens. Newest frames win:
-/// walk backward, keep what fits, archive the rest oldest-first.
-pub fn compact_frames(frames: Vec<ContextFrame>, budget: usize) -> CompactionOutcome {
-    let mut spent = 0usize;
-    let mut keep_from = frames.len();
-    for (index, frame) in frames.iter().enumerate().rev() {
-        let cost = project_tokens(&frame.text);
-        if spent + cost > budget {
-            break;
-        }
-        spent += cost;
-        keep_from = index;
-    }
-    let kept = frames.iter().skip(keep_from).cloned().collect::<Vec<ContextFrame>>();
-    let archived = frames[..keep_from].to_vec();
-    if !archived.is_empty() {
-        tracing::info!(archived = archived.len(), kept = kept.len(), budget, "context compacted");
-    }
-    CompactionOutcome {
-        kept,
-        archived,
-    }
-}
+pub use compact_frames::compact_frames;
+pub use compaction_outcome::CompactionOutcome;
+pub use context_frame::ContextFrame;
+pub use project_tokens::project_tokens;
