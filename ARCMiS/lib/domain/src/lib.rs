@@ -11,19 +11,43 @@
 #![allow(non_snake_case)]
 
 pub mod blackboard;
+pub mod evidence;
 pub mod gateway;
 pub mod hierarchy;
 pub mod mailbox;
+pub mod mailboxes;
+pub mod message;
 pub mod module_phase;
+pub mod module_state_machine;
+pub mod module_transition;
 pub mod phase;
+pub mod phase_machine;
 pub mod repository;
+pub mod revision;
+pub mod role;
+pub mod team;
+pub mod team_registry;
 pub mod test_outcomes;
+pub mod tool_call;
+pub mod tool_verdict;
+pub mod topic;
+pub mod transition;
 
-pub use blackboard::{Blackboard, Revision};
-pub use gateway::{Gateway, ToolCall, ToolVerdict};
+pub use blackboard::Blackboard;
+pub use revision::Revision;
+pub use evidence::Evidence;
+pub use gateway::Gateway;
+pub use tool_call::ToolCall;
+pub use tool_verdict::ToolVerdict;
 pub use hierarchy::{Role, Team, TeamRegistry};
-pub use mailbox::{Mailbox, Mailboxes, Message};
-pub use module_phase::{ModulePhase, ModuleStateMachine, ModuleTransition};
-pub use phase::{Evidence, Phase, PhaseMachine, Transition};
+pub use mailbox::Mailbox;
+pub use mailboxes::Mailboxes;
+pub use message::Message;
+pub use module_phase::ModulePhase;
+pub use module_state_machine::ModuleStateMachine;
+pub use module_transition::ModuleTransition;
+pub use phase::Phase;
+pub use phase_machine::PhaseMachine;
 pub use repository::RepositoryMetadata;
 pub use test_outcomes::TestOutcomes;
+pub use transition::Transition;

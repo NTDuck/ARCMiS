@@ -6,26 +6,8 @@
 //! wins: this follows the run-config GuardConfig contract and ADR 0031
 //! over any task brief asking otherwise.
 
-/// One tool call awaiting a verdict.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ToolCall {
-    /// Tool name, e.g. `bash` or `edit`.
-    pub tool: String,
-    /// Raw argument text.
-    pub args: String,
-}
-
-/// Gateway verdict.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ToolVerdict {
-    /// The call may proceed.
-    Allow,
-    /// The gateway refused the call. Carries the matched pattern.
-    Deny {
-        /// Pattern that matched the call.
-        matched: String,
-    },
-}
+use crate::tool_call::ToolCall;
+use crate::tool_verdict::ToolVerdict;
 
 /// Deterministic call gateway.
 #[derive(Debug, Default)]
