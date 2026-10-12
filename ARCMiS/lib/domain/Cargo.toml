@@ -1,0 +1,18 @@
+[package]
+name = "ARCMiS-domain"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Domain types and state machines: hierarchy, phase, module-phase, gateway, blackboard, mailbox, repository, test-outcomes."
+
+[lib]
+name = "mas_domain"
+
+[dependencies]
+run-config = { package = "ARCMiS-run-config", path = "../run-config" }
+serde.workspace = true
+tracing.workspace = true
+
+[lints]
+workspace = true
