@@ -12,7 +12,6 @@
 #![allow(deprecated)]
 
 use std::collections::HashSet;
-use std::time::Duration;
 
 use artifact::Verdict;
 use decision::Router;
@@ -27,57 +26,14 @@ use runtime::ConductorError;
 use runtime::Event;
 use runtime::Transport;
 use runtime::TransportError;
-use taskgraph::GraphBudgets;
 use taskgraph::TaskGraph;
 use taskgraph::WorkItem;
 
 use crate::context::ContextStore;
 use crate::frame_sink;
-
-/// End-of-run summary.
-#[derive(Debug, Clone, PartialEq)]
-pub struct RunSummary {
-    /// Final phase the machine reached.
-    pub final_phase: Phase,
-    /// How the run ended.
-    pub verdict: Verdict,
-    /// Completed dispatch count.
-    pub dispatches: usize,
-    /// Compaction passes over the run.
-    pub compactions: usize,
-}
-
-/// One round's fresh activity, for stagnation accounting. Counts hold
-/// round deltas, never cumulative totals.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct RoundOutcome {
-    /// Work items dispatched this round.
-    pub dispatched: usize,
-    /// Work items completed this round.
-    pub completed: usize,
-}
-
-/// Budgets and policy knobs for one run. Every value bubbles from the
-/// call site (config rule): the conductor never reads the environment.
-#[derive(Debug, Clone)]
-pub struct RunLimits {
-    /// Graph budgets: fanout, repairs, stagnation.
-    pub graph: GraphBudgets,
-    /// Projected-token ceiling that triggers compaction.
-    pub context_budget: usize,
-    /// Per-event wait on the transport.
-    pub event_timeout: Duration,
-}
-
-impl Default for RunLimits {
-    fn default() -> Self {
-        Self {
-            graph: GraphBudgets::default(),
-            context_budget: 100_000,
-            event_timeout: Duration::from_secs(600),
-        }
-    }
-}
+use crate::round_outcome::RoundOutcome;
+use crate::run_limits::RunLimits;
+use crate::run_summary::RunSummary;
 
 /// One conductor run.
 pub struct Conductor<T: Transport> {
@@ -94,6 +50,7 @@ pub struct Conductor<T: Transport> {
     /// opens a span. The closing frame for that agent closes it.
     open_subagents: HashSet<String>,
 }
+
 impl<T: Transport> Conductor<T> {
     /// Assemble one run over `transport`.
     pub fn new(transport: T, registry: TeamRegistry, router: Router, gateway: Gateway, limits: RunLimits) -> Self {
@@ -112,6 +69,7 @@ impl<T: Transport> Conductor<T> {
             open_subagents: HashSet::new(),
         }
     }
+
     /// Current phase.
     pub fn phase(&self) -> Phase {
         self.phases.phase()

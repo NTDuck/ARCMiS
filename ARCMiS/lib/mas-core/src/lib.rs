@@ -13,12 +13,17 @@
 // snake_case identifier trips only this lint.
 #![allow(non_snake_case)]
 
+pub mod absorb_prompt_result;
+pub mod absorb_response;
 pub mod conductor;
 pub mod context;
 pub mod frame_sink;
+pub mod round_outcome;
+pub mod run_limits;
+pub mod run_summary;
 
 pub use conductor::Conductor;
-pub use conductor::RoundOutcome;
-pub use conductor::RunLimits;
-pub use conductor::RunSummary;
+pub use round_outcome::RoundOutcome;
+pub use run_limits::RunLimits;
+pub use run_summary::RunSummary;
 pub use context::ContextStore;
