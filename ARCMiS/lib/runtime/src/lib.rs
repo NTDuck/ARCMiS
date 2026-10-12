@@ -1,0 +1,39 @@
+//! `mas_runtime` is the IO and runtime layer for the MAS conductor.
+//!
+//! It bundles the wire vocabulary, the transport seam, the error
+//! classes, the context compaction, and the read-only advisor. The
+//! conductor and its collaborators depend on this crate for every
+//! concern that touches the outside world.
+
+// The workspace naming rule prefixes crates with ARCMiS-. The generated
+// snake_case identifier trips only this lint.
+#![allow(non_snake_case)]
+
+pub mod advisor;
+pub mod agent_progress;
+pub mod compact;
+pub mod error;
+pub mod extension_ui_request;
+pub mod frames;
+pub mod prompt_error_detail;
+pub mod prompt_result;
+pub mod ready;
+pub mod response;
+pub mod session_event;
+pub mod subagent_event;
+pub mod subagent_lifecycle;
+pub mod subagent_progress;
+pub mod transport;
+
+mod map;
+
+pub use advisor::{AdvisorConfig, AdvisorConsultation, AdvisorVerdict, OmpAdvisor};
+pub use compact::{compact_frames, project_tokens, CompactionOutcome, ContextFrame};
+pub use error::{AdvisorError, ConductorError, TransportError, ValidationError};
+pub use frames::{
+    AgentProgress, Event, ExtensionUiRequestFrame, PromptErrorDetail, PromptResultFrame, ReadyFrame, ResponseFrame,
+    SessionEvent, SubagentEventFrame, SubagentEventPayload, SubagentLifecycleFrame, SubagentLifecyclePayload,
+    SubagentProgressFrame, SubagentProgressPayload,
+};
+pub use map::map_sdk_event;
+pub use transport::{forward_frames, map_sdk_error, OmpLaunchConfig, OmpTransport, Transport};

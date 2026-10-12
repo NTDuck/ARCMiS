@@ -1,0 +1,21 @@
+[package]
+name = "ARCMiS-runtime"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "IO and runtime concerns: transport, frames, error, compact, advisor."
+
+[lib]
+name = "mas_runtime"
+
+[dependencies]
+omp-rpc.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, features = ["macros", "sync", "rt-multi-thread", "time"] }
+tracing.workspace = true
+
+[lints]
+workspace = true
