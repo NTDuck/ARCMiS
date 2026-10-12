@@ -257,3 +257,20 @@ async fn error_result_burns_the_repair_budget() {
         }
     );
 }
+
+#[tokio::test]
+async fn in_flight_turns_do_not_count_as_stagnation() {
+    // Several quiet polls while the only item stays in flight, then the
+    // completed result. The quiet polls are normal waiting on a slow
+    // engine, not stalls.
+    let mut script = (0..4).map(|_| Err(TransportError::Timeout)).collect::<Vec<_>>();
+    script.push(Ok(completed_frame("req-1")));
+    let transport = StreamTransport::replaying(script);
+    let mut conductor =
+        Conductor::new(transport, TeamRegistry::direct(), Router::keyword_only(), Gateway::permissive(), limits());
+    conductor.add_work(analyst_item("map the source"), Vec::new());
+    let summary = conductor.run().await.unwrap();
+    assert_eq!(summary.verdict, Verdict::Success);
+    assert_eq!(summary.final_phase, Phase::Done);
+    assert_eq!(summary.dispatches, 1);
+}

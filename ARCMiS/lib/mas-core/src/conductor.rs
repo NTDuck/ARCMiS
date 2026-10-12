@@ -178,9 +178,10 @@ impl<T: Transport> Conductor<T> {
             }
             // WHY round outcomes: a settled graph reports no fresh
             // completions while the phase walk advances, so stagnation
-            // counts only rounds with no dispatch, no completion, and no
-            // phase advance.
-            if outcome.dispatched > 0 || outcome.completed > 0 || settled {
+            // counts only rounds with no dispatch, no completion, no
+            // phase advance, and no in-flight item.
+            let in_flight = self.graph.status_counts().in_progress;
+            if outcome.dispatched > 0 || outcome.completed > 0 || settled || in_flight > 0 {
                 self.graph.record_progress();
             } else if self.graph.record_stagnation() {
                 return Ok(self.summarize(Verdict::Failed {
@@ -225,13 +226,20 @@ impl<T: Transport> Conductor<T> {
         )
     }
 
-    /// Drain transport events until the wait times out. Frames append to
-    /// the context.
+    /// Drain transport events until the wait times out with no work in
+    /// flight. Frames append to the context.
     async fn drain_events(&mut self) -> Result<(), ConductorError> {
         loop {
             match self.transport.recv_within(self.limits.event_timeout).await {
                 Ok(event) => frame_sink::absorb(&mut self.graph, &mut self.context, event),
-                Err(TransportError::Timeout) => return Ok(()),
+                Err(TransportError::Timeout) => {
+                    // WHY the poll keeps going: a quiet wait while a turn
+                    // is in flight is normal waiting on a slow engine,
+                    // not a stall. An in-flight item keeps this round open.
+                    if self.graph.ids_in_progress().is_empty() {
+                        return Ok(());
+                    }
+                },
                 Err(TransportError::Closed) => return Err(ConductorError::Transport("transport closed".to_owned())),
                 Err(other) => return Err(ConductorError::Transport(other.to_string())),
             }
