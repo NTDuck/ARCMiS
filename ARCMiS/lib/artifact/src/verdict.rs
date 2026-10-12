@@ -1,12 +1,8 @@
-//! `mas_verdict` computes run verdicts from task evidence.
+//! Verdict computation from task evidence.
 //!
 //! The verdict is the conductor's final answer: did the run succeed or
 //! fail, and why. The `VerdictComputer` rolls per-task verdicts into
 //! one run-level verdict using the evidence each task collected.
-
-// The workspace naming rule prefixes crates with ARCMiS-. The generated
-// snake_case identifier trips only this lint.
-#![allow(non_snake_case)]
 
 /// How a run ended.
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -1,4 +1,4 @@
-//! Integration tests for the artifact crate.
+//! Integration tests for the artifact module.
 
 use std::time::SystemTime;
 

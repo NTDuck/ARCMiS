@@ -1,8 +1,8 @@
-//! Integration tests for the verdict crate.
+//! Integration tests for the verdict module.
 
-use mas_verdict::TaskEvidence;
-use mas_verdict::Verdict;
-use mas_verdict::VerdictComputer;
+use mas_artifact::TaskEvidence;
+use mas_artifact::Verdict;
+use mas_artifact::VerdictComputer;
 
 #[test]
 fn empty_evidence_is_success() {

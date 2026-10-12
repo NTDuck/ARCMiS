@@ -4,13 +4,13 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Typed artifact store with owner, schema, provenance, and validation rule per artifact."
+description = "Artifact chain: artifact store and verdict computation."
 
 [lib]
 name = "mas_artifact"
 
 [dependencies]
-error = { package = "ARCMiS-error", path = "../error" }
+runtime = { package = "ARCMiS-runtime", path = "../runtime" }
 tracing.workspace = true
 
 [lints]
